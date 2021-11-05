@@ -1,0 +1,7 @@
+build/
+
+.idea/
+.vscode/
+
+.DS_Store
+include/.DS_Store
