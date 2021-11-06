@@ -15,10 +15,13 @@
 
 #include "fsim/util/vector_utils.h"
 
-RodCollection::RodCollection(const Eigen::Ref<const fsim::Mat3<double>> V,
+namespace fsim
+{
+
+RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                              const std::vector<std::vector<int>> &indices,
                              const Eigen::MatrixX2i &C,
-                             const Eigen::Ref<const fsim::Mat3<double>> N,
+                             const Eigen::Ref<const Mat3<double>> N,
                              const std::vector<std::vector<double>> &normal_widths,
                              const std::vector<std::vector<double>> &binormal_widths,
                              double young_modulus,
@@ -34,7 +37,7 @@ RodCollection::RodCollection(const Eigen::Ref<const fsim::Mat3<double>> V,
   int nE = 0;
   for(int i = 0; i < nR; ++i)
   {
-    fsim::Mat3<double> D1, D2;
+    Mat3<double> D1, D2;
     Map<VectorXi> E(const_cast<int *>(indices[i].data()), indices[i].size());
     ElasticRod::bishop_frame(V, E, N.row(i), D1, D2);
     for(int j = 0; j < E.size() - 1; ++j)
@@ -116,10 +119,10 @@ RodCollection::RodCollection(const Eigen::Ref<const fsim::Mat3<double>> V,
   assert(_springs.size() == _frames.size());
 }
 
-RodCollection::RodCollection(const Eigen::Ref<const fsim::Mat3<double>> V,
+RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                              const std::vector<std::vector<int>> &indices,
                              const Eigen::MatrixX2i &C,
-                             const Eigen::Ref<const fsim::Mat3<double>> N,
+                             const Eigen::Ref<const Mat3<double>> N,
                              const std::vector<double> &W_n,
                              const std::vector<double> &W_b,
                              double young_modulus,
@@ -127,10 +130,10 @@ RodCollection::RodCollection(const Eigen::Ref<const fsim::Mat3<double>> V,
     : RodCollection(V, indices, C, N, constant(W_n, indices), constant(W_b, indices), young_modulus, incompressibility)
 {}
 
-RodCollection::RodCollection(const Eigen::Ref<const fsim::Mat3<double>> V,
+RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                              const std::vector<std::vector<int>> &indices,
                              const Eigen::MatrixX2i &C,
-                             const Eigen::Ref<const fsim::Mat3<double>> N,
+                             const Eigen::Ref<const Mat3<double>> N,
                              double w_n,
                              double w_b,
                              double young_modulus,
@@ -144,3 +147,5 @@ RodCollection::RodCollection(const Eigen::Ref<const fsim::Mat3<double>> V,
                     young_modulus,
                     incompressibility)
 {}
+
+} // namespace fsim

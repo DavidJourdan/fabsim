@@ -12,6 +12,9 @@
 
 #include <array>
 
+namespace fsim
+{
+
 template <int id = 0>
 class OrthotropicStVKElement : public ElementBase<3>
 {
@@ -21,7 +24,7 @@ public:
    * @param V  n by 2 list of vertex positions (each row is a vertex)
    * @param face  list of 3 indices, one per vertex of the triangle
    */
-  OrthotropicStVKElement(const Eigen::Ref<const fsim::Mat2<double>> V,
+  OrthotropicStVKElement(const Eigen::Ref<const Mat2<double>> V,
                         const Eigen::Vector3i &face,
                         double thickness);
 
@@ -48,16 +51,16 @@ public:
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return Green strain
    */
-  Eigen::Matrix2d strain(const Eigen::Ref<const fsim::Mat3<double>> V) const;
-  Eigen::Vector3d strain_voigt(const Eigen::Ref<const fsim::Mat3<double>> V) const;
+  Eigen::Matrix2d strain(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Vector3d strain_voigt(const Eigen::Ref<const Mat3<double>> V) const;
 
   /**
    * Computes the Second Piola-Kirchhoff stress tensor S = \frac{\partial f}{\partial E} where E is the Green strain
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return second Piola-Kirchhoff stress
    */
-  Eigen::Matrix2d stress(const Eigen::Ref<const fsim::Mat3<double>> V) const;
-  Eigen::Vector3d stress_voigt(const Eigen::Ref<const fsim::Mat3<double>> V) const;
+  Eigen::Matrix2d stress(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Vector3d stress_voigt(const Eigen::Ref<const Mat3<double>> V) const;
 
   double coeff;
   Eigen::Matrix<double, 3, 2> _R;
@@ -69,7 +72,7 @@ template <int id>
 Eigen::Matrix3d OrthotropicStVKElement<id>::_C = Eigen::Matrix3d::Zero();
 
 template <int id>
-OrthotropicStVKElement<id>::OrthotropicStVKElement(const Eigen::Ref<const fsim::Mat2<double>> V,
+OrthotropicStVKElement<id>::OrthotropicStVKElement(const Eigen::Ref<const Mat2<double>> V,
                                                  const Eigen::Vector3i &E,
                                                  double thickness)
 {
@@ -88,7 +91,7 @@ OrthotropicStVKElement<id>::OrthotropicStVKElement(const Eigen::Ref<const fsim::
 }
 
 template <int id>
-Eigen::Matrix2d OrthotropicStVKElement<id>::strain(const Eigen::Ref<const fsim::Mat3<double>> V) const
+Eigen::Matrix2d OrthotropicStVKElement<id>::strain(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
   Matrix3d P; P << V.row(idx(0)), V.row(idx(1)), V.row(idx(2));
@@ -98,7 +101,7 @@ Eigen::Matrix2d OrthotropicStVKElement<id>::strain(const Eigen::Ref<const fsim::
 }
 
 template <int id>
-Eigen::Vector3d OrthotropicStVKElement<id>::strain_voigt(const Eigen::Ref<const fsim::Mat3<double>> V) const
+Eigen::Vector3d OrthotropicStVKElement<id>::strain_voigt(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
   Matrix3d P; P << V.row(idx(0)), V.row(idx(1)), V.row(idx(2));
@@ -113,7 +116,7 @@ Eigen::Vector3d OrthotropicStVKElement<id>::strain_voigt(const Eigen::Ref<const 
 }
 
 template <int id>
-Eigen::Matrix2d OrthotropicStVKElement<id>::stress(const Eigen::Ref<const fsim::Mat3<double>> V) const
+Eigen::Matrix2d OrthotropicStVKElement<id>::stress(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
   Vector3d S = stress_voigt(V);
@@ -121,7 +124,7 @@ Eigen::Matrix2d OrthotropicStVKElement<id>::stress(const Eigen::Ref<const fsim::
 }
 
 template <int id>
-Eigen::Vector3d OrthotropicStVKElement<id>::stress_voigt(const Eigen::Ref<const fsim::Mat3<double>> V) const
+Eigen::Vector3d OrthotropicStVKElement<id>::stress_voigt(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
   Vector3d E = strain_voigt(V);
@@ -132,7 +135,7 @@ template <int id>
 double OrthotropicStVKElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Map<fsim::Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
   Vector3d E = strain_voigt(V);
 
@@ -140,10 +143,10 @@ double OrthotropicStVKElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd
 }
 
 template <int id>
-fsim::Vector<double, 9> OrthotropicStVKElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+Vec<double, 9> OrthotropicStVKElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Map<fsim::Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
   Matrix2d S = stress(V);
 
@@ -151,14 +154,14 @@ fsim::Vector<double, 9> OrthotropicStVKElement<id>::gradient(const Eigen::Ref<co
   Matrix<double, 3, 2> F = P.transpose() * _R;
 
   Matrix3d grad = coeff * F * (S * _R.transpose());
-  return Map<fsim::Vector<double, 9>>(grad.data(), 9);
+  return Map<Vec<double, 9>>(grad.data(), 9);
 }
 
 template <int id>
-Eigen::Matrix<double, 9, 9> OrthotropicStVKElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+Mat<double, 9, 9> OrthotropicStVKElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Map<fsim::Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
   Matrix2d S = stress(V);
   Matrix3d P;
@@ -182,3 +185,4 @@ Eigen::Matrix<double, 9, 9> OrthotropicStVKElement<id>::hessian(const Eigen::Ref
 
   return coeff * hess.selfadjointView<Upper>();
 }
+} // namespace fsim

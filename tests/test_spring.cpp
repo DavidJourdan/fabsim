@@ -3,6 +3,8 @@
 
 #include <fsim/Spring.h>
 
+using namespace fsim;
+
 TEST_CASE("Spring", "[Spr]")
 {
   using namespace Eigen;

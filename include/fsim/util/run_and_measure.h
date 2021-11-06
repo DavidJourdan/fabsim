@@ -8,6 +8,9 @@
 #include <chrono>
 #include <iostream>
 
+namespace fsim
+{
+
 template <typename TFunc>
 void run_and_measure(TFunc &&f, const char *name)
 {
@@ -17,3 +20,5 @@ void run_and_measure(TFunc &&f, const char *name)
   std::chrono::duration<double> elapsed_seconds = end - start;
   std::cout << name << " elapsed seconds: " << elapsed_seconds.count() << "s\n";
 }
+
+} // namespace fsim

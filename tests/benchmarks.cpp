@@ -9,6 +9,8 @@
 #include <fsim/ElasticMembraneModel.h>
 #include <fsim/DiscreteShell.h>
 
+using namespace fsim;
+
 TEST_CASE("StVKMembrane class", "[StVK]")
 {
   using namespace Eigen;

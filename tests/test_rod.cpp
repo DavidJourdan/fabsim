@@ -6,6 +6,8 @@
 #include <fsim/RodStencil.h>
 #include <fsim/util/geometry.h>
 
+using namespace fsim;
+
 TEST_CASE("Local Frames")
 {
   using namespace Eigen;
@@ -30,7 +32,7 @@ TEST_CASE("Local Frames")
 
 struct BundledRodStencil
 {
-  BundledRodStencil(const Eigen::Ref<const fsim::Mat3<double>> V,
+  BundledRodStencil(const Eigen::Ref<const Mat3<double>> V,
                     const Eigen::Vector3d &t,
                     const Eigen::Vector3d &n,
                     const Eigen::Matrix<int, 5, 1> &dofs,
@@ -182,7 +184,7 @@ TEST_CASE("Class equivalences")
   // {
   //   RodCollection rodCol(V, {{0, 1}, {1, 2}}, 
   //     (MatrixX2i(2, 2) << 0, 1, 1, 0).finished(), 
-  //     (fsim::Mat3<double>(2, 3) << n.transpose(), n.transpose()).finished(), 
+  //     (Mat3<double>(2, 3) << n.transpose(), n.transpose()).finished(), 
   //     {W_n(0), W_n(1)}, {W_b(0), W_b(1)}, young_modulus, 0);
   //   rodCol.update_properties(X);
 
@@ -213,7 +215,7 @@ TEST_CASE("ElasticRod class", "[Rod]")
     Vector3d t1 = (X.segment<3>(6) - X.segment<3>(3)).normalized();
 
     e.update_properties(X);
-    fsim::Mat3<double> D1, D2;
+    Mat3<double> D1, D2;
     e.get_reference_directors(D1, D2);
 
     REQUIRE(t0.dot(D1.row(0)) == Approx(0).margin(1e-10));

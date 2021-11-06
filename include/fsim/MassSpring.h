@@ -14,6 +14,9 @@
 
 #include <vector>
 
+namespace fsim
+{
+
 /**
  * A model for an elastic membrane. Uses a simple mass-spring system.
  * @tparam allow_compression  whether or not to allow compression in springs. If false, springs whose lengths is smaller
@@ -32,8 +35,8 @@ public:
    * @param prestress  membrane's amount of stretch in length (e.g. 1.3 if it has been stretched from 10cm long to 13cm
    * long)
    */
-  MassSpring(const Eigen::Ref<const fsim::Mat3<double>> V,
-             const Eigen::Ref<const fsim::Mat3<int>> F,
+  MassSpring(const Eigen::Ref<const Mat3<double>> V,
+             const Eigen::Ref<const Mat3<int>> F,
              double young_modulus,
              double prestress = 1.0,
              double density = 0.0);
@@ -87,3 +90,5 @@ private:
   std::vector<Spring<allow_compression>> _springs;
   int nV;
 };
+
+} // namespace fsim

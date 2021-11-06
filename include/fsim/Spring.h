@@ -7,6 +7,9 @@
 
 #include <Eigen/Dense>
 
+namespace fsim
+{
+
 template <bool allow_compression>
 struct Spring
 {
@@ -52,3 +55,5 @@ struct Spring
       return ratio < 1 ? h : Matrix3d::Zero();
   }
 };
+
+} // namespace fsim

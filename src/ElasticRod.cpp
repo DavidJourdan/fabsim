@@ -15,7 +15,10 @@
 
 #include "fsim/util/vector_utils.h"
 
-ElasticRod::ElasticRod(const Eigen::Ref<const fsim::Mat3<double>> V,
+namespace fsim
+{
+
+ElasticRod::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
                        const Eigen::Ref<const Eigen::VectorXi> indices,
                        const Eigen::Vector3d &N,
                        const Eigen::Ref<const Eigen::VectorXd> normal_widths,
@@ -31,7 +34,7 @@ ElasticRod::ElasticRod(const Eigen::Ref<const fsim::Mat3<double>> V,
   assert(normal_widths.size() == nR && binormal_widths.size() == nR);
   MatrixX2i extremal_edges(nR, 2); // rod extremal edge indices
 
-  fsim::Mat3<double> D1, D2;
+  Mat3<double> D1, D2;
   Map<VectorXi> E(const_cast<int *>(indices.data()), indices.size());
   ElasticRod::bishop_frame(V, E, N, D1, D2);
   for(int j = 0; j < E.size() - 1; ++j)
@@ -52,7 +55,7 @@ ElasticRod::ElasticRod(const Eigen::Ref<const fsim::Mat3<double>> V,
   assert(_springs.size() == _frames.size());
 }
 
-ElasticRod::ElasticRod(const Eigen::Ref<const fsim::Mat3<double>> V,
+ElasticRod::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
                        const Eigen::Ref<const Eigen::VectorXi> indices,
                        const Eigen::Vector3d N,
                        double w_n,
@@ -208,7 +211,7 @@ void ElasticRod::update_properties(const Eigen::Ref<const Eigen::VectorXd> X)
   }
 }
 
-void ElasticRod::get_reference_directors(fsim::Mat3<double> &D1, fsim::Mat3<double> &D2) const
+void ElasticRod::get_reference_directors(Mat3<double> &D1, Mat3<double> &D2) const
 {
   using namespace Eigen;
   D1.resize(_frames.size(), 3);
@@ -221,8 +224,8 @@ void ElasticRod::get_reference_directors(fsim::Mat3<double> &D1, fsim::Mat3<doub
 }
 
 void ElasticRod::get_rotated_directors(const Eigen::Ref<const Eigen::VectorXd> theta,
-                                       fsim::Mat3<double> &P1,
-                                       fsim::Mat3<double> &P2) const
+                                       Mat3<double> &P1,
+                                       Mat3<double> &P2) const
 {
   using namespace Eigen;
   P1.resize(_frames.size(), 3);
@@ -245,11 +248,11 @@ LocalFrame<double> ElasticRod::get_frame(const Eigen::Ref<const Eigen::VectorXd>
   return f;
 }
 
-void ElasticRod::bishop_frame(const Eigen::Ref<const fsim::Mat3<double>> V,
+void ElasticRod::bishop_frame(const Eigen::Ref<const Mat3<double>> V,
                               const Eigen::Ref<const Eigen::VectorXi> E,
                               const Eigen::Vector3d &n,
-                              fsim::Mat3<double> &P1,
-                              fsim::Mat3<double> &P2)
+                              Mat3<double> &P1,
+                              Mat3<double> &P2)
 {
   using namespace Eigen;
   int nE = E.rows() - 1; // number of edges
@@ -280,11 +283,11 @@ void ElasticRod::bishop_frame(const Eigen::Ref<const fsim::Mat3<double>> V,
   }
 }
 
-fsim::Mat3<double> ElasticRod::curvature_binormals(const Eigen::Ref<const fsim::Mat3<double>> P,
+Mat3<double> ElasticRod::curvature_binormals(const Eigen::Ref<const Mat3<double>> P,
                                                    const Eigen::Ref<const Eigen::VectorXi> E)
 {
   using namespace Eigen;
-  fsim::Mat3<double> KB(E.size() - 2, 3);
+  Mat3<double> KB(E.size() - 2, 3);
 
   for(int i = 1; i < E.size() - 1; ++i)
   {
@@ -294,3 +297,5 @@ fsim::Mat3<double> ElasticRod::curvature_binormals(const Eigen::Ref<const fsim::
   }
   return KB;
 }
+
+} // namespace fsim

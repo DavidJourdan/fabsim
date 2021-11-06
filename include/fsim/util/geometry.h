@@ -7,6 +7,9 @@
 
 #include <Eigen/Dense>
 
+namespace fsim
+{
+
 /**
  * Computes the signed angle from one vector to another given an orientation vector.
  * @param u The "from" vector.
@@ -103,3 +106,5 @@ auto sym(const Eigen::MatrixBase<DerivedM> &M)
 {
   return (M + M.transpose()) / 2;
 }
+
+} // namespace fsim

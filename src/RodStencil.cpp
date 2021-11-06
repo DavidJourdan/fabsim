@@ -9,6 +9,9 @@
 
 #include <iostream>
 
+namespace fsim
+{
+
 Eigen::Matrix<double, 2, 3> material_matrix(const LocalFrame<double> &f, double theta)
 {
   using namespace Eigen;
@@ -18,7 +21,7 @@ Eigen::Matrix<double, 2, 3> material_matrix(const LocalFrame<double> &f, double 
   return res;
 }
 
-RodStencil::RodStencil(const Eigen::Ref<const fsim::Mat3<double>> V,
+RodStencil::RodStencil(const Eigen::Ref<const Mat3<double>> V,
                        const LocalFrame<double> &f1,
                        const LocalFrame<double> &f2,
                        const Eigen::Matrix<int, 5, 1> &dofs,
@@ -272,3 +275,5 @@ void RodStencil::update_reference_twist(const LocalFrame<double> &f1, const Loca
   // compute increment to reference twist to align reference frames
   _ref_twist += signed_angle(u, f2.d1, f2.t);
 }
+
+} // namespace fsim

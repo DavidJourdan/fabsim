@@ -9,6 +9,8 @@
 #include <iostream>
 #include <vector>
 
+namespace fsim
+{
 
 template <typename T>
 std::vector<T> unroll(const std::vector<std::vector<T>> &vec)
@@ -50,3 +52,4 @@ std::vector<std::vector<T>> constant(const std::vector<T> &a, const std::vector<
   }
   return _constant;
 }
+} // namespace fsim

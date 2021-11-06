@@ -18,6 +18,9 @@
 
 #include <vector>
 
+namespace fsim
+{
+
 template <class Formulation = TanAngleFormulation, bool FullHess = true>
 class DiscreteShell : public ModelBase<HingeElement<Formulation, FullHess>>
 {
@@ -30,8 +33,8 @@ public:
    * @param poisson_ratio  membrane's Poisson's ratio
    * @param thickness  membrane's thickness
    */
-  DiscreteShell(const Eigen::Ref<const fsim::Mat3<double>> V,
-                const Eigen::Ref<const fsim::Mat3<int>> F,
+  DiscreteShell(const Eigen::Ref<const Mat3<double>> V,
+                const Eigen::Ref<const Mat3<int>> F,
                 double young_modulus,
                 double poisson_ratio,
                 double thickness);
@@ -64,8 +67,8 @@ public:
    * @param F  nF by 3 list of face indices
    * @return  nE by 4 list of hinge indices, first 2 indices represent the shared edge between two faces
    */
-  static fsim::Mat4<int> hinge_indices(const Eigen::Ref<const fsim::Mat3<double>> V,
-                                       const Eigen::Ref<const fsim::Mat3<int>> F);
+  static Mat4<int> hinge_indices(const Eigen::Ref<const Mat3<double>> V,
+                                       const Eigen::Ref<const Mat3<int>> F);
 
 private:
   int nE, nV, nF;
@@ -75,3 +78,5 @@ private:
 };
 
 using ElasticShell = DiscreteShell<TanAngleFormulation, true>;
+
+} // namespace fsim

@@ -9,6 +9,9 @@
 #include <stdexcept>
 #include <vector>
 
+namespace fsim
+{
+
 template <typename scalar>
 void filter_var(Eigen::SparseMatrix<scalar> &M, const std::vector<int> &indices)
 {
@@ -32,3 +35,4 @@ void filter_var(Eigen::SparseMatrix<scalar> &M, const std::vector<int> &indices)
 
 template void filter_var(Eigen::SparseMatrix<double> &M, const std::vector<int> &indices);
 template void filter_var(Eigen::SparseMatrix<float> &M, const std::vector<int> &indices);
+} // namespace fsim

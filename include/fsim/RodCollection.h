@@ -23,34 +23,39 @@
 
 #include <vector>
 
+namespace fsim
+{
+
 class RodCollection : public ElasticRod
 {
 public:
-  RodCollection(const Eigen::Ref<const fsim::Mat3<double>> V,
+  RodCollection(const Eigen::Ref<const Mat3<double>> V,
                 const std::vector<std::vector<int>> &indices,
                 const Eigen::MatrixX2i &C,
-                const Eigen::Ref<const fsim::Mat3<double>> N,
+                const Eigen::Ref<const Mat3<double>> N,
                 const std::vector<std::vector<double>> &normal_widths,
                 const std::vector<std::vector<double>> &binormal_widths,
                 double young_modulus,
                 double incompressibility);
 
-  RodCollection(const Eigen::Ref<const fsim::Mat3<double>> V,
+  RodCollection(const Eigen::Ref<const Mat3<double>> V,
                 const std::vector<std::vector<int>> &indices,
                 const Eigen::MatrixX2i &C,
-                const Eigen::Ref<const fsim::Mat3<double>> N,
+                const Eigen::Ref<const Mat3<double>> N,
                 const std::vector<double> &normal_widths,
                 const std::vector<double> &binormal_widths,
                 double young_modulus,
                 double incompressibility);
 
-  RodCollection(const Eigen::Ref<const fsim::Mat3<double>> V,
+  RodCollection(const Eigen::Ref<const Mat3<double>> V,
                 const std::vector<std::vector<int>> &indices,
                 const Eigen::MatrixX2i &C,
-                const Eigen::Ref<const fsim::Mat3<double>> N,
+                const Eigen::Ref<const Mat3<double>> N,
                 double w_n,
                 double w_b,
                 double young_modulus,
                 double incompressibility);
   RodCollection() = default;
 };
+
+} // namespace fsim

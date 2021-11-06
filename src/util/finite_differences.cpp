@@ -9,6 +9,9 @@
 #include <cmath> // std::abs
 #include <iostream>
 
+namespace fsim
+{
+
 Eigen::VectorXd finite_differences(const std::function<double(const Eigen::Ref<const Eigen::VectorXd>)> &func,
                                    const Eigen::Ref<const Eigen::VectorXd> var,
                                    bool parallelism_enabled)
@@ -150,3 +153,5 @@ void derivative_check(
 
   std::cout << "Max error at (" << row_max << ", " << col_max << "): " << max << std::endl;
 }
+
+} // namespace fsim

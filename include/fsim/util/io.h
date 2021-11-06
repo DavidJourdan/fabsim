@@ -12,6 +12,9 @@
 #include <iostream>
 #include <vector>
 
+namespace fsim
+{
+
 /**
  * Read OFF file and store vertex and face information into V and F
  * @tparam File  can be a string representing the file name or a std::filesystem object (c++17)
@@ -254,3 +257,5 @@ void save_to_obj(const std::string &file,
     }
   }
 }
+
+} // namespace fsim

@@ -22,10 +22,13 @@
 
 #include <vector>
 
+namespace fsim
+{
+
 class ElasticRod
 {
 public:
-  ElasticRod(const Eigen::Ref<const fsim::Mat3<double>> V,
+  ElasticRod(const Eigen::Ref<const Mat3<double>> V,
              const Eigen::Ref<const Eigen::VectorXi> indices,
              const Eigen::Vector3d &N,
              const Eigen::Ref<const Eigen::VectorXd> normal_widths,
@@ -33,7 +36,7 @@ public:
              double young_modulus,
              double incompressibility);
 
-  ElasticRod(const Eigen::Ref<const fsim::Mat3<double>> V,
+  ElasticRod(const Eigen::Ref<const Mat3<double>> V,
              const Eigen::Ref<const Eigen::VectorXi> indices,
              const Eigen::Vector3d N,
              double w_n,
@@ -74,10 +77,10 @@ public:
 
   void update_properties(const Eigen::Ref<const Eigen::VectorXd> X);
 
-  void get_reference_directors(fsim::Mat3<double> &D1, fsim::Mat3<double> &D2) const;
+  void get_reference_directors(Mat3<double> &D1, Mat3<double> &D2) const;
   void get_rotated_directors(const Eigen::Ref<const Eigen::VectorXd> theta,
-                             fsim::Mat3<double> &P1,
-                             fsim::Mat3<double> &P2) const;
+                             Mat3<double> &P1,
+                             Mat3<double> &P2) const;
 
   std::vector<RodStencil> const &rod_stencils() const { return _stencils; };
   std::vector<RodStencil> &rod_stencils() { return _stencils; };
@@ -108,11 +111,11 @@ public:
    * if n isn't orthogonal to the first edge, the direction chosen to be the normal will be as close as possible to n
    * @return P1 and P2  nE by 3 lists of frame directors
    */
-  static void bishop_frame(const Eigen::Ref<const fsim::Mat3<double>> V,
+  static void bishop_frame(const Eigen::Ref<const Mat3<double>> V,
                            const Eigen::Ref<const Eigen::VectorXi> E,
                            const Eigen::Vector3d &n,
-                           fsim::Mat3<double> &P1,
-                           fsim::Mat3<double> &P2);
+                           Mat3<double> &P1,
+                           Mat3<double> &P2);
 
   /**
    * Returns curvature binormals
@@ -120,7 +123,7 @@ public:
    * @param E  nE + 1 by 1 list of rod vertex indices into P
    * @return KB nE - 1 by 3 list of curvature binormals
    */
-  static fsim::Mat3<double> curvature_binormals(const Eigen::Ref<const fsim::Mat3<double>> P,
+  static Mat3<double> curvature_binormals(const Eigen::Ref<const Mat3<double>> P,
                                                 const Eigen::Ref<const Eigen::VectorXi> E);
 
 protected:
@@ -130,3 +133,5 @@ protected:
   int nV; // total number of vertices in the simulation (includes non-rod vertices)
   double _stretch_modulus;
 };
+
+} // namespace fsim

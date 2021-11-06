@@ -4,6 +4,8 @@
 #include <fsim/DiscreteShell.h>
 #include <fsim/util/geometry.h>
 
+using namespace fsim;
+
 bool check_normals(const Eigen::VectorXd &X)
 {
   using namespace Eigen;
@@ -19,7 +21,7 @@ TEMPLATE_TEST_CASE("HingeElement", "[HingeElem]", SquaredAngleFormulation, TanAn
 
   double coeff = GENERATE(take(2, random(0., 1.)));
   VectorXd X = GENERATE(take(10, filter(check_normals, vector_random(12))));
-  Map<fsim::Mat3<double>> V(X.data(), 4, 3);
+  Map<Mat3<double>> V(X.data(), 4, 3);
   HingeElement<TestType, true> e1(V, Vector4i(0, 1, 2, 3), coeff);
 
   RandomRange random_generator(-1.0, 1.0);
@@ -57,7 +59,7 @@ TEST_CASE("DiscreteShell class", "[Shell]")
   using namespace Eigen;
 
   VectorXd X = GENERATE(take(10, filter(check_normals, vector_random(12))));
-  Map<fsim::Mat3<double>> V(X.data(), 4, 3);
+  Map<Mat3<double>> V(X.data(), 4, 3);
   MatrixX3i F(2, 3);
   F << 0, 1, 2, 0, 2, 3;
 

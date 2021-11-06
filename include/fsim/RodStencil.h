@@ -9,10 +9,13 @@
 #include "LocalFrame.h"
 #include "util/typedefs.h"
 
+namespace fsim
+{
+
 class RodStencil : public ElementBase<3, 2>
 {
 public:
-  RodStencil(const Eigen::Ref<const fsim::Mat3<double>> V,
+  RodStencil(const Eigen::Ref<const Mat3<double>> V,
              const LocalFrame<double> &f1,
              const LocalFrame<double> &f2,
              const Eigen::Matrix<int, 5, 1> &dofs,
@@ -61,3 +64,5 @@ private:
 };
 
 Eigen::Matrix<double, 2, 3> material_matrix(const LocalFrame<double> &f, double theta); // matrix of material directors
+
+} // namespace fsim

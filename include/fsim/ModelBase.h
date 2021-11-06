@@ -12,6 +12,9 @@
 
 #include <vector>
 
+namespace fsim
+{
+
 template <class Element>
 class ModelBase
 {
@@ -141,3 +144,5 @@ ModelBase<Element>::hessian_triplets(const Eigen::Ref<const Eigen::VectorXd> X) 
 
   return triplets;
 }
+
+} // namespace fsim

@@ -13,6 +13,9 @@
 
 #include <vector>
 
+namespace fsim
+{
+
 class TanAngleFormulation;
 class SquaredAngleFormulation;
 
@@ -32,7 +35,7 @@ public:
    * @param indices  list of 4 indices corresponding to 2 faces sharing an edge, first 2 indices are for the shared edge
    * @param coeff  coefficent which will be multiplied to the energy
    */
-  HingeElement(const Eigen::Ref<const fsim::Mat3<double>> V, const Eigen::Vector4i &indices, double coeff);
+  HingeElement(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector4i &indices, double coeff);
 
   /**
    * @param X  a flat vector stacking all degrees of freedom
@@ -57,7 +60,7 @@ public:
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @param hessian  optional return parameter: derivative of the gradient
    */
-  LocalVector bend_angle_gradient(const Eigen::Ref<const fsim::Mat3<double>> V, LocalMatrix *hessian = nullptr) const;
+  LocalVector bend_angle_gradient(const Eigen::Ref<const Mat3<double>> V, LocalMatrix *hessian = nullptr) const;
 
   double _coeff;
   HingeFormulation _hinge;
@@ -71,7 +74,7 @@ public:
 class SquaredAngleFormulation
 {
 public:
-  SquaredAngleFormulation(const Eigen::Ref<const fsim::Mat3<double>> V, const Eigen::Vector4i &indices);
+  SquaredAngleFormulation(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector4i &indices);
   SquaredAngleFormulation() : _rest_angle(0) {}
   double func(const Eigen::Vector3d &n0, const Eigen::Vector3d &n1, const Eigen::Vector3d &axis) const;
   double deriv(const Eigen::Vector3d &n0,
@@ -91,7 +94,7 @@ private:
 class TanAngleFormulation
 {
 public:
-  TanAngleFormulation(const Eigen::Ref<const fsim::Mat3<double>> V, const Eigen::Vector4i &indices);
+  TanAngleFormulation(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector4i &indices);
   TanAngleFormulation() : _rest_tangent(0) {}
   double func(const Eigen::Vector3d &n0, const Eigen::Vector3d &n1, const Eigen::Vector3d &axis) const;
   double deriv(const Eigen::Vector3d &n0,
@@ -102,3 +105,5 @@ public:
 private:
   double _rest_tangent;
 };
+
+} // namespace fsim

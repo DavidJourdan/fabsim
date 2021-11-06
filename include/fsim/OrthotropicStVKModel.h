@@ -11,6 +11,9 @@
 
 #include <iostream>
 
+namespace fsim
+{
+
 template <int id = 0>
 class OrthotropicStVKModel : public ElasticMembraneModel<OrthotropicStVKElement<id>>
 {
@@ -25,8 +28,8 @@ public:
    * @param poisson_ratio  membrane's Poisson's ratio
    * @param stress  membrane's amount of stretch in length (e.g. 1.3 if it has been stretched from 10cm long to 13cm long)
    */
-  OrthotropicStVKModel(const Eigen::Ref<const fsim::Mat3<double>> V,
-                      const Eigen::Ref<const fsim::Mat3<int>> F,
+  OrthotropicStVKModel(const Eigen::Ref<const Mat3<double>> V,
+                      const Eigen::Ref<const Mat3<int>> F,
                       const std::vector<double> &thicknesses,
                       double E1,
                       double E2,
@@ -56,3 +59,4 @@ public:
 };
 
 using OrthotropicStVKMembrane = OrthotropicStVKModel<0>;
+} // namespace fsim

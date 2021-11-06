@@ -10,10 +10,10 @@
 namespace fsim
 {
 template <typename Scalar, int i = -1, int j = -1>
-using Matrix = Eigen::Matrix<Scalar, i, j, Eigen::RowMajor>;
+using Mat = Eigen::Matrix<Scalar, i, j, Eigen::RowMajor>;
 
 template <typename Scalar, int i = -1>
-using Vector = Eigen::Matrix<Scalar, i, 1>;
+using Vec = Eigen::Matrix<Scalar, i, 1>;
 
 template <typename Scalar>
 using Mat4 = Eigen::Matrix<Scalar, -1, 4, Eigen::RowMajor>;

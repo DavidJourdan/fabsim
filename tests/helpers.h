@@ -203,7 +203,7 @@ void test_gradient(const Element &e,
       REQUIRE_FALSE(isnan(e.energy(var)));
 
       gradient_computed += e.gradient(var);
-      gradient_numerical += finite_differences([&e](const Eigen::VectorXd &X) { return e.energy(X); }, var);
+      gradient_numerical += fsim::finite_differences([&e](const Eigen::VectorXd &X) { return e.energy(X); }, var);
     }
   }
   gradient_computed /= 10;
@@ -243,7 +243,7 @@ void test_hessian(const Element &e,
         e.prepare_data(var);
 
       hessian_computed += MatrixXd(e.hessian(var));
-      hessian_numerical += MatrixXd(finite_differences([&e](const Eigen::VectorXd &X) { return e.gradient(X); }, var));
+      hessian_numerical += MatrixXd(fsim::finite_differences([&e](const Eigen::VectorXd &X) { return e.gradient(X); }, var));
     }
   }
 

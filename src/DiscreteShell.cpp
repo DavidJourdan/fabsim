@@ -7,9 +7,12 @@
 
 #include "fsim/util/geometry.h"
 
+namespace fsim
+{
+
 template <class Formulation, bool FullHess>
-DiscreteShell<Formulation, FullHess>::DiscreteShell(const Eigen::Ref<const fsim::Mat3<double>> V,
-                                           const Eigen::Ref<const fsim::Mat3<int>> F,
+DiscreteShell<Formulation, FullHess>::DiscreteShell(const Eigen::Ref<const Mat3<double>> V,
+                                           const Eigen::Ref<const Mat3<int>> F,
                                            double young_modulus,
                                            double poisson_ratio,
                                            double thickness)
@@ -45,9 +48,9 @@ DiscreteShell<Formulation, FullHess>::DiscreteShell(const Eigen::Ref<const fsim:
 }
 
 template <class Formulation, bool FullHess>
-fsim::Mat4<int>
-DiscreteShell<Formulation, FullHess>::hinge_indices(const Eigen::Ref<const fsim::Mat3<double>> V,
-                                           const Eigen::Ref<const fsim::Mat3<int>> F)
+Mat4<int>
+DiscreteShell<Formulation, FullHess>::hinge_indices(const Eigen::Ref<const Mat3<double>> V,
+                                           const Eigen::Ref<const Mat3<int>> F)
 {
   using namespace Eigen;
 
@@ -70,7 +73,7 @@ DiscreteShell<Formulation, FullHess>::hinge_indices(const Eigen::Ref<const fsim:
     fill(F(i, 2), F(i, 0), F(i, 1));
   }
   std::sort(indices.begin(), indices.end());
-  Matrix<int, -1, 4, RowMajor> E(indices.size(), 4);
+  Mat4<int> E(indices.size(), 4);
 
   // "merge" neighboring indices to form a hinge index list
   int i = 0, k = 0;
@@ -146,3 +149,5 @@ template class DiscreteShell<TanAngleFormulation, true>;
 template class DiscreteShell<TanAngleFormulation, false>;
 template class DiscreteShell<SquaredAngleFormulation, true>;
 template class DiscreteShell<SquaredAngleFormulation, false>;
+
+} // namespace fsim

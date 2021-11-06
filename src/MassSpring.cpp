@@ -9,9 +9,12 @@
 
 #include <algorithm>
 
+namespace fsim
+{
+
 template <bool allow_compression>
-MassSpring<allow_compression>::MassSpring(const Eigen::Ref<const fsim::Mat3<double>> V,
-                                          const Eigen::Ref<const fsim::Mat3<int>> F,
+MassSpring<allow_compression>::MassSpring(const Eigen::Ref<const Mat3<double>> V,
+                                          const Eigen::Ref<const Mat3<int>> F,
                                           double young_modulus,
                                           double stress,
                                           double density)
@@ -143,3 +146,5 @@ Eigen::SparseMatrix<double> MassSpring<allow_compression>::hessian(const Eigen::
 // instantiation
 template class MassSpring<true>;
 template class MassSpring<false>;
+
+} // namespace fsim

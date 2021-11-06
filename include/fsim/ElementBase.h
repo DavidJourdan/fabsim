@@ -8,7 +8,11 @@
 
 #pragma once
 
+#include "fsim/util/typedefs.h"
 #include <Eigen/Dense>
+
+namespace fsim
+{
 
 /**
  * Base class for all stencil elements
@@ -22,11 +26,13 @@ public:
   static const int NB_DOFS = 3 * nb_vtx + additional_dofs;
   static const int NB_VERTICES = nb_vtx;
 
-  typedef Eigen::Matrix<double, NB_DOFS, 1> LocalVector;
-  typedef Eigen::Matrix<double, NB_DOFS, NB_DOFS> LocalMatrix;
+  typedef Vec<double, NB_DOFS> LocalVector;
+  typedef Mat<double, NB_DOFS, NB_DOFS> LocalMatrix;
 
-  Eigen::Matrix<int, nb_vtx + additional_dofs, 1> idx;
+  Vec<int, nb_vtx + additional_dofs> idx;
 
   constexpr int nb_dofs() const { return NB_DOFS; }
   constexpr int nb_vertices() const { return NB_VERTICES; }
 };
+
+} // namespace fsim

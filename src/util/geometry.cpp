@@ -5,6 +5,9 @@
 
 #include "fsim/util/geometry.h"
 
+namespace fsim
+{
+
 double signed_angle(const Eigen::Vector3d &u, const Eigen::Vector3d &v, const Eigen::Vector3d &n)
 {
   Eigen::Vector3d w = u.cross(v);
@@ -68,3 +71,5 @@ bool point_in_segment(const Eigen::Vector3d &x, const Eigen::Vector3d &a, const 
   double r = (x - a).dot(b - a) / (b - a).squaredNorm();
   return (r >= 0 && r <= 1);
 }
+
+} // namespace fsim

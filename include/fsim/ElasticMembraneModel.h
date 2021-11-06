@@ -11,6 +11,9 @@
 
 #include <iostream>
 
+namespace fsim
+{
+
 /**
  * template class for any FEM-based membrane material model (e.g. StVK, neohookean...)
  * @tparam Element  triangle stencil class such as StVKElement, NeoHookeanElement, etc.
@@ -29,29 +32,19 @@ public:
    * @param stress  membrane's amount of stretch in length (e.g. 1.3 if it has been stretched from 10cm long to 13cm
    * long)
    */
-  ElasticMembraneModel(const Eigen::Ref<const fsim::Mat3<double>> V,
-                       const Eigen::Ref<const fsim::Mat3<int>> F,
+  ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
+                       const Eigen::Ref<const Mat3<int>> F,
                        double young_modulus,
                        double poisson_ratio,
                        double thickness,
                        double stress = 1);
 
-  ElasticMembraneModel(const Eigen::Ref<const fsim::Mat3<double>> V,
-                       const Eigen::Ref<const fsim::Mat3<int>> F,
+  ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
+                       const Eigen::Ref<const Mat3<int>> F,
                        const std::vector<double> &young_moduli,
                        const std::vector<double> &thicknesses,
                        double poisson_ratio,
                        double stress = 1);
-
-  // ElasticMembraneModel(const Eigen::Ref<const fsim::Mat3<double>> V,
-  //                      const Eigen::Ref<const fsim::Mat3<int>> F,
-  //                      const Eigen::Ref<const Eigen::VectorXd> stressX,
-  //                      const Eigen::Ref<const Eigen::VectorXd> stressY,
-  //                      const Eigen::Ref<const fsim::Mat2<double>> stressDirX,
-  //                      const Eigen::Ref<const fsim::Mat2<double>> stressDirY,
-  //                      const std::vector<double> &young_moduli,
-  //                      const std::vector<double> &thicknesses,
-  //                      double poisson_ratio);
 
   int nb_dofs() const { return 3 * nV; }
   void set_poisson_ratio(double poisson_ratio);
@@ -89,8 +82,8 @@ template <int id = 0>
 using NHIncompressibleMembraneModel = ElasticMembraneModel<NHIncompressibleElement<id>>;
 
 template <class Element>
-ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const fsim::Mat3<double>> V,
-                                                    const Eigen::Ref<const fsim::Mat3<int>> F,
+ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
+                                                    const Eigen::Ref<const Mat3<int>> F,
                                                     double young_modulus,
                                                     double poisson_ratio,
                                                     double thickness,
@@ -104,8 +97,8 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const fsim:
 {}
 
 template <class Element>
-ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const fsim::Mat3<double>> V,
-                                                    const Eigen::Ref<const fsim::Mat3<int>> F,
+ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
+                                                    const Eigen::Ref<const Mat3<int>> F,
                                                     const std::vector<double> &young_moduli,
                                                     const std::vector<double> &thicknesses,
                                                     double poisson_ratio,
@@ -131,45 +124,6 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const fsim:
     this->_elements.emplace_back(smallerV, F.row(i), thicknesses[i], young_moduli[i]);
   }
 }
-
-// template <class Element>
-// ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const fsim::Mat3<double>> V,
-//                                                     const Eigen::Ref<const fsim::Mat3<int>> F,
-//                                                     const Eigen::Ref<const Eigen::VectorXd> stressX,
-//                                                     const Eigen::Ref<const Eigen::VectorXd> stressY,
-//                                                     const Eigen::Ref<const fsim::Mat2<double>> stressDirX,
-//                                                     const Eigen::Ref<const fsim::Mat2<double>> stressDirY,
-//                                                     const std::vector<double> &young_moduli,
-//                                                     const std::vector<double> &thicknesses,
-//                                                     double poisson_ratio)
-//     : _stress{1}, _thickness{thicknesses[0]}, _young_modulus{young_moduli[0]}
-// {
-//   using namespace Eigen;
-
-//   nV = V.rows();
-//   nF = F.rows();
-
-//   Element::alpha = poisson_ratio / (1.0 - pow(poisson_ratio, 2));
-//   Element::beta = 0.5 / (1.0 + poisson_ratio);
-
-//   this->_elements.reserve(nF);
-//   for(int i = 0; i < nF; ++i)
-//   {
-//     this->_elements.emplace_back(V, F.row(i), thicknesses[i], young_moduli[i]);
-
-//     Matrix2d E;
-//     E.col(0) = V.row(F(i, 1)) - V.row(F(i, 0));
-//     E.col(1) = V.row(F(i, 2)) - V.row(F(i, 0));
-//     DiagonalMatrix<double, 2, 2> S(pow(stressX(i), 2), pow(stressY(i), 2));
-//     Matrix2d R;
-//     R.col(0) = stressDirX.row(i);
-//     R.col(1) = stressDirY.row(i);
-
-//     Matrix2d abar = E.transpose() * R * S * R.transpose() * E;
-//     this->_elements[i].coeff = young_moduli[i] * thicknesses[i] / 2 * sqrt(abar.determinant());
-//     this->_elements[i].abar_inv = abar.inverse();
-//   }
-// }
 
 template <class Element>
 void ElasticMembraneModel<Element>::set_poisson_ratio(double poisson_ratio)
@@ -209,3 +163,4 @@ void ElasticMembraneModel<Element>::set_thickness(double t)
   }
   _thickness = t;
 }
+} // namespace fsim

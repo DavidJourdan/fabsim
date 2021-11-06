@@ -5,6 +5,8 @@
 #include <fsim/TriangleElement.h>
 #include <fsim/OrthotropicStVKElement.h>
 
+using namespace fsim;
+
 TEMPLATE_TEST_CASE("TriangleElement", "[TriElem]", StVKElement<>, NeoHookeanElement<>, NHIncompressibleElement<>)
 {
   using namespace Eigen;

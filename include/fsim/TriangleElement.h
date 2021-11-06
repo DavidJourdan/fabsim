@@ -12,6 +12,9 @@
 #include "util/geometry.h"
 #include "util/typedefs.h"
 
+namespace fsim
+{
+
 enum class MaterialType { StVK, NeoHookean, NeoHookeanIncompressible };
 
 /**
@@ -29,7 +32,7 @@ public:
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @param face  list of 3 indices, one per vertex of the triangle
    */
-  TriangleElement(const Eigen::Ref<const fsim::Mat3<double>> V,
+  TriangleElement(const Eigen::Ref<const Mat3<double>> V,
                   const Eigen::Vector3i &face,
                   double thickness,
                   double young_modulus);
@@ -41,7 +44,7 @@ public:
   double energy(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
     using namespace Eigen;
-    Map<fsim::Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+    Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
     if(mat == MaterialType::StVK)
       return energy_stvk(V);
     if(mat == MaterialType::NeoHookean)
@@ -59,7 +62,7 @@ public:
   LocalVector gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
     using namespace Eigen;
-    Map<fsim::Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+    Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
     if(mat == MaterialType::StVK)
       return gradient_stvk(V);
     if(mat == MaterialType::NeoHookean)
@@ -77,7 +80,7 @@ public:
   LocalMatrix hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
     using namespace Eigen;
-    Map<fsim::Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+    Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
     if(mat == MaterialType::StVK)
       return hessian_stvk(V);
     if(mat == MaterialType::NeoHookean)
@@ -93,14 +96,14 @@ public:
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return Green strain
    */
-  Eigen::Matrix2d strain(const Eigen::Ref<const fsim::Mat3<double>> V) const;
+  Eigen::Matrix2d strain(const Eigen::Ref<const Mat3<double>> V) const;
 
   /**
    * Computes the Second Piola-Kirchhoff stress tensor S = \frac{\partial f}{\partial E} where E is the Green strain
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return second Piola-Kirchhoff stress
    */
-  Eigen::Matrix2d stress(const Eigen::Ref<const fsim::Mat3<double>> V) const;
+  Eigen::Matrix2d stress(const Eigen::Ref<const Mat3<double>> V) const;
 
   /**
    * Computes the principal strain directions and their corresponding eigenvalues
@@ -109,7 +112,7 @@ public:
    * @param min_dir  minimum strain direction
    * @param eigs  eigenvalues (in ascending order)
    */
-  void principal_strains(const Eigen::Ref<const fsim::Mat3<double>> V,
+  void principal_strains(const Eigen::Ref<const Mat3<double>> V,
                          Eigen::Vector3d &max_dir,
                          Eigen::Vector3d &min_dir,
                          Eigen::Vector2d &eigs) const;
@@ -121,7 +124,7 @@ public:
    * @param min_dir  minimum stress direction
    * @param eigs  eigenvalues (in ascending order)
    */
-  void principal_stresses(const Eigen::Ref<const fsim::Mat3<double>> V,
+  void principal_stresses(const Eigen::Ref<const Mat3<double>> V,
                           Eigen::Vector3d &max_dir,
                           Eigen::Vector3d &min_dir,
                           Eigen::Vector2d &eigs) const;
@@ -138,22 +141,22 @@ public:
 
 protected:
   void principal_directions_and_eigenvalues(const Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix2d> &solver,
-                                            const Eigen::Ref<const fsim::Mat3<double>> V,
+                                            const Eigen::Ref<const Mat3<double>> V,
                                             Eigen::Vector3d &max_dir,
                                             Eigen::Vector3d &min_dir,
                                             Eigen::Vector2d &eigs) const;
 
-  double energy_stvk(const Eigen::Ref<const fsim::Mat3<double>> V) const;
-  double energy_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const;
-  double energy_incompressible_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const;
+  double energy_stvk(const Eigen::Ref<const Mat3<double>> V) const;
+  double energy_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
+  double energy_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
 
-  LocalVector gradient_stvk(const Eigen::Ref<const fsim::Mat3<double>> V) const;
-  LocalVector gradient_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const;
-  LocalVector gradient_incompressible_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const;
+  LocalVector gradient_stvk(const Eigen::Ref<const Mat3<double>> V) const;
+  LocalVector gradient_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
+  LocalVector gradient_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
 
-  LocalMatrix hessian_stvk(const Eigen::Ref<const fsim::Mat3<double>> V) const;
-  LocalMatrix hessian_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const;
-  LocalMatrix hessian_incompressible_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const;
+  LocalMatrix hessian_stvk(const Eigen::Ref<const Mat3<double>> V) const;
+  LocalMatrix hessian_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
+  LocalMatrix hessian_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
 
   Eigen::Matrix2d abar_inv;
 };
@@ -177,7 +180,7 @@ template <MaterialType mat, int id>
 double TriangleElement<mat, id>::beta = 0;
 
 template <MaterialType mat, int id>
-TriangleElement<mat, id>::TriangleElement(const Eigen::Ref<const fsim::Mat3<double>> V,
+TriangleElement<mat, id>::TriangleElement(const Eigen::Ref<const Mat3<double>> V,
                                           const Eigen::Vector3i &E,
                                           double thickness,
                                           double young_modulus)
@@ -191,7 +194,7 @@ TriangleElement<mat, id>::TriangleElement(const Eigen::Ref<const fsim::Mat3<doub
 }
 
 template <MaterialType mat, int id>
-double TriangleElement<mat, id>::energy_stvk(const Eigen::Ref<const fsim::Mat3<double>> V) const
+double TriangleElement<mat, id>::energy_stvk(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -202,7 +205,7 @@ double TriangleElement<mat, id>::energy_stvk(const Eigen::Ref<const fsim::Mat3<d
 }
 
 template <MaterialType mat, int id>
-double TriangleElement<mat, id>::energy_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const
+double TriangleElement<mat, id>::energy_neohookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -213,7 +216,7 @@ double TriangleElement<mat, id>::energy_neohookean(const Eigen::Ref<const fsim::
 }
 
 template <MaterialType mat, int id>
-double TriangleElement<mat, id>::energy_incompressible_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const
+double TriangleElement<mat, id>::energy_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -224,11 +227,11 @@ double TriangleElement<mat, id>::energy_incompressible_neohookean(const Eigen::R
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalVector
-TriangleElement<mat, id>::gradient_stvk(const Eigen::Ref<const fsim::Mat3<double>> V) const
+TriangleElement<mat, id>::gradient_stvk(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
-  Matrix<double, 4, 9> aderiv;
+  Eigen::Matrix<double, 4, 9> aderiv;
   Matrix2d a = first_fundamental_form(V, idx, &aderiv);
   Matrix2d M = (abar_inv * a - Matrix2d::Identity()) / 2; // Green strain tensor
 
@@ -240,11 +243,11 @@ TriangleElement<mat, id>::gradient_stvk(const Eigen::Ref<const fsim::Mat3<double
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalVector
-TriangleElement<mat, id>::gradient_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const
+TriangleElement<mat, id>::gradient_neohookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
-  Matrix<double, 4, 9> aderiv;
+  Eigen::Matrix<double, 4, 9> aderiv;
   Matrix2d a = first_fundamental_form(V, idx, &aderiv);
   double lnJ = log((a * abar_inv).determinant()) / 2;
 
@@ -256,16 +259,16 @@ TriangleElement<mat, id>::gradient_neohookean(const Eigen::Ref<const fsim::Mat3<
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalVector
-TriangleElement<mat, id>::gradient_incompressible_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const
+TriangleElement<mat, id>::gradient_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
-  Matrix<double, 4, 9> aderiv;
-  Matrix2d a = first_fundamental_form(V, idx, &aderiv);
+  Eigen::Matrix<double, 4, 9> aderiv;
+  Eigen::Matrix2d a = first_fundamental_form(V, idx, &aderiv);
   double J = sqrt((a * abar_inv).determinant());
   double trC = (abar_inv * a).trace() / J;
 
-  Matrix2d temp = abar_inv / J + (1e4 * J * (J - 1) - trC / 2) * a.inverse();
+  Eigen::Matrix2d temp = abar_inv / J + (1e4 * J * (J - 1) - trC / 2) * a.inverse();
   temp *= beta / 2 * coeff;
 
   return aderiv.transpose() * Map<Vector4d>(temp.data());
@@ -273,26 +276,26 @@ TriangleElement<mat, id>::gradient_incompressible_neohookean(const Eigen::Ref<co
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalMatrix
-TriangleElement<mat, id>::hessian_stvk(const Eigen::Ref<const fsim::Mat3<double>> V) const
+TriangleElement<mat, id>::hessian_stvk(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
-  Matrix<double, 4, 9> aderiv;
-  Matrix<double, 36, 9> ahess;
-  Matrix2d a = first_fundamental_form(V, idx, &aderiv, &ahess);
-  Matrix2d M = (abar_inv * a - Matrix2d::Identity()) / 2; // Green strain tensor
+  Eigen::Matrix<double, 4, 9> aderiv;
+  Eigen::Matrix<double, 36, 9> ahess;
+  Eigen::Matrix2d a = first_fundamental_form(V, idx, &aderiv, &ahess);
+  Eigen::Matrix2d M = (abar_inv * a - Eigen::Matrix2d::Identity()) / 2; // Green strain tensor
 
-  Matrix<double, 9, 1> inner = aderiv.transpose() * Map<Vector4d>{const_cast<double *>(abar_inv.data())};
-  Matrix<double, 9, 9> hess = alpha / 4 * outer_prod(inner, inner);
+  Eigen::Matrix<double, 9, 1> inner = aderiv.transpose() * Map<Vector4d>{const_cast<double *>(abar_inv.data())};
+  Eigen::Matrix<double, 9, 9> hess = alpha / 4 * outer_prod(inner, inner);
 
-  Matrix2d Mabarinv = M * abar_inv;
+  Eigen::Matrix2d Mabarinv = M * abar_inv;
   for(int i = 0; i < 4; ++i) // iterate over Mabarinv and abar_inv as if they were vectors
     hess += (beta * Mabarinv(i) + alpha / 2 * M.trace() * abar_inv(i)) * ahess.block<9, 9>(9 * i, 0);
 
-  Matrix<double, 9, 1> inner00 = abar_inv(0, 0) * aderiv.row(0) + abar_inv(0, 1) * aderiv.row(2);
-  Matrix<double, 9, 1> inner01 = abar_inv(0, 0) * aderiv.row(1) + abar_inv(0, 1) * aderiv.row(3);
-  Matrix<double, 9, 1> inner10 = abar_inv(1, 0) * aderiv.row(0) + abar_inv(1, 1) * aderiv.row(2);
-  Matrix<double, 9, 1> inner11 = abar_inv(1, 0) * aderiv.row(1) + abar_inv(1, 1) * aderiv.row(3);
+  Eigen::Matrix<double, 9, 1> inner00 = abar_inv(0, 0) * aderiv.row(0) + abar_inv(0, 1) * aderiv.row(2);
+  Eigen::Matrix<double, 9, 1> inner01 = abar_inv(0, 0) * aderiv.row(1) + abar_inv(0, 1) * aderiv.row(3);
+  Eigen::Matrix<double, 9, 1> inner10 = abar_inv(1, 0) * aderiv.row(0) + abar_inv(1, 1) * aderiv.row(2);
+  Eigen::Matrix<double, 9, 1> inner11 = abar_inv(1, 0) * aderiv.row(1) + abar_inv(1, 1) * aderiv.row(3);
   hess += beta / 2 * outer_prod(inner00, inner00);
   hess += beta * sym(outer_prod(inner01, inner10));
   hess += beta / 2 * outer_prod(inner11, inner11);
@@ -303,21 +306,21 @@ TriangleElement<mat, id>::hessian_stvk(const Eigen::Ref<const fsim::Mat3<double>
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalMatrix
-TriangleElement<mat, id>::hessian_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const
+TriangleElement<mat, id>::hessian_neohookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
-  Matrix<double, 4, 9> aderiv;
-  Matrix<double, 36, 9> ahess;
-  Matrix2d a = first_fundamental_form(V, idx, &aderiv, &ahess);
+  Eigen::Matrix<double, 4, 9> aderiv;
+  Eigen::Matrix<double, 36, 9> ahess;
+  Eigen::Matrix2d a = first_fundamental_form(V, idx, &aderiv, &ahess);
 
-  Matrix2d a_inv = a.inverse();
+  Eigen::Matrix2d a_inv = a.inverse();
   double k = -beta + alpha * log((a * abar_inv).determinant()) / 2;
 
-  Matrix<double, 9, 1> ainvda = aderiv.transpose() * Map<Vector4d>(a_inv.data());
-  Matrix<double, 9, 9> hess = (alpha / 2 - k) * ainvda * ainvda.transpose();
+  Eigen::Matrix<double, 9, 1> ainvda = aderiv.transpose() * Map<Vector4d>(a_inv.data());
+  Eigen::Matrix<double, 9, 9> hess = (alpha / 2 - k) * ainvda * ainvda.transpose();
 
-  Matrix<double, 4, 9> a_deriv_adj;
+  Eigen::Matrix<double, 4, 9> a_deriv_adj;
   a_deriv_adj << aderiv.row(3), -aderiv.row(1), -aderiv.row(2), aderiv.row(0);
 
   hess += k * a_inv.determinant() * a_deriv_adj.transpose() * aderiv;
@@ -331,25 +334,25 @@ TriangleElement<mat, id>::hessian_neohookean(const Eigen::Ref<const fsim::Mat3<d
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalMatrix
-TriangleElement<mat, id>::hessian_incompressible_neohookean(const Eigen::Ref<const fsim::Mat3<double>> V) const
+TriangleElement<mat, id>::hessian_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
-  Matrix<double, 4, 9> aderiv;
-  Matrix<double, 36, 9> ahess;
-  Matrix2d a = first_fundamental_form(V, idx, &aderiv, &ahess);
+  Eigen::Matrix<double, 4, 9> aderiv;
+  Eigen::Matrix<double, 36, 9> ahess;
+  Eigen::Matrix2d a = first_fundamental_form(V, idx, &aderiv, &ahess);
 
   double J = sqrt((a * abar_inv).determinant());
   double trC = (a * abar_inv).trace() / J;
   double k = 1e4;
 
-  Matrix2d a_inv = a.inverse();
+  Eigen::Matrix2d a_inv = a.inverse();
   double a_det = a.determinant();
 
-  Matrix<double, 9, 9> hess = (3 * trC / 4 + k * J / 2) * aderiv.transpose() * Map<Vector4d>(a_inv.data()) *
+  Eigen::Matrix<double, 9, 9> hess = (3 * trC / 4 + k * J / 2) * aderiv.transpose() * Map<Vector4d>(a_inv.data()) *
                               Map<RowVector4d>(a_inv.data()) * aderiv;
 
-  Matrix<double, 4, 9> a_deriv_adj;
+  Eigen::Matrix<double, 4, 9> a_deriv_adj;
   a_deriv_adj << aderiv.row(3), -aderiv.row(1), -aderiv.row(2), aderiv.row(0);
 
   hess += (k * J * (J - 1) - trC / 2) / a_det * aderiv.transpose() * a_deriv_adj;
@@ -368,16 +371,14 @@ TriangleElement<mat, id>::hessian_incompressible_neohookean(const Eigen::Ref<con
 }
 
 template <MaterialType mat, int id>
-Eigen::Matrix2d TriangleElement<mat, id>::strain(const Eigen::Ref<const fsim::Mat3<double>> V) const
+Eigen::Matrix2d TriangleElement<mat, id>::strain(const Eigen::Ref<const Mat3<double>> V) const
 {
-  using namespace Eigen;
-
-  Matrix2d a = first_fundamental_form(V, idx);
-  return 0.5 * (abar_inv * a - Matrix2d::Identity());
+  Eigen::Matrix2d a = first_fundamental_form(V, idx);
+  return 0.5 * (abar_inv * a - Eigen::Matrix2d::Identity());
 }
 
 template <MaterialType mat, int id>
-Eigen::Matrix2d TriangleElement<mat, id>::stress(const Eigen::Ref<const fsim::Mat3<double>> V) const
+Eigen::Matrix2d TriangleElement<mat, id>::stress(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -406,20 +407,18 @@ Eigen::Matrix2d TriangleElement<mat, id>::stress(const Eigen::Ref<const fsim::Ma
 template <MaterialType mat, int id>
 void TriangleElement<mat, id>::principal_directions_and_eigenvalues(
     const Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix2d> &eigensolver,
-    const Eigen::Ref<const fsim::Mat3<double>> V,
+    const Eigen::Ref<const Mat3<double>> V,
     Eigen::Vector3d &max_dir,
     Eigen::Vector3d &min_dir,
     Eigen::Vector2d &eigs) const
 {
-  using namespace Eigen;
-
   // triangle frame, edge-aligned
-  Matrix<double, 3, 2> X;
+  Eigen::Matrix<double, 3, 2> X;
   X.col(0) = V.row(idx(1)) - V.row(idx(0));
   X.col(1) = V.row(idx(2)) - V.row(idx(0));
 
-  Matrix<double, 3, 2> dirs = X * eigensolver.eigenvectors();
-  Vector2d lambda = eigensolver.eigenvalues();
+  Eigen::Matrix<double, 3, 2> dirs = X * eigensolver.eigenvectors();
+  Eigen::Vector2d lambda = eigensolver.eigenvalues();
 
   // order eigenvalues and eigenvectors
   if(lambda(0) < lambda(1))
@@ -438,7 +437,7 @@ void TriangleElement<mat, id>::principal_directions_and_eigenvalues(
 }
 
 template <MaterialType mat, int id>
-void TriangleElement<mat, id>::principal_strains(const Eigen::Ref<const fsim::Mat3<double>> V,
+void TriangleElement<mat, id>::principal_strains(const Eigen::Ref<const Mat3<double>> V,
                                                  Eigen::Vector3d &max_dir,
                                                  Eigen::Vector3d &min_dir,
                                                  Eigen::Vector2d &eigs) const
@@ -450,7 +449,7 @@ void TriangleElement<mat, id>::principal_strains(const Eigen::Ref<const fsim::Ma
 }
 
 template <MaterialType mat, int id>
-void TriangleElement<mat, id>::principal_stresses(const Eigen::Ref<const fsim::Mat3<double>> V,
+void TriangleElement<mat, id>::principal_stresses(const Eigen::Ref<const Mat3<double>> V,
                                                   Eigen::Vector3d &max_dir,
                                                   Eigen::Vector3d &min_dir,
                                                   Eigen::Vector2d &eigs) const
@@ -470,3 +469,5 @@ void TriangleElement<mat, id>::principal_stresses(const Eigen::Ref<const fsim::M
     return principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), V,
                                                 max_dir, min_dir, eigs);
 }
+
+} // namespace fsim

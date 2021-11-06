@@ -7,8 +7,11 @@
 
 #include "fsim/util/geometry.h"
 
+namespace fsim
+{
+
 template <class Formulation, bool full_hess>
-HingeElement<Formulation, full_hess>::HingeElement(const Eigen::Ref<const fsim::Mat3<double>> V,
+HingeElement<Formulation, full_hess>::HingeElement(const Eigen::Ref<const Mat3<double>> V,
                                                    const Eigen::Vector4i &E,
                                                    double coeff)
     : _coeff{coeff}, _hinge(V, E)
@@ -21,7 +24,7 @@ double HingeElement<Formulation, full_hess>::energy(const Eigen::Ref<const Eigen
 {
   using namespace Eigen;
 
-  Map<fsim::Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
   Vector3d n0 = (V.row(idx(0)) - V.row(idx(2))).cross(V.row(idx(1)) - V.row(idx(2))).normalized();
   Vector3d n1 = (V.row(idx(1)) - V.row(idx(3))).cross(V.row(idx(0)) - V.row(idx(3))).normalized();
@@ -34,7 +37,7 @@ typename HingeElement<Formulation, full_hess>::LocalVector
 HingeElement<Formulation, full_hess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Map<fsim::Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
   Vector3d n0 = (V.row(idx(0)) - V.row(idx(2))).cross(V.row(idx(1)) - V.row(idx(2))).normalized();
   Vector3d n1 = (V.row(idx(1)) - V.row(idx(3))).cross(V.row(idx(0)) - V.row(idx(3))).normalized();
@@ -47,7 +50,7 @@ typename HingeElement<Formulation, full_hess>::LocalMatrix
 HingeElement<Formulation, full_hess>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Map<fsim::Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
   LocalMatrix bend_hess;
   LocalVector bend_grad;
@@ -73,7 +76,7 @@ HingeElement<Formulation, full_hess>::hessian(const Eigen::Ref<const Eigen::Vect
 
 template <class Formulation, bool full_hess>
 typename HingeElement<Formulation, full_hess>::LocalVector
-HingeElement<Formulation, full_hess>::bend_angle_gradient(const Eigen::Ref<const fsim::Mat3<double>> V,
+HingeElement<Formulation, full_hess>::bend_angle_gradient(const Eigen::Ref<const Mat3<double>> V,
                                                           LocalMatrix *hessian) const
 {
   using namespace Eigen;
@@ -152,7 +155,7 @@ HingeElement<Formulation, full_hess>::bend_angle_gradient(const Eigen::Ref<const
   return gradient;
 }
 
-SquaredAngleFormulation::SquaredAngleFormulation(const Eigen::Ref<const fsim::Mat3<double>> V, const Eigen::Vector4i &E)
+SquaredAngleFormulation::SquaredAngleFormulation(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector4i &E)
 {
   using namespace Eigen;
 
@@ -188,7 +191,7 @@ double SquaredAngleFormulation::deriv(const Eigen::Vector3d &n0,
   return res;
 }
 
-TanAngleFormulation::TanAngleFormulation(const Eigen::Ref<const fsim::Mat3<double>> V, const Eigen::Vector4i &E)
+TanAngleFormulation::TanAngleFormulation(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector4i &E)
 {
   using namespace Eigen;
 
@@ -233,3 +236,5 @@ template class HingeElement<SquaredAngleFormulation, false>;
 template class HingeElement<SquaredAngleFormulation, true>;
 template class HingeElement<TanAngleFormulation, false>;
 template class HingeElement<TanAngleFormulation, true>;
+
+} // namespace fsim

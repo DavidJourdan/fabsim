@@ -9,6 +9,9 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 
+namespace fsim
+{
+
 /**
  * removes the entries of the specified indices from X (sets them to 0)
  * useful to remove variables (or fix degrees of freedom) from a linear system
@@ -33,3 +36,5 @@ void filter_var(Eigen::PlainObjectBase<DerivedX> &X, const std::vector<int> &ind
  */
 template <typename scalar>
 void filter_var(Eigen::SparseMatrix<scalar> &M, const std::vector<int> &indices);
+
+} // namespace fsim

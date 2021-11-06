@@ -12,6 +12,9 @@
 
 #include <Eigen/Dense>
 
+namespace fsim
+{
+
 /**
  * Computes the (discrete) first fundamental form I of a triangle whose indices are stored in face
  * Optionally computes derivative and hessian (if pointers are not null)
@@ -20,7 +23,9 @@
  * @param derivative optional return parameter, each row corresponds to the gradient of 1 coefficient in the matrix
  * @param hessian optional return parameter, each 9x9 block corresponds to the hessian of 1 coefficient in the matrix
  */
-Eigen::Matrix2d first_fundamental_form(const Eigen::Ref<const fsim::Mat3<double>> V,
+Eigen::Matrix2d first_fundamental_form(const Eigen::Ref<const Mat3<double>> V,
                                        const Eigen::Vector3i &face,
                                        Eigen::Matrix<double, 4, 9> *derivative = nullptr,
                                        Eigen::Matrix<double, 36, 9> *hessian = nullptr);
+
+} // namespace fsim

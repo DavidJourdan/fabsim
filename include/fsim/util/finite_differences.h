@@ -10,6 +10,9 @@
 
 #include <functional>
 
+namespace fsim
+{
+
 /**
  * computes the approximate gradient of an energy function using finite differences
  * @param func  energy function
@@ -56,3 +59,5 @@ void derivative_check(
     const Eigen::Ref<const Eigen::VectorXd> var,
     std::vector<int> &indices_to_be_filtered,
     bool dump_matrices = false);
+
+} // namespace fsim

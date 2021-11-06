@@ -7,7 +7,10 @@
 
 #include "fsim/util/first_fundamental_form.h"
 
-Eigen::Matrix2d first_fundamental_form(const Eigen::Ref<const fsim::Mat3<double>> V,
+namespace fsim
+{
+
+Eigen::Matrix2d first_fundamental_form(const Eigen::Ref<const Mat3<double>> V,
                                        const Eigen::Vector3i &face,
                                        Eigen::Matrix<double, 4, 9> *derivative,
                                        Eigen::Matrix<double, 36, 9> *hessian)
@@ -63,3 +66,5 @@ Eigen::Matrix2d first_fundamental_form(const Eigen::Ref<const fsim::Mat3<double>
 
   return result;
 }
+
+} // namespace fsim
