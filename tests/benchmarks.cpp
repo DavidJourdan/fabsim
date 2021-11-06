@@ -19,7 +19,7 @@ TEST_CASE("StVKMembrane class", "[StVK]")
   MatrixX3i F;
   read_from_file("../../../tests/mesh.off", V, F);
 
-  StVKMembrane membrane(V, F, 10, 0.3, 0.1, 1.5);
+  StVKMembrane membrane(V, F, 10, 0.3, 0.1);
 
   static int nX = 3 * V.rows();
   VectorXd X = GENERATE(take(10, vector_random(nX)));

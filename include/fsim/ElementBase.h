@@ -9,6 +9,7 @@
 #pragma once
 
 #include "fsim/util/typedefs.h"
+
 #include <Eigen/Dense>
 
 namespace fsim

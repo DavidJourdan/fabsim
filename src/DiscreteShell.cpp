@@ -12,10 +12,10 @@ namespace fsim
 
 template <class Formulation, bool FullHess>
 DiscreteShell<Formulation, FullHess>::DiscreteShell(const Eigen::Ref<const Mat3<double>> V,
-                                           const Eigen::Ref<const Mat3<int>> F,
-                                           double young_modulus,
-                                           double poisson_ratio,
-                                           double thickness)
+                                                    const Eigen::Ref<const Mat3<int>> F,
+                                                    double young_modulus,
+                                                    double poisson_ratio,
+                                                    double thickness)
     : _young_modulus(young_modulus), _thickness(thickness), _poisson_ratio(poisson_ratio)
 {
   using namespace Eigen;
@@ -48,9 +48,8 @@ DiscreteShell<Formulation, FullHess>::DiscreteShell(const Eigen::Ref<const Mat3<
 }
 
 template <class Formulation, bool FullHess>
-Mat4<int>
-DiscreteShell<Formulation, FullHess>::hinge_indices(const Eigen::Ref<const Mat3<double>> V,
-                                           const Eigen::Ref<const Mat3<int>> F)
+Mat4<int> DiscreteShell<Formulation, FullHess>::hinge_indices(const Eigen::Ref<const Mat3<double>> V,
+                                                              const Eigen::Ref<const Mat3<int>> F)
 {
   using namespace Eigen;
 

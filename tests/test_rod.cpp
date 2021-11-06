@@ -14,7 +14,7 @@ TEST_CASE("Local Frames")
   Vector3d t = GENERATE(take(5, vector_random(3))).normalized();
   Vector3d n = GENERATE(take(5, vector_random(3))).normalized();
   n = (n - n.dot(t) * t).normalized(); // make sure the frame is orthogonal
-  LocalFrame<double> f{t, n, t.cross(n)};
+  ElasticRod::LocalFrame f{t, n, t.cross(n)};
 
   Vector3d x0 = GENERATE(take(5, vector_random(3)));
   Vector3d x1 = GENERATE(take(5, vector_random(3)));
@@ -55,10 +55,10 @@ struct BundledRodStencil
 
   double energy(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
-    LocalFrame<double> new_f1 =
-        update_frame<double>(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
-    LocalFrame<double> new_f2 =
-        update_frame<double>(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
+    ElasticRod::LocalFrame new_f1 =
+        ElasticRod::update_frame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
+    ElasticRod::LocalFrame new_f2 =
+        ElasticRod::update_frame(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
 
     double ref_twist = stencil.get_reference_twist();
     stencil.update_reference_twist(new_f1, new_f2);
@@ -68,10 +68,10 @@ struct BundledRodStencil
   }
   RodStencil::LocalVector gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
-    LocalFrame<double> new_f1 =
-        update_frame<double>(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
-    LocalFrame<double> new_f2 =
-        update_frame<double>(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
+    ElasticRod::LocalFrame new_f1 =
+        ElasticRod::update_frame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
+    ElasticRod::LocalFrame new_f2 =
+        ElasticRod::update_frame(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
 
     double ref_twist = stencil.get_reference_twist();
     stencil.update_reference_twist(new_f1, new_f2);
@@ -88,8 +88,8 @@ struct BundledRodStencil
   static const int NB_DOFS = 11;
 
   mutable RodStencil stencil;
-  mutable LocalFrame<double> f1;
-  mutable LocalFrame<double> f2;
+  mutable ElasticRod::LocalFrame f1;
+  mutable ElasticRod::LocalFrame f2;
 };
 
 TEST_CASE("RodStencil")
@@ -157,16 +157,16 @@ TEST_CASE("Class equivalences")
 
   Matrix<double, -1, 3, RowMajor> D1, D2;
   ElasticRod::bishop_frame(V, Vector3i(0, 1, 2), n, D1, D2);
-  LocalFrame<double> f1{(V.row(1) - V.row(0)).normalized(), D1.row(0), D2.row(0)};
-  LocalFrame<double> f2{(V.row(2) - V.row(1)).normalized(), D1.row(1), D2.row(1)};
+  ElasticRod::LocalFrame f1{(V.row(1) - V.row(0)).normalized(), D1.row(0), D2.row(0)};
+  ElasticRod::LocalFrame f2{(V.row(2) - V.row(1)).normalized(), D1.row(1), D2.row(1)};
 
   VectorXi dofs(5);
   dofs << 0, 1, 2, 9, 10;
   RodStencil stencil(V, f1, f2, dofs, Vector2d(W_n.sum() / 2, W_b.sum() / 2), young_modulus);
 
   VectorXd X = GENERATE(take(10, vector_random(11)));
-  LocalFrame<double> new_f1 = update_frame<double>(f1, X.segment<3>(0), X.segment<3>(3));
-  LocalFrame<double> new_f2 = update_frame<double>(f2, X.segment<3>(3), X.segment<3>(6));
+  ElasticRod::LocalFrame new_f1 = ElasticRod::update_frame(f1, X.segment<3>(0), X.segment<3>(3));
+  ElasticRod::LocalFrame new_f2 = ElasticRod::update_frame(f2, X.segment<3>(3), X.segment<3>(6));
 
   stencil.update_reference_twist(new_f1, new_f2);
   

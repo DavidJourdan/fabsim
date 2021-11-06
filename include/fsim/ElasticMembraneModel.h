@@ -29,37 +29,30 @@ public:
    * @param young_modulus  membrane's Young's modulus, controls the resistance to bending
    * @param poisson_ratio  membrane's Poisson's ratio
    * @param thickness  membrane's thickness
-   * @param stress  membrane's amount of stretch in length (e.g. 1.3 if it has been stretched from 10cm long to 13cm
-   * long)
    */
   ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
                        const Eigen::Ref<const Mat3<int>> F,
                        double young_modulus,
                        double poisson_ratio,
-                       double thickness,
-                       double stress = 1);
+                       double thickness);
 
   ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
                        const Eigen::Ref<const Mat3<int>> F,
                        const std::vector<double> &young_moduli,
                        const std::vector<double> &thicknesses,
-                       double poisson_ratio,
-                       double stress = 1);
+                       double poisson_ratio);
 
   int nb_dofs() const { return 3 * nV; }
   void set_poisson_ratio(double poisson_ratio);
   void set_young_modulus(double E);
   void set_thickness(double t);
-  void set_stress(double stress);
 
   double get_lame_alpha() { return Element::alpha; }
   double get_lame_beta() { return Element::beta; }
   double get_thickness() { return _thickness; }
-  double get_stress() { return _stress; }
 
 private:
   int nV, nF;
-  double _stress;
   double _thickness;
   double _young_modulus;
 };
@@ -86,14 +79,12 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<
                                                     const Eigen::Ref<const Mat3<int>> F,
                                                     double young_modulus,
                                                     double poisson_ratio,
-                                                    double thickness,
-                                                    double stress)
+                                                    double thickness)
     : ElasticMembraneModel(V,
                            F,
                            std::vector<double>(F.rows(), young_modulus),
                            std::vector<double>(F.rows(), thickness),
-                           poisson_ratio,
-                           stress)
+                           poisson_ratio)
 {}
 
 template <class Element>
@@ -101,9 +92,8 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<
                                                     const Eigen::Ref<const Mat3<int>> F,
                                                     const std::vector<double> &young_moduli,
                                                     const std::vector<double> &thicknesses,
-                                                    double poisson_ratio,
-                                                    double stress)
-    : _stress{stress}, _thickness{thicknesses[0]}, _young_modulus{young_moduli[0]}
+                                                    double poisson_ratio)
+    : _thickness{thicknesses[0]}, _young_modulus{young_moduli[0]}
 {
   using namespace Eigen;
 
@@ -116,12 +106,10 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<
   Element::alpha = poisson_ratio / (1.0 - pow(poisson_ratio, 2));
   Element::beta = 0.5 / (1.0 + poisson_ratio);
 
-  MatrixX3d smallerV = V / stress;
-
   this->_elements.reserve(nF);
   for(int i = 0; i < nF; ++i)
   {
-    this->_elements.emplace_back(smallerV, F.row(i), thicknesses[i], young_moduli[i]);
+    this->_elements.emplace_back(V, F.row(i), thicknesses[i], young_moduli[i]);
   }
 }
 
@@ -140,17 +128,6 @@ void ElasticMembraneModel<Element>::set_young_modulus(double young_modulus)
     e.coeff *= young_modulus / _young_modulus;
   }
   _young_modulus = young_modulus;
-}
-
-template <class Element>
-void ElasticMembraneModel<Element>::set_stress(double stress)
-{
-  assert(stress != 0);
-  for(auto &e: this->_elements)
-  {
-    e.set_stretch_factor(stress, _stress);
-  }
-  _stress = stress;
 }
 
 template <class Element>

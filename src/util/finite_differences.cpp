@@ -4,6 +4,7 @@
 // Created: 04/10/18
 
 #include "fsim/util/finite_differences.h"
+
 #include "fsim/util/filter_var.h"
 
 #include <cmath> // std::abs

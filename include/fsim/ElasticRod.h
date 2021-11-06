@@ -13,8 +13,8 @@
 
 #pragma once
 
-#include "RodStencil.h"
 #include "Spring.h"
+#include "util/geometry.h"
 #include "util/typedefs.h"
 
 #include <Eigen/Dense>
@@ -24,6 +24,8 @@
 
 namespace fsim
 {
+
+class RodStencil;
 
 class ElasticRod
 {
@@ -78,9 +80,7 @@ public:
   void update_properties(const Eigen::Ref<const Eigen::VectorXd> X);
 
   void get_reference_directors(Mat3<double> &D1, Mat3<double> &D2) const;
-  void get_rotated_directors(const Eigen::Ref<const Eigen::VectorXd> theta,
-                             Mat3<double> &P1,
-                             Mat3<double> &P2) const;
+  void get_rotated_directors(const Eigen::Ref<const Eigen::VectorXd> theta, Mat3<double> &P1, Mat3<double> &P2) const;
 
   std::vector<RodStencil> const &rod_stencils() const { return _stencils; };
   std::vector<RodStencil> &rod_stencils() { return _stencils; };
@@ -89,17 +89,6 @@ public:
   std::vector<Spring<true>> &springs() { return _springs; }
 
   Spring<true> const &get_spring(int id) const { return _springs[id - 3 * nV]; };
-
-  /**
-   * Returns a LocalFrame, uniquely identified by the index of the rotational degree of freedom corresponding to its
-   * twist, oriented from vertex x0 to vertex x1
-   * @param X a flat vector stacking all degrees of freedom
-   * @param x0 index of the 'from' vertex
-   * @param x1 index of the 'to' vertex
-   * @param id index of the corresponding rotational degree of freedom
-   * @return
-   */
-  LocalFrame<double> get_frame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const;
 
   int nb_edges() const { return _springs.size(); }
 
@@ -124,12 +113,53 @@ public:
    * @return KB nE - 1 by 3 list of curvature binormals
    */
   static Mat3<double> curvature_binormals(const Eigen::Ref<const Mat3<double>> P,
-                                                const Eigen::Ref<const Eigen::VectorXi> E);
+                                          const Eigen::Ref<const Eigen::VectorXi> E);
+
+  struct LocalFrame
+  {
+    LocalFrame(const Eigen::Vector3d &_t, const Eigen::Vector3d &_d1, const Eigen::Vector3d &_d2)
+        : t(_t), d1(_d1), d2(_d2)
+    {}
+    LocalFrame() = default;
+
+    void update(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1)
+    {
+      using namespace fsim;
+      Eigen::Vector3d t_new = (x1 - x0).normalized();
+      d1 = parallel_transport(d1, t, t_new);
+      d2 = t_new.cross(d1);
+      t = t_new;
+    }
+
+    Eigen::Vector3d t;
+    Eigen::Vector3d d1;
+    Eigen::Vector3d d2;
+  };
+
+  /**
+   * Returns a LocalFrame, uniquely identified by the index of the rotational degree of freedom corresponding to its
+   * twist, oriented from vertex x0 to vertex x1
+   * @param X a flat vector stacking all degrees of freedom
+   * @param x0 index of the 'from' vertex
+   * @param x1 index of the 'to' vertex
+   * @param id index of the corresponding rotational degree of freedom
+   * @return
+   */
+  LocalFrame get_frame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const;
+
+  static LocalFrame update_frame(const LocalFrame &f, const Eigen::Vector3d &x0, const Eigen::Vector3d &x1)
+  {
+    LocalFrame f_updated;
+    f_updated.t = (x1 - x0).normalized();
+    f_updated.d1 = parallel_transport(f.d1, f.t, f_updated.t);
+    f_updated.d2 = f_updated.t.cross(f_updated.d1);
+    return f_updated;
+  }
 
 protected:
   mutable std::vector<RodStencil> _stencils;
   std::vector<Spring<true>> _springs;
-  std::vector<LocalFrame<double>> _frames;
+  std::vector<LocalFrame> _frames;
   int nV; // total number of vertices in the simulation (includes non-rod vertices)
   double _stretch_modulus;
 };

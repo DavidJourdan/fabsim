@@ -67,8 +67,7 @@ public:
    * @param F  nF by 3 list of face indices
    * @return  nE by 4 list of hinge indices, first 2 indices represent the shared edge between two faces
    */
-  static Mat4<int> hinge_indices(const Eigen::Ref<const Mat3<double>> V,
-                                       const Eigen::Ref<const Mat3<int>> F);
+  static Mat4<int> hinge_indices(const Eigen::Ref<const Mat3<double>> V, const Eigen::Ref<const Mat3<int>> F);
 
 private:
   int nE, nV, nF;

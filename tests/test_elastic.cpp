@@ -46,26 +46,16 @@ TEST_CASE("StVKMembrane class", "[StVK]")
   MatrixX3i F(1, 3);
   F.row(0) = Vector3i(0, 1, 2);
 
-  StVKMembraneModel<0> instance0(V, F, 10, 0.3, 0.1, 1.5);
-  StVKMembraneModel<1> instance1(V, F, 100, 0.4, 0.9, 1.3);
+  StVKMembraneModel<0> instance0(V, F, 10, 0.3, 0.1);
+  StVKMembraneModel<1> instance1(V, F, 100, 0.4, 0.9);
 
   SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
   SECTION("get_lame_alpha") { REQUIRE(instance0.get_lame_alpha() != instance1.get_lame_alpha()); }
   SECTION("get_lame_beta") { REQUIRE(instance0.get_lame_beta() != instance1.get_lame_beta()); }
-  SECTION("get_stress") { REQUIRE(instance1.get_stress() == 1.3); }
   SECTION("set_thickness")
   {
     instance0.set_thickness(0.3);
     REQUIRE(instance0.get_thickness() == 0.3);
-  }
-  SECTION("set_stress")
-  {
-    instance0.set_stress(1);
-    REQUIRE(instance0.get_stress() == 1);
-
-    VectorXd var(9);
-    var << V.row(0).transpose(), V.row(1).transpose(), V.row(2).transpose();
-    REQUIRE(instance0.energy(var) == Approx(0).margin(1e-10));
   }
   SECTION("Gradient") { test_gradient(instance0); }
   SECTION("Hessian") { test_hessian(instance0); }
@@ -79,26 +69,16 @@ TEST_CASE("NeoHookeanMembrane class", "[NeoHookean]")
   MatrixX3i F(1, 3);
   F.row(0) = Vector3i(0, 1, 2);
 
-  NeoHookeanMembraneModel<0> instance0(V, F, 10, 0.3, 0.1, 1.5);
-  NeoHookeanMembraneModel<1> instance1(V, F, 100, 0.4, 0.9, 1.3);
+  NeoHookeanMembraneModel<0> instance0(V, F, 10, 0.3, 0.1);
+  NeoHookeanMembraneModel<1> instance1(V, F, 100, 0.4, 0.9);
 
   SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
   SECTION("get_lame_alpha") { REQUIRE(instance0.get_lame_alpha() != instance1.get_lame_alpha()); }
   SECTION("get_lame_beta") { REQUIRE(instance0.get_lame_beta() != instance1.get_lame_beta()); }
-  SECTION("get_stress") { REQUIRE(instance1.get_stress() == 1.3); }
   SECTION("set_thickness")
   {
     instance0.set_thickness(0.3);
     REQUIRE(instance0.get_thickness() == 0.3);
-  }
-  SECTION("set_stress")
-  {
-    instance0.set_stress(1);
-    REQUIRE(instance0.get_stress() == 1);
-
-    VectorXd var(9);
-    var << V.row(0).transpose(), V.row(1).transpose(), V.row(2).transpose();
-    REQUIRE(instance0.energy(var) == Approx(0).margin(1e-10));
   }
   SECTION("Gradient") { test_gradient(instance0); }
   SECTION("Hessian") { test_hessian(instance0); }
@@ -112,26 +92,16 @@ TEST_CASE("NHIncompressibleMembrane class", "[IncompressibleNeoHookean]")
   MatrixX3i F(1, 3);
   F.row(0) = Vector3i(0, 1, 2);
 
-  NHIncompressibleMembraneModel<0> instance0(V, F, 10, 0.3, 0.1, 1.5);
-  NHIncompressibleMembraneModel<1> instance1(V, F, 100, 0.4, 0.9, 1.3);
+  NHIncompressibleMembraneModel<0> instance0(V, F, 10, 0.3, 0.1);
+  NHIncompressibleMembraneModel<1> instance1(V, F, 100, 0.4, 0.9);
 
   SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
   SECTION("get_lame_alpha") { REQUIRE(instance0.get_lame_alpha() != instance1.get_lame_alpha()); }
   SECTION("get_lame_beta") { REQUIRE(instance0.get_lame_beta() != instance1.get_lame_beta()); }
-  SECTION("get_stress") { REQUIRE(instance1.get_stress() == 1.3); }
   SECTION("set_thickness")
   {
     instance0.set_thickness(0.3);
     REQUIRE(instance0.get_thickness() == 0.3);
-  }
-  SECTION("set_stress")
-  {
-    instance0.set_stress(1);
-    REQUIRE(instance0.get_stress() == 1);
-
-    VectorXd var(9);
-    var << V.row(0).transpose(), V.row(1).transpose(), V.row(2).transpose();
-    REQUIRE(instance0.energy(var) == Approx(0).margin(1e-10));
   }
   SECTION("Gradient") { test_gradient(instance0); }
   SECTION("Hessian") { test_hessian(instance0); }

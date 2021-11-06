@@ -1,7 +1,7 @@
 // first_fundamental_form.h
 // Computation of the first fundamental form and its derivatives
 //
-// Author: David Jourdan (david.jourdan@inria.fr)
+// Authors: Etienne Vouga and David Jourdan (david.jourdan@inria.fr)
 // Created: 09/10/19
 // Code adapted with permission from Etienne Vouga's implementation of the Discrete shell energy
 // For original implementation see https://github.com/evouga/libshell

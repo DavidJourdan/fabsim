@@ -13,6 +13,7 @@
 
 #include "fsim/ElasticRod.h"
 
+#include "fsim/RodStencil.h"
 #include "fsim/util/vector_utils.h"
 
 namespace fsim
@@ -237,9 +238,9 @@ void ElasticRod::get_rotated_directors(const Eigen::Ref<const Eigen::VectorXd> t
   }
 }
 
-LocalFrame<double> ElasticRod::get_frame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const
+ElasticRod::LocalFrame ElasticRod::get_frame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const
 {
-  LocalFrame<> f = _frames[id - 3 * nV];
+  LocalFrame f = _frames[id - 3 * nV];
   if(f.t.dot(X.segment<3>(3 * x1) - X.segment<3>(3 * x0)) < 0)
   {
     f.t *= -1;
@@ -284,7 +285,7 @@ void ElasticRod::bishop_frame(const Eigen::Ref<const Mat3<double>> V,
 }
 
 Mat3<double> ElasticRod::curvature_binormals(const Eigen::Ref<const Mat3<double>> P,
-                                                   const Eigen::Ref<const Eigen::VectorXi> E)
+                                             const Eigen::Ref<const Eigen::VectorXi> E)
 {
   using namespace Eigen;
   Mat3<double> KB(E.size() - 2, 3);

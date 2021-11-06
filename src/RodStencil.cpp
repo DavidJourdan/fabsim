@@ -5,6 +5,8 @@
 
 #include "fsim/RodStencil.h"
 
+#include "fsim/ElasticRod.h"
+
 #include <fsim/util/geometry.h>
 
 #include <iostream>
@@ -12,7 +14,7 @@
 namespace fsim
 {
 
-Eigen::Matrix<double, 2, 3> material_matrix(const LocalFrame<double> &f, double theta)
+Eigen::Matrix<double, 2, 3> material_matrix(const ElasticRod::LocalFrame &f, double theta)
 {
   using namespace Eigen;
   Matrix<double, 2, 3> res;
@@ -22,8 +24,8 @@ Eigen::Matrix<double, 2, 3> material_matrix(const LocalFrame<double> &f, double 
 }
 
 RodStencil::RodStencil(const Eigen::Ref<const Mat3<double>> V,
-                       const LocalFrame<double> &f1,
-                       const LocalFrame<double> &f2,
+                       const ElasticRod::LocalFrame &f1,
+                       const ElasticRod::LocalFrame &f2,
                        const Eigen::Matrix<int, 5, 1> &dofs,
                        const Eigen::Vector2d &widths,
                        double young_modulus)
@@ -46,8 +48,8 @@ RodStencil::RodStencil(const Eigen::Ref<const Mat3<double>> V,
 }
 
 double RodStencil::energy(const Eigen::Ref<const Eigen::VectorXd> X,
-                          const LocalFrame<double> &f1,
-                          const LocalFrame<double> &f2) const
+                          const ElasticRod::LocalFrame &f1,
+                          const ElasticRod::LocalFrame &f2) const
 {
   using namespace Eigen;
 
@@ -58,8 +60,8 @@ double RodStencil::energy(const Eigen::Ref<const Eigen::VectorXd> X,
 }
 
 RodStencil::LocalVector RodStencil::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
-                                             const LocalFrame<double> &f1,
-                                             const LocalFrame<double> &f2) const
+                                             const ElasticRod::LocalFrame &f1,
+                                             const ElasticRod::LocalFrame &f2) const
 {
   using namespace Eigen;
 
@@ -71,8 +73,8 @@ RodStencil::LocalVector RodStencil::gradient(const Eigen::Ref<const Eigen::Vecto
 }
 
 RodStencil::LocalMatrix RodStencil::hessian(const Eigen::Ref<const Eigen::VectorXd> X,
-                                            const LocalFrame<double> &f1,
-                                            const LocalFrame<double> &f2) const
+                                            const ElasticRod::LocalFrame &f1,
+                                            const ElasticRod::LocalFrame &f2) const
 {
   using namespace Eigen;
 
@@ -85,8 +87,8 @@ RodStencil::LocalMatrix RodStencil::hessian(const Eigen::Ref<const Eigen::Vector
 }
 
 Eigen::Vector2d RodStencil::material_curvature(const Eigen::Ref<const Eigen::VectorXd> X,
-                                               const LocalFrame<double> &f1,
-                                               const LocalFrame<double> &f2) const
+                                               const ElasticRod::LocalFrame &f1,
+                                               const ElasticRod::LocalFrame &f2) const
 {
   using namespace Eigen;
 
@@ -104,8 +106,8 @@ Eigen::Vector2d RodStencil::material_curvature(const Eigen::Ref<const Eigen::Vec
 }
 
 Eigen::Matrix<double, 11, 2> RodStencil::material_curvature_derivative(const Eigen::Ref<const Eigen::VectorXd> X,
-                                                                       const LocalFrame<double> &f1,
-                                                                       const LocalFrame<double> &f2,
+                                                                       const ElasticRod::LocalFrame &f1,
+                                                                       const ElasticRod::LocalFrame &f2,
                                                                        Eigen::Matrix<double, 11, 11> *ddK) const
 {
   using namespace Eigen;
@@ -217,8 +219,8 @@ double RodStencil::twist_angle(const Eigen::Ref<const Eigen::VectorXd> X) const
 }
 
 Eigen::Matrix<double, 11, 1> RodStencil::twist_angle_derivative(const Eigen::Ref<const Eigen::VectorXd> X,
-                                                                const LocalFrame<double> &f1,
-                                                                const LocalFrame<double> &f2,
+                                                                const ElasticRod::LocalFrame &f1,
+                                                                const ElasticRod::LocalFrame &f2,
                                                                 Eigen::Matrix<double, 11, 11> *dderiv) const
 {
   using namespace Eigen;
@@ -264,7 +266,7 @@ Eigen::Matrix<double, 11, 1> RodStencil::twist_angle_derivative(const Eigen::Ref
   return V;
 }
 
-void RodStencil::update_reference_twist(const LocalFrame<double> &f1, const LocalFrame<double> &f2)
+void RodStencil::update_reference_twist(const ElasticRod::LocalFrame &f1, const ElasticRod::LocalFrame &f2)
 {
   using namespace Eigen;
 

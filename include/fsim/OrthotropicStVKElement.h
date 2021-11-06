@@ -24,9 +24,7 @@ public:
    * @param V  n by 2 list of vertex positions (each row is a vertex)
    * @param face  list of 3 indices, one per vertex of the triangle
    */
-  OrthotropicStVKElement(const Eigen::Ref<const Mat2<double>> V,
-                        const Eigen::Vector3i &face,
-                        double thickness);
+  OrthotropicStVKElement(const Eigen::Ref<const Mat2<double>> V, const Eigen::Vector3i &face, double thickness);
 
   /**
    * @param X  a flat vector stacking all degrees of freedom
@@ -73,8 +71,8 @@ Eigen::Matrix3d OrthotropicStVKElement<id>::_C = Eigen::Matrix3d::Zero();
 
 template <int id>
 OrthotropicStVKElement<id>::OrthotropicStVKElement(const Eigen::Ref<const Mat2<double>> V,
-                                                 const Eigen::Vector3i &E,
-                                                 double thickness)
+                                                   const Eigen::Vector3i &E,
+                                                   double thickness)
 {
   using namespace Eigen;
 

@@ -6,8 +6,8 @@
 // Author: David Jourdan (david.jourdan@inria.fr)
 // Created: 30/10/21
 
-#include "OrthotropicStVKElement.h"
 #include "ElasticMembraneModel.h"
+#include "OrthotropicStVKElement.h"
 
 #include <iostream>
 
@@ -29,23 +29,24 @@ public:
    * @param stress  membrane's amount of stretch in length (e.g. 1.3 if it has been stretched from 10cm long to 13cm long)
    */
   OrthotropicStVKModel(const Eigen::Ref<const Mat3<double>> V,
-                      const Eigen::Ref<const Mat3<int>> F,
-                      const std::vector<double> &thicknesses,
-                      double E1,
-                      double E2,
-                      double poisson_ratio,
-                      double stress = 1)
+                       const Eigen::Ref<const Mat3<int>> F,
+                       const std::vector<double> &thicknesses,
+                       double E1,
+                       double E2,
+                       double poisson_ratio,
+                       double stress = 1)
   {
     using namespace Eigen;
 
     if(OrthotropicStVKElement<id>::C.norm() == 0)
-      std::cerr << "Warning: overwriting elasticity tensor. Please declare your different instances as OrthotropicStVKModel<0>, OrthotropicStVKModel<1>, etc.\n";
+      std::cerr << "Warning: overwriting elasticity tensor. Please declare your different instances as "
+                   "OrthotropicStVKModel<0>, OrthotropicStVKModel<1>, etc.\n";
 
     OrthotropicStVKElement<id>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
                                      poisson_ratio * sqrt(E1 * E2), E2, 0,
                                      0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
 
-    OrthotropicStVKElement<id>::_C /= (1 - std::pow(poisson_ratio, 2));                                
+    OrthotropicStVKElement<id>::_C /= (1 - std::pow(poisson_ratio, 2));
 
     MatrixX3d smallerV = V / stress;
 

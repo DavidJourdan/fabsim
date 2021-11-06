@@ -1,6 +1,6 @@
 // TriangleElement.h
 //
-// Author: Etienne Vouga, David Jourdan (david.jourdan@inria.fr)
+// Authors: Etienne Vouga and David Jourdan (david.jourdan@inria.fr)
 // Created: 01/13/20
 // Code adapted with permission from Etienne Vouga's implementation of the Discrete shell energy
 // For original implementation see https://github.com/evouga/libshell
@@ -128,12 +128,6 @@ public:
                           Eigen::Vector3d &max_dir,
                           Eigen::Vector3d &min_dir,
                           Eigen::Vector2d &eigs) const;
-
-  void set_stretch_factor(double new_stretch, double old_stretch)
-  {
-    abar_inv *= pow(new_stretch / old_stretch, 2);
-    coeff *= pow(old_stretch / new_stretch, 2);
-  }
 
   static double alpha;
   static double beta;
@@ -350,7 +344,7 @@ TriangleElement<mat, id>::hessian_incompressible_neohookean(const Eigen::Ref<con
   double a_det = a.determinant();
 
   Eigen::Matrix<double, 9, 9> hess = (3 * trC / 4 + k * J / 2) * aderiv.transpose() * Map<Vector4d>(a_inv.data()) *
-                              Map<RowVector4d>(a_inv.data()) * aderiv;
+                                     Map<RowVector4d>(a_inv.data()) * aderiv;
 
   Eigen::Matrix<double, 4, 9> a_deriv_adj;
   a_deriv_adj << aderiv.row(3), -aderiv.row(1), -aderiv.row(2), aderiv.row(0);
