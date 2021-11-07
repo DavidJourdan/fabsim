@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 3.9)
 ################################################################################
 
 set(TEST_SOURCES
-        test_shell.cpp
-        test_elastic.cpp
-        test_rod.cpp
-        test_spring
         benchmarks.cpp
+        check_finite_differences.cpp
+        membranes.cpp
+        rods.cpp
+        shells.cpp
+        springs.cpp
         )
 
 foreach(SOURCE IN ITEMS ${TEST_SOURCES})

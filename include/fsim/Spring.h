@@ -10,7 +10,7 @@
 namespace fsim
 {
 
-template <bool allow_compression>
+template <bool allowCompression = true>
 struct Spring
 {
   int i, j;
@@ -21,7 +21,7 @@ struct Spring
   double energy(const Eigen::Ref<const Eigen::VectorXd> pos, double stretch = 1.0) const
   {
     double diff = (pos.segment<3>(3 * i) - pos.segment<3>(3 * j)).norm() - rest_length / stretch;
-    if(allow_compression)
+    if(allowCompression)
       return pow(diff, 2) / 2.;
     else
       return diff > 0 ? pow(diff, 2) / 2. : 0.;
@@ -35,7 +35,7 @@ struct Spring
     Vector3d v = pos.segment<3>(3 * j);
     double r = rest_length / (u - v).norm() / stretch;
     VectorXd f = -(u - v) * (1 - r);
-    if(allow_compression)
+    if(allowCompression)
       return f;
     else
       return r < 1 ? f : Vector3d::Zero();
@@ -49,7 +49,7 @@ struct Spring
     Vector3d v = pos.segment<3>(3 * j);
     double ratio = rest_length / (u - v).norm() / stretch;
     Matrix3d h = -((1 - ratio) * Matrix3d::Identity() + ratio / (u - v).squaredNorm() * (u - v) * (u - v).transpose());
-    if(allow_compression)
+    if(allowCompression)
       return h;
     else
       return ratio < 1 ? h : Matrix3d::Zero();
