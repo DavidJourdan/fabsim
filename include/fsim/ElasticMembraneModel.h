@@ -9,6 +9,7 @@
 #include "TriangleElement.h"
 #include "util/typedefs.h"
 
+#include <exception>
 #include <iostream>
 
 namespace fsim
@@ -32,14 +33,20 @@ public:
    */
   ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
                        const Eigen::Ref<const Mat3<int>> F,
+                       double thickness,
                        double young_modulus,
-                       double poisson_ratio,
-                       double thickness);
+                       double poisson_ratio);
 
   ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
                        const Eigen::Ref<const Mat3<int>> F,
-                       const std::vector<double> &young_moduli,
                        const std::vector<double> &thicknesses,
+                       double young_modulus,
+                       double poisson_ratio);
+
+  ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
+                       const Eigen::Ref<const Mat3<int>> F,
+                       const std::vector<double> &thicknesses,
+                       const std::vector<double> &young_moduli,
                        double poisson_ratio);
 
   int nb_dofs() const { return 3 * nV; }
@@ -47,14 +54,14 @@ public:
   void set_young_modulus(double E);
   void set_thickness(double t);
 
-  double get_lame_alpha() { return Element::alpha; }
-  double get_lame_beta() { return Element::beta; }
+  double get_poisson_ratio() { return Element::nu; }
+  double get_young_modulus() { return _young_modulus; }
   double get_thickness() { return _thickness; }
 
 private:
   int nV, nF;
-  double _thickness;
-  double _young_modulus;
+  double _thickness = -1;
+  double _young_modulus = -1;
 };
 
 // the ids are there to disambiguate between different instances so that they don't have the same Lamé coefficients
@@ -77,34 +84,46 @@ using NHIncompressibleMembraneModel = ElasticMembraneModel<NHIncompressibleEleme
 template <class Element>
 ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
                                                     const Eigen::Ref<const Mat3<int>> F,
+                                                    double thickness,
                                                     double young_modulus,
-                                                    double poisson_ratio,
-                                                    double thickness)
+                                                    double poisson_ratio)
     : ElasticMembraneModel(V,
                            F,
-                           std::vector<double>(F.rows(), young_modulus),
                            std::vector<double>(F.rows(), thickness),
+                           std::vector<double>(F.rows(), young_modulus),
                            poisson_ratio)
-{}
+{
+  _young_modulus = young_modulus;
+  _thickness = thickness;
+}
 
 template <class Element>
 ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
                                                     const Eigen::Ref<const Mat3<int>> F,
-                                                    const std::vector<double> &young_moduli,
                                                     const std::vector<double> &thicknesses,
+                                                    double young_modulus,
                                                     double poisson_ratio)
-    : _thickness{thicknesses[0]}, _young_modulus{young_moduli[0]}
+    : ElasticMembraneModel(V, F, thicknesses, std::vector<double>(F.rows(), young_modulus), poisson_ratio)
+{
+  _young_modulus = young_modulus;
+}
+
+template <class Element>
+ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
+                                                    const Eigen::Ref<const Mat3<int>> F,
+                                                    const std::vector<double> &thicknesses,
+                                                    const std::vector<double> &young_moduli,
+                                                    double poisson_ratio)
 {
   using namespace Eigen;
 
   nV = V.rows();
   nF = F.rows();
 
-  if(Element::alpha != 0 || Element::beta != 0)
-    std::cerr << "Warning: overwriting Lamé coefficents. Please declare your different instances as e.g. "
+  if(Element::nu != 0)
+    std::cerr << "Warning: overwriting Poisson's ratio. Please declare your different instances as e.g. "
                  "StVKMembraneModel<0>, StVKMembraneModel<1>, etc.\n";
-  Element::alpha = poisson_ratio / (1.0 - pow(poisson_ratio, 2));
-  Element::beta = 0.5 / (1.0 + poisson_ratio);
+  Element::nu = poisson_ratio;
 
   this->_elements.reserve(nF);
   for(int i = 0; i < nF; ++i)
@@ -116,13 +135,15 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<
 template <class Element>
 void ElasticMembraneModel<Element>::set_poisson_ratio(double poisson_ratio)
 {
-  Element::alpha = poisson_ratio / (1 - pow(poisson_ratio, 2));
-  Element::beta = 0.5 / (1 + poisson_ratio);
+  Element::nu = poisson_ratio;
 }
 
 template <class Element>
 void ElasticMembraneModel<Element>::set_young_modulus(double young_modulus)
 {
+  if(_young_modulus <= 0)
+    throw std::runtime_error(
+        "Warning: membrane may have a locally varying Young's modulus\nCan't set it to a constant value\n");
   for(auto &e: this->_elements)
   {
     e.coeff *= young_modulus / _young_modulus;
@@ -133,7 +154,9 @@ void ElasticMembraneModel<Element>::set_young_modulus(double young_modulus)
 template <class Element>
 void ElasticMembraneModel<Element>::set_thickness(double t)
 {
-  assert(_thickness != 0);
+  if(_thickness <= 0)
+    throw std::runtime_error(
+        "Warning: membrane may have a locally varying thickness\nCan't set it to a constant value\n");
   for(auto &elem: this->_elements)
   {
     elem.coeff *= t / _thickness;

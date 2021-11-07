@@ -129,8 +129,7 @@ public:
                           Eigen::Vector3d &min_dir,
                           Eigen::Vector2d &eigs) const;
 
-  static double alpha;
-  static double beta;
+  static double nu;
   double coeff;
 
 protected:
@@ -156,7 +155,7 @@ protected:
 };
 
 // the ids are there to disambiguate between TriangleElements pertaining to different Membrane instances
-// so that they don't have the same static fields (ie Lamé alpha, beta and thickness)
+// so that they don't have the same static fields
 template <int id = 0>
 using StVKElement = TriangleElement<MaterialType::StVK, id>;
 
@@ -168,10 +167,7 @@ using NHIncompressibleElement = TriangleElement<MaterialType::NeoHookeanIncompre
 
 // https://stackoverflow.com/questions/3229883/static-member-initialization-in-a-class-template
 template <MaterialType mat, int id>
-double TriangleElement<mat, id>::alpha = 0;
-
-template <MaterialType mat, int id>
-double TriangleElement<mat, id>::beta = 0;
+double TriangleElement<mat, id>::nu = 0;
 
 template <MaterialType mat, int id>
 TriangleElement<mat, id>::TriangleElement(const Eigen::Ref<const Mat3<double>> V,
@@ -195,7 +191,7 @@ double TriangleElement<mat, id>::energy_stvk(const Eigen::Ref<const Mat3<double>
   Matrix2d a = first_fundamental_form(V, idx);
   // Green strain tensor (abar_inv * a  can be identified as the right Cauchy-Green deformation tensor)
   Matrix2d M = (abar_inv * a - Matrix2d::Identity()) / 2;
-  return coeff * (alpha / 2 * pow(M.trace(), 2) + beta * (M * M).trace());
+  return coeff / (2 * (1 + nu)) * (nu / (1 - nu) * pow(M.trace(), 2) + (M * M).trace());
 }
 
 template <MaterialType mat, int id>
@@ -206,7 +202,7 @@ double TriangleElement<mat, id>::energy_neohookean(const Eigen::Ref<const Mat3<d
   Matrix2d a = first_fundamental_form(V, idx);
   // = \ln J with J^2 = \det C (C = abar_inv * a is the right Cauchy-Green deformation tensor)
   double lnJ = log((a * abar_inv).determinant()) / 2;
-  return coeff * (alpha / 2 * pow(lnJ, 2) + beta / 2 * ((abar_inv * a).trace() - 2 - 2 * lnJ));
+  return coeff / (2 * (1 + nu)) * (nu / (1 - nu) * pow(lnJ, 2) + (abar_inv * a).trace() / 2 - 1 - lnJ);
 }
 
 template <MaterialType mat, int id>
@@ -216,7 +212,7 @@ double TriangleElement<mat, id>::energy_incompressible_neohookean(const Eigen::R
 
   Matrix2d a = first_fundamental_form(V, idx);
   double J = sqrt((a * abar_inv).determinant());
-  return beta / 2 * coeff * ((abar_inv * a).trace() / J - 2 + 1e4 * pow(J - 1, 2));
+  return coeff / (4 * (1 + nu)) * ((abar_inv * a).trace() / J - 2 + 1e4 * pow(J - 1, 2));
 }
 
 template <MaterialType mat, int id>
@@ -229,10 +225,10 @@ TriangleElement<mat, id>::gradient_stvk(const Eigen::Ref<const Mat3<double>> V) 
   Matrix2d a = first_fundamental_form(V, idx, &aderiv);
   Matrix2d M = (abar_inv * a - Matrix2d::Identity()) / 2; // Green strain tensor
 
-  Matrix2d temp = beta * M * abar_inv + alpha / 2 * M.trace() * abar_inv;
+  Matrix2d temp = M * abar_inv + nu / (1 - nu) * M.trace() * abar_inv;
   Map<Vector4d> flat(temp.data());
 
-  return coeff * aderiv.transpose() * flat;
+  return coeff / (2 * (1 + nu)) * aderiv.transpose() * flat;
 }
 
 template <MaterialType mat, int id>
@@ -245,8 +241,8 @@ TriangleElement<mat, id>::gradient_neohookean(const Eigen::Ref<const Mat3<double
   Matrix2d a = first_fundamental_form(V, idx, &aderiv);
   double lnJ = log((a * abar_inv).determinant()) / 2;
 
-  Matrix2d temp = beta * abar_inv + (alpha * lnJ - beta) * a.inverse();
-  temp *= coeff / 2;
+  Matrix2d temp = abar_inv + (2 * nu / (1 - nu) * lnJ - 1) * a.inverse();
+  temp *= coeff / (4 * (1 + nu));
 
   return aderiv.transpose() * Map<Vector4d>(temp.data());
 }
@@ -263,7 +259,7 @@ TriangleElement<mat, id>::gradient_incompressible_neohookean(const Eigen::Ref<co
   double trC = (abar_inv * a).trace() / J;
 
   Eigen::Matrix2d temp = abar_inv / J + (1e4 * J * (J - 1) - trC / 2) * a.inverse();
-  temp *= beta / 2 * coeff;
+  temp *= coeff / (4 * (1 + nu));
 
   return aderiv.transpose() * Map<Vector4d>(temp.data());
 }
@@ -280,21 +276,21 @@ TriangleElement<mat, id>::hessian_stvk(const Eigen::Ref<const Mat3<double>> V) c
   Eigen::Matrix2d M = (abar_inv * a - Eigen::Matrix2d::Identity()) / 2; // Green strain tensor
 
   Eigen::Matrix<double, 9, 1> inner = aderiv.transpose() * Map<Vector4d>{const_cast<double *>(abar_inv.data())};
-  Eigen::Matrix<double, 9, 9> hess = alpha / 4 * outer_prod(inner, inner);
+  Eigen::Matrix<double, 9, 9> hess = nu / (2 * (1 - nu)) * outer_prod(inner, inner);
 
   Eigen::Matrix2d Mabarinv = M * abar_inv;
   for(int i = 0; i < 4; ++i) // iterate over Mabarinv and abar_inv as if they were vectors
-    hess += (beta * Mabarinv(i) + alpha / 2 * M.trace() * abar_inv(i)) * ahess.block<9, 9>(9 * i, 0);
+    hess += (Mabarinv(i) + nu / (1 - nu) * M.trace() * abar_inv(i)) * ahess.block<9, 9>(9 * i, 0);
 
   Eigen::Matrix<double, 9, 1> inner00 = abar_inv(0, 0) * aderiv.row(0) + abar_inv(0, 1) * aderiv.row(2);
   Eigen::Matrix<double, 9, 1> inner01 = abar_inv(0, 0) * aderiv.row(1) + abar_inv(0, 1) * aderiv.row(3);
   Eigen::Matrix<double, 9, 1> inner10 = abar_inv(1, 0) * aderiv.row(0) + abar_inv(1, 1) * aderiv.row(2);
   Eigen::Matrix<double, 9, 1> inner11 = abar_inv(1, 0) * aderiv.row(1) + abar_inv(1, 1) * aderiv.row(3);
-  hess += beta / 2 * outer_prod(inner00, inner00);
-  hess += beta * sym(outer_prod(inner01, inner10));
-  hess += beta / 2 * outer_prod(inner11, inner11);
+  hess += 0.5 * outer_prod(inner00, inner00);
+  hess += sym(outer_prod(inner01, inner10));
+  hess += 0.5 * outer_prod(inner11, inner11);
 
-  hess *= coeff;
+  hess *= coeff / (2 * (1 + nu));
   return hess;
 }
 
@@ -309,10 +305,10 @@ TriangleElement<mat, id>::hessian_neohookean(const Eigen::Ref<const Mat3<double>
   Eigen::Matrix2d a = first_fundamental_form(V, idx, &aderiv, &ahess);
 
   Eigen::Matrix2d a_inv = a.inverse();
-  double k = -beta + alpha * log((a * abar_inv).determinant()) / 2;
+  double k = -1 + nu / (1 - nu) * log((a * abar_inv).determinant());
 
   Eigen::Matrix<double, 9, 1> ainvda = aderiv.transpose() * Map<Vector4d>(a_inv.data());
-  Eigen::Matrix<double, 9, 9> hess = (alpha / 2 - k) * ainvda * ainvda.transpose();
+  Eigen::Matrix<double, 9, 9> hess = (nu / (1 - nu) - k) * ainvda * ainvda.transpose();
 
   Eigen::Matrix<double, 4, 9> a_deriv_adj;
   a_deriv_adj << aderiv.row(3), -aderiv.row(1), -aderiv.row(2), aderiv.row(0);
@@ -320,9 +316,9 @@ TriangleElement<mat, id>::hessian_neohookean(const Eigen::Ref<const Mat3<double>
   hess += k * a_inv.determinant() * a_deriv_adj.transpose() * aderiv;
 
   for(int j = 0; j < 4; ++j)
-    hess += (a_inv(j) * k + abar_inv(j) * beta) * ahess.block<9, 9>(9 * j, 0);
+    hess += (a_inv(j) * k + abar_inv(j) * 1) * ahess.block<9, 9>(9 * j, 0);
 
-  hess *= coeff / 2;
+  hess *= coeff / (4 * (1 + nu));
   return hess;
 }
 
@@ -360,7 +356,7 @@ TriangleElement<mat, id>::hessian_incompressible_neohookean(const Eigen::Ref<con
   hess += -1 / (2 * J) * (aderiv.transpose() * Map<Vector4d>(a_inv.data())) * (flat_abarinv.transpose() * aderiv);
   hess += -1 / (2 * J) * (aderiv.transpose() * flat_abarinv) * (Map<RowVector4d>(a_inv.data()) * aderiv);
 
-  hess *= beta / 2 * coeff;
+  hess *= 0.5 * coeff / (2 * (1 + nu));
   return hess;
 }
 
@@ -381,18 +377,18 @@ Eigen::Matrix2d TriangleElement<mat, id>::stress(const Eigen::Ref<const Mat3<dou
   if(mat == MaterialType::StVK)
   {
     Matrix2d M = (abar_inv * a - Matrix2d::Identity()) / 2;
-    return coeff * (alpha / 2 * M.trace() * Matrix2d::Identity() + beta * M);
+    return coeff / (2 * (1 + nu)) * (nu / (1 - nu) * M.trace() * Matrix2d::Identity() + M);
   }
   else if(mat == MaterialType::NeoHookean)
   {
     double lnJ = log((a * abar_inv).determinant()) / 2;
-    return coeff * (beta * Matrix2d::Identity() + (abar_inv * a).inverse() * (alpha * lnJ - beta));
+    return coeff / (2 * (1 + nu)) * (Matrix2d::Identity() + (abar_inv * a).inverse() * (2 * nu / (1 - nu) * lnJ - 1));
   }
   else if(mat == MaterialType::NeoHookeanIncompressible)
   {
     double J = sqrt((a * abar_inv).determinant());
     double trC = (abar_inv * a).trace() / J;
-    return coeff * beta * (Matrix2d::Identity() / J + (1e4 * J * (J - 1) - trC / 2) * (abar_inv * a).inverse());
+    return coeff / (2 * (1 + nu)) * (Matrix2d::Identity() / J + (1e4 * J * (J - 1) - trC / 2) * (abar_inv * a).inverse());
   }
   else
     return Matrix2d{};

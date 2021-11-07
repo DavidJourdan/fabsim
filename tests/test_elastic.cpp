@@ -15,8 +15,7 @@ TEMPLATE_TEST_CASE("TriangleElement", "[TriElem]", StVKElement<>, NeoHookeanElem
   double thickness = GENERATE(take(1, random(0., 1.)));
   double young_modulus = GENERATE(take(2, random(0., 1.)));
   double poisson_ratio = GENERATE(range(0.01, 0.5, 0.05));
-  TestType::alpha = poisson_ratio / (1.0 - pow(poisson_ratio, 2));
-  TestType::beta = 0.5 / (1 + poisson_ratio);
+  TestType::nu = poisson_ratio;
   TestType e(V, Vector3i(0, 1, 2), thickness, young_modulus);
 
   SECTION("Gradient") { test_gradient(e); }
@@ -46,12 +45,12 @@ TEST_CASE("StVKMembrane class", "[StVK]")
   MatrixX3i F(1, 3);
   F.row(0) = Vector3i(0, 1, 2);
 
-  StVKMembraneModel<0> instance0(V, F, 10, 0.3, 0.1);
-  StVKMembraneModel<1> instance1(V, F, 100, 0.4, 0.9);
+  StVKMembraneModel<0> instance0(V, F, 0.1, 10, 0.3);
+  StVKMembraneModel<1> instance1(V, F, 0.9, 100, 0.4);
 
   SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
-  SECTION("get_lame_alpha") { REQUIRE(instance0.get_lame_alpha() != instance1.get_lame_alpha()); }
-  SECTION("get_lame_beta") { REQUIRE(instance0.get_lame_beta() != instance1.get_lame_beta()); }
+  SECTION("get_poisson_ratio") { REQUIRE(instance0.get_poisson_ratio() != instance1.get_poisson_ratio()); }
+  SECTION("get_young_modulus") { REQUIRE(instance0.get_young_modulus() != instance1.get_young_modulus()); }
   SECTION("set_thickness")
   {
     instance0.set_thickness(0.3);
@@ -69,12 +68,12 @@ TEST_CASE("NeoHookeanMembrane class", "[NeoHookean]")
   MatrixX3i F(1, 3);
   F.row(0) = Vector3i(0, 1, 2);
 
-  NeoHookeanMembraneModel<0> instance0(V, F, 10, 0.3, 0.1);
-  NeoHookeanMembraneModel<1> instance1(V, F, 100, 0.4, 0.9);
+  NeoHookeanMembraneModel<0> instance0(V, F, 0.1, 10, 0.3);
+  NeoHookeanMembraneModel<1> instance1(V, F, 0.9, 100, 0.4);
 
   SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
-  SECTION("get_lame_alpha") { REQUIRE(instance0.get_lame_alpha() != instance1.get_lame_alpha()); }
-  SECTION("get_lame_beta") { REQUIRE(instance0.get_lame_beta() != instance1.get_lame_beta()); }
+  SECTION("get_poisson_ratio") { REQUIRE(instance0.get_poisson_ratio() != instance1.get_poisson_ratio()); }
+  SECTION("get_young_modulus") { REQUIRE(instance0.get_young_modulus() != instance1.get_young_modulus()); }
   SECTION("set_thickness")
   {
     instance0.set_thickness(0.3);
@@ -92,12 +91,12 @@ TEST_CASE("NHIncompressibleMembrane class", "[IncompressibleNeoHookean]")
   MatrixX3i F(1, 3);
   F.row(0) = Vector3i(0, 1, 2);
 
-  NHIncompressibleMembraneModel<0> instance0(V, F, 10, 0.3, 0.1);
-  NHIncompressibleMembraneModel<1> instance1(V, F, 100, 0.4, 0.9);
+  NHIncompressibleMembraneModel<0> instance0(V, F, 0.1, 10, 0.3);
+  NHIncompressibleMembraneModel<1> instance1(V, F, 0.9, 100, 0.4);
 
   SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
-  SECTION("get_lame_alpha") { REQUIRE(instance0.get_lame_alpha() != instance1.get_lame_alpha()); }
-  SECTION("get_lame_beta") { REQUIRE(instance0.get_lame_beta() != instance1.get_lame_beta()); }
+  SECTION("get_poisson_ratio") { REQUIRE(instance0.get_poisson_ratio() != instance1.get_poisson_ratio()); }
+  SECTION("get_young_modulus") { REQUIRE(instance0.get_young_modulus() != instance1.get_young_modulus()); }
   SECTION("set_thickness")
   {
     instance0.set_thickness(0.3);
@@ -120,11 +119,8 @@ TEST_CASE("Small strain equivalence", "[Membrane]")
   StVKElement<> e1(V, Vector3i(0, 1, 2), thickness, young_modulus);
   NeoHookeanElement<> e2(V, Vector3i(0, 1, 2), thickness, young_modulus);
 
-  StVKElement<>::alpha = poisson_ratio / (1.0 - pow(poisson_ratio, 2));
-  StVKElement<>::beta = 0.5 / (1 + poisson_ratio);
-
-  NeoHookeanElement<>::alpha = poisson_ratio / (1.0 - pow(poisson_ratio, 2));
-  NeoHookeanElement<>::beta = 0.5 / (1 + poisson_ratio);
+  StVKElement<>::nu = poisson_ratio;
+  NeoHookeanElement<>::nu = poisson_ratio;
 
   VectorXd var = 1e-5 * GENERATE(take(10, vector_random(9)));
   var.segment<3>(0) += V.row(0);
@@ -166,8 +162,7 @@ TEST_CASE("OrthotropicStVKElement", "[StVK]")
     Matrix3d V1(3, 3);
     V1 << V, VectorXd::Zero(9);
     StVKElement<> e1(V1, Vector3i(0, 1, 2), thickness, 1);
-    StVKElement<>::alpha = poisson_ratio / (1.0 - pow(poisson_ratio, 2));
-    StVKElement<>::beta = 0.5 / (1 + poisson_ratio);
+    StVKElement<>::nu = poisson_ratio;
 
     double E1 = 1;
     double E2 = 1;
