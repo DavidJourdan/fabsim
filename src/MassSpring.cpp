@@ -13,12 +13,10 @@ namespace fsim
 {
 
 template <bool allow_compression>
-MassSpring<allow_compression>::MassSpring(const Eigen::Ref<const Mat3<double>> V,
+MassSpringModel<allow_compression>::MassSpringModel(const Eigen::Ref<const Mat3<double>> V,
                                           const Eigen::Ref<const Mat3<int>> F,
-                                          double young_modulus,
-                                          double stress,
-                                          double density)
-    : _F(F), _stress(stress), _young_modulus(young_modulus)
+                                          double young_modulus)
+    : _young_modulus(young_modulus)
 {
   using namespace Eigen;
   nV = V.rows();
@@ -50,18 +48,18 @@ MassSpring<allow_compression>::MassSpring(const Eigen::Ref<const Mat3<double>> V
 }
 
 template <bool allow_compression>
-double MassSpring<allow_compression>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
+double MassSpringModel<allow_compression>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   double w = 0.0;
   // Spring
   for(const auto &s: _springs)
-    w += _young_modulus * s.energy(X, _stress);
+    w += _young_modulus * s.energy(X);
 
   return w;
 }
 
 template <bool allow_compression>
-void MassSpring<allow_compression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
+void MassSpringModel<allow_compression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
                                              Eigen::Ref<Eigen::VectorXd> Y) const
 {
   using namespace Eigen;
@@ -69,71 +67,52 @@ void MassSpring<allow_compression>::gradient(const Eigen::Ref<const Eigen::Vecto
 
   for(const auto &s: _springs)
   {
-    Vector3d force = _young_modulus * s.force(X, _stress);
+    Vector3d force = _young_modulus * s.force(X);
     Y.segment<3>(3 * s.i) -= force;
     Y.segment<3>(3 * s.j) += force;
   }
 }
 
 template <bool allow_compression>
-std::vector<Eigen::Triplet<double>>
-MassSpring<allow_compression>::hessian_triplets_upper(const Eigen::Ref<const Eigen::VectorXd> X) const
+Eigen::VectorXd MassSpringModel<allow_compression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  std::vector<Triplet<double>> triplets;
-  triplets.reserve(3 * 9 * _springs.size());
-  for(const auto &s: _springs)
+
+  VectorXd Y(X.size());
+  gradient(X, Y);
+  return Y;
+}
+
+template <bool allow_compression>
+std::vector<Eigen::Triplet<double>>
+MassSpringModel<allow_compression>::hessian_triplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+{
+  using namespace Eigen;
+
+  std::vector<Triplet<double>> triplets(_springs.size() * 9 * 3);
+
+#pragma omp parallel for if(_springs.size() > 1000)
+  for(int k = 0; k < _springs.size(); ++k)
   {
-    Matrix3d h_ij = _young_modulus * s.hessian(X, _stress);
-    // clang-format off
-    auto fill = [&triplets](int a, int b, Matrix3d m)
-    {
-      for(int i = 0; i < 3; ++i)
-        for(int j = 0; j < 3; ++j) triplets.emplace_back(3 * a + i, 3 * b + j, m(i, j));
-    };
-    // clang-format on
-    if(s.i < s.j)
-      fill(s.i, s.j, h_ij);
-    else
-      fill(s.j, s.i, h_ij);
-    fill(s.i, s.i, -h_ij);
-    fill(s.j, s.j, -h_ij);
+    auto s = _springs[k];
+    Matrix3d h = _young_modulus * s.hessian(X);
+
+    for(int a = 0; a < 3; ++a)
+      for(int b = 0; b < 3; ++b)
+      {
+        if(s.i < s.j)
+          triplets[3 * (3 * (3 * k + a) + b) + 0] = Triplet<double>(3 * s.i + a, 3 * s.j + b, h(a, b));
+        else
+          triplets[3 * (3 * (3 * k + a) + b) + 0] = Triplet<double>(3 * s.j + a, 3 * s.i + b, h(a, b));
+        triplets[3 * (3 * (3 * k + a) + b) + 1] = Triplet<double>(3 * s.i + a, 3 * s.i + b, -h(a, b));
+        triplets[3 * (3 * (3 * k + a) + b) + 2] = Triplet<double>(3 * s.j + a, 3 * s.j + b, -h(a, b));
+      }
   }
   return triplets;
 }
 
 template <bool allow_compression>
-std::vector<Eigen::Triplet<double>>
-MassSpring<allow_compression>::hessian_triplets(const Eigen::Ref<const Eigen::VectorXd> X) const
-{
-  using namespace Eigen;
-
-  std::vector<std::vector<Triplet<double>>> local_triplets(_springs.size());
-
-#pragma omp parallel for if(_springs.size() > 100)
-  for(int k = 0; k < _springs.size(); ++k)
-  {
-    auto s = _springs[k];
-    Matrix3d h_ij = _young_modulus * s.hessian(X, _stress);
-
-    auto fill = [&](int a, int b, Matrix3d m) {
-      for(int i = 0; i < 3; ++i)
-        for(int j = 0; j < 3; ++j)
-          local_triplets[k].emplace_back(3 * a + i, 3 * b + j, m(i, j));
-    };
-
-    local_triplets[k].reserve(4 * 9);
-    fill(s.i, s.j, h_ij);
-    fill(s.j, s.i, h_ij);
-
-    fill(s.i, s.i, -h_ij);
-    fill(s.j, s.j, -h_ij);
-  }
-  return unroll(local_triplets);
-}
-
-template <bool allow_compression>
-Eigen::SparseMatrix<double> MassSpring<allow_compression>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+Eigen::SparseMatrix<double> MassSpringModel<allow_compression>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   assert(X.size() == 3 * nV);
   Eigen::SparseMatrix<double> hess(3 * nV, 3 * nV);
@@ -144,7 +123,7 @@ Eigen::SparseMatrix<double> MassSpring<allow_compression>::hessian(const Eigen::
 }
 
 // instantiation
-template class MassSpring<true>;
-template class MassSpring<false>;
+template class MassSpringModel<true>;
+template class MassSpringModel<false>;
 
 } // namespace fsim

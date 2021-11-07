@@ -21,7 +21,8 @@ file(GLOB BASE ${FABSIM_SOURCE_DIR}/DiscreteShell.cpp
                ${FABSIM_SOURCE_DIR}/HingeElement.cpp
                ${FABSIM_SOURCE_DIR}/MassSpring.cpp
                ${FABSIM_SOURCE_DIR}/RodCollection.cpp
-               ${FABSIM_SOURCE_DIR}/RodStencil.cpp)
+               ${FABSIM_SOURCE_DIR}/RodStencil.cpp
+               ${FABSIM_SOURCE_DIR}/Spring.cpp)
 file(GLOB UTIL ${FABSIM_SOURCE_DIR}/util/filter_var.cpp 
                ${FABSIM_SOURCE_DIR}/util/finite_differences.cpp
                ${FABSIM_SOURCE_DIR}/util/first_fundamental_form.cpp
