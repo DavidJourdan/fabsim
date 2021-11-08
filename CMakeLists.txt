@@ -12,9 +12,6 @@ endif()
 # Build tests
 option(FABSIM_BUILD_TESTS      "Build fabsim unit test"        ${FABSIM_TOPLEVEL_PROJECT})
 
-option(FABSIM_USE_CHOLMOD  "Use Cholmod linear solver instead of Eigen's built-in one"  ON)
-option(FABSIM_USE_PARDISO  "Compile Fabsim with Intel Pardiso"  OFF)
-
 #set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 #set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 #set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

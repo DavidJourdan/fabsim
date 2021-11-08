@@ -43,4 +43,4 @@ if(OpenMP_CXX_FOUND)
 endif(OpenMP_CXX_FOUND)
 
 target_link_libraries(fabsim ${EXTRA_LIBS})
-include_directories(${FABSIM_INCLUDE_DIR})
+target_include_directories(fabsim PUBLIC ${FABSIM_INCLUDE_DIR})
