@@ -61,11 +61,15 @@ public:
   double coeff;
   Eigen::Matrix<double, 3, 2> _R;
   static Eigen::Matrix3d _C;
+  static double mass;
 };
 
 // https://stackoverflow.com/questions/3229883/static-member-initialization-in-a-class-template
 template <int id>
 Eigen::Matrix3d OrthotropicStVKElement<id>::_C = Eigen::Matrix3d::Zero();
+
+template <int id>
+double OrthotropicStVKElement<id>::mass = 0;
 
 template <int id>
 OrthotropicStVKElement<id>::OrthotropicStVKElement(const Eigen::Ref<const Mat2<double>> V,
@@ -117,7 +121,7 @@ double OrthotropicStVKElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd
 
   Vector3d E = strain(V);
 
-  return 0.5 * coeff * E.dot(_C * E);
+  return coeff * (0.5 * E.dot(_C * E) + 9.8 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2)));
 }
 
 template <int id>
@@ -133,6 +137,7 @@ Vec<double, 9> OrthotropicStVKElement<id>::gradient(const Eigen::Ref<const Eigen
   Matrix<double, 3, 2> F = P.transpose() * _R;
 
   Matrix3d grad = coeff * F * (SMat * _R.transpose());
+  grad.col(2) += Vector3d::Constant(9.8 * coeff * mass);
   return Map<Vec<double, 9>>(grad.data(), 9);
 }
 

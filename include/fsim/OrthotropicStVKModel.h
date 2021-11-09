@@ -32,23 +32,27 @@ public:
                        double thickness,
                        double E1,
                        double E2,
-                       double poisson_ratio);
+                       double poisson_ratio,
+                       double mass = 0);
 
   OrthotropicStVKModel(const Eigen::Ref<const Mat2<double>> V,
                        const Eigen::Ref<const Mat3<int>> F,
                        const std::vector<double> &thicknesses,
                        double E1,
                        double E2,
-                       double poisson_ratio);
+                       double poisson_ratio,
+                       double mass = 0);
 
   int nbDOFs() const { return 3 * nV; }
   void setPoissonRatio(double poisson_ratio);
   void setYoungModuli(double E1, double E2);
   void setThickness(double t);
+  void setMass(double mass);
 
   double getPoissonRatio() const { return _poisson_ratio; }
   std::array<double, 2> getYoungModuli() const { return {_E1, _E2}; }
   double getThickness() const { return _thickness; }
+  double getMass() const { return OrthotropicStVKElement<id>::mass; }
 
 private:
   int nV;
@@ -66,8 +70,9 @@ OrthotropicStVKModel<id>::OrthotropicStVKModel(const Eigen::Ref<const Mat2<doubl
                                                double thickness,
                                                double E1,
                                                double E2,
-                                               double poisson_ratio)
-    : OrthotropicStVKModel(V, F, std::vector<double>(F.rows(), thickness), E1, E2, poisson_ratio)
+                                               double poisson_ratio,
+                                               double mass)
+    : OrthotropicStVKModel(V, F, std::vector<double>(F.rows(), thickness), E1, E2, poisson_ratio, mass)
 {
   _thickness = thickness;
 }
@@ -78,7 +83,8 @@ OrthotropicStVKModel<id>::OrthotropicStVKModel(const Eigen::Ref<const Mat2<doubl
                                                const std::vector<double> &thicknesses,
                                                double E1,
                                                double E2,
-                                               double poisson_ratio)
+                                               double poisson_ratio,
+                                               double mass)
     : _poisson_ratio{poisson_ratio}, _E1{E1}, _E2{E2}
 {
   using namespace Eigen;
@@ -93,9 +99,9 @@ OrthotropicStVKModel<id>::OrthotropicStVKModel(const Eigen::Ref<const Mat2<doubl
     E1, poisson_ratio * sqrt(E1 * E2), 0, 
     poisson_ratio * sqrt(E1 * E2), E2, 0, 0, 
     0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
-
   OrthotropicStVKElement<id>::_C /= (1 - std::pow(poisson_ratio, 2));
 
+  OrthotropicStVKElement<id>::mass = mass;
   int nF = F.rows();
   this->_elements.reserve(nF);
   for(int i = 0; i < nF; ++i)
@@ -140,6 +146,12 @@ void OrthotropicStVKModel<id>::setThickness(double t)
     elem.coeff *= t / _thickness;
   }
   _thickness = t;
+}
+
+template <int id>
+void OrthotropicStVKModel<id>::setMass(double mass)
+{
+  OrthotropicStVKElement<id>::mass = mass;
 }
 
 } // namespace fsim

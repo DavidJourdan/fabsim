@@ -22,9 +22,12 @@ TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, NH
   Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
   double thickness = GENERATE(take(2, random(0., 1.)));
   double young_modulus = GENERATE(take(2, random(0., 1.)));
+  double mass = GENERATE(take(2, random(0., 1.)));
   double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
   TestType::nu = poisson_ratio;
-  TestType e(V, Vector3i(0, 1, 2), thickness, young_modulus);
+  TestType::E = young_modulus;
+  TestType::mass = mass;
+  TestType e(V, Vector3i(0, 1, 2), thickness);
 
   SECTION("Gradient") { test_gradient(e, 1e-5); }
   SECTION("Hessian") { test_hessian(e, 1e-5); }

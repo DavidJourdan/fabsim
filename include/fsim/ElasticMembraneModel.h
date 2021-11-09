@@ -35,33 +35,30 @@ public:
                        const Eigen::Ref<const Mat3<int>> F,
                        double thickness,
                        double young_modulus,
-                       double poisson_ratio);
+                       double poisson_ratio,
+                       double mass = 0);
 
   ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
                        const Eigen::Ref<const Mat3<int>> F,
                        const std::vector<double> &thicknesses,
                        double young_modulus,
-                       double poisson_ratio);
-
-  ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
-                       const Eigen::Ref<const Mat3<int>> F,
-                       const std::vector<double> &thicknesses,
-                       const std::vector<double> &young_moduli,
-                       double poisson_ratio);
+                       double poisson_ratio,
+                       double mass = 0);
 
   int nbDOFs() const { return 3 * nV; }
   void setPoissonRatio(double poisson_ratio);
   void setYoungModulus(double E);
   void setThickness(double t);
+  void setMass(double mass);
 
-  double getPoissonRatio() { return Element::nu; }
-  double getYoungModulus() { return _young_modulus; }
-  double getThickness() { return _thickness; }
+  double getPoissonRatio() const { return Element::nu; }
+  double getYoungModulus() const { return Element::E; }
+  double getThickness() const { return _thickness; }
+  double getMass() const { return Element::mass; }
 
 private:
   int nV, nF;
   double _thickness = -1;
-  double _young_modulus = -1;
 };
 
 // the ids are there to disambiguate between different instances so that they don't have the same Lamé coefficients
@@ -86,14 +83,15 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<
                                                     const Eigen::Ref<const Mat3<int>> F,
                                                     double thickness,
                                                     double young_modulus,
-                                                    double poisson_ratio)
+                                                    double poisson_ratio,
+                                                    double mass)
     : ElasticMembraneModel(V,
                            F,
                            std::vector<double>(F.rows(), thickness),
-                           std::vector<double>(F.rows(), young_modulus),
-                           poisson_ratio)
+                           young_modulus,
+                           poisson_ratio,
+                           mass)
 {
-  _young_modulus = young_modulus;
   _thickness = thickness;
 }
 
@@ -102,34 +100,23 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<
                                                     const Eigen::Ref<const Mat3<int>> F,
                                                     const std::vector<double> &thicknesses,
                                                     double young_modulus,
-                                                    double poisson_ratio)
-    : ElasticMembraneModel(V, F, thicknesses, std::vector<double>(F.rows(), young_modulus), poisson_ratio)
+                                                    double poisson_ratio,
+                                                    double mass)
 {
-  _young_modulus = young_modulus;
-}
-
-template <class Element>
-ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<double>> V,
-                                                    const Eigen::Ref<const Mat3<int>> F,
-                                                    const std::vector<double> &thicknesses,
-                                                    const std::vector<double> &young_moduli,
-                                                    double poisson_ratio)
-{
-  using namespace Eigen;
-
   nV = V.rows();
   nF = F.rows();
 
-  if(Element::nu != 0)
-    std::cerr << "Warning: overwriting Poisson's ratio. Please declare your different instances as e.g. "
+  if(Element::E != 0 && Element::E != young_modulus || Element::nu != 0 && Element::nu != poisson_ratio 
+  || Element::mass != 0 && Element::mass != mass)
+    std::cerr << "Warning: overwriting properties. Please declare your different instances as e.g. "
                  "StVKMembraneModel<0>, StVKMembraneModel<1>, etc.\n";
+  Element::E = young_modulus;
   Element::nu = poisson_ratio;
+  Element::mass = mass;
 
   this->_elements.reserve(nF);
   for(int i = 0; i < nF; ++i)
-  {
-    this->_elements.emplace_back(V, F.row(i), thicknesses[i], young_moduli[i]);
-  }
+    this->_elements.emplace_back(V, F.row(i), thicknesses[i]);
 }
 
 template <class Element>
@@ -141,14 +128,13 @@ void ElasticMembraneModel<Element>::setPoissonRatio(double poisson_ratio)
 template <class Element>
 void ElasticMembraneModel<Element>::setYoungModulus(double young_modulus)
 {
-  if(_young_modulus <= 0)
-    throw std::runtime_error(
-        "Warning: membrane may have a locally varying Young's modulus\nCan't set it to a constant value\n");
-  for(auto &e: this->_elements)
-  {
-    e.coeff *= young_modulus / _young_modulus;
-  }
-  _young_modulus = young_modulus;
+  Element::E = young_modulus;
+}
+
+template <class Element>
+void ElasticMembraneModel<Element>::setMass(double mass)
+{
+  Element::mass = mass;
 }
 
 template <class Element>
