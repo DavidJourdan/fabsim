@@ -6,8 +6,6 @@
 #pragma once
 
 #include "ElementBase.h"
-#include "util/first_fundamental_form.h"
-#include "util/geometry.h"
 #include "util/typedefs.h"
 
 #include <array>

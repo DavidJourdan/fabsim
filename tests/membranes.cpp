@@ -3,7 +3,7 @@
 
 #include <fsim/ElasticMembraneModel.h>
 #include <fsim/TriangleElement.h>
-#include <fsim/OrthotropicStVKElement.h>
+#include <fsim/OrthotropicStVKModel.h>
 
 using namespace fsim;
 
@@ -46,7 +46,7 @@ TEST_CASE("NeoHookeanMembrane class")
 {
   using namespace Eigen;
 
-  MatrixX3d V = GENERATE(take(2, matrix_random(3, 3)));
+  Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
   NeoHookeanMembraneModel<0> instance0(V, F, 0.1, 10, 0.3);
@@ -66,7 +66,7 @@ TEST_CASE("NHIncompressibleMembrane class")
 {
   using namespace Eigen;
 
-  MatrixX3d V = GENERATE(take(2, matrix_random(3, 3)));
+  Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
   NHIncompressibleMembraneModel<0> instance0(V, F, 0.1, 10, 0.3);
@@ -82,11 +82,30 @@ TEST_CASE("NHIncompressibleMembrane class")
   }
 }
 
+TEST_CASE("OrthotropicStVKMembrane class")
+{
+  using namespace Eigen;
+
+  Mat2<double> V = GENERATE(take(2, matrix_random(3, 2)));
+  Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
+
+  OrthotropicStVKModel<0> instance0(V, F, 0.1, 10, 5, 0.3);
+  OrthotropicStVKModel<1> instance1(V, F, 0.9, 100, 50, 0.4);
+
+  SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
+  SECTION("get_poisson_ratio") { REQUIRE(instance0.get_poisson_ratio() != instance1.get_poisson_ratio()); }
+  SECTION("set_thickness")
+  {
+    instance0.set_thickness(0.3);
+    REQUIRE(instance0.get_thickness() == 0.3);
+  }
+}
+
 TEST_CASE("Small strain equivalence")
 {
   using namespace Eigen;
 
-  MatrixX3d V = GENERATE(take(2, matrix_random(3, 3)));
+  Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
 
   double young_modulus = GENERATE(take(2, random(1e10, 1e11)));
   double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
