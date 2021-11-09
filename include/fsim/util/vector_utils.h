@@ -12,15 +12,6 @@
 namespace fsim
 {
 
-template <typename T>
-std::vector<T> unroll(const std::vector<std::vector<T>> &vec)
-{
-  std::vector<T> list;
-  for(auto v: vec)
-    list.insert(list.end(), v.begin(), v.end());
-  return list;
-}
-
 /**
  * Removes elements in container whose indices are in the indices list
  * @param container

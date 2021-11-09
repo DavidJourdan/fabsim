@@ -32,13 +32,13 @@ TEST_CASE("StVKMembrane class")
   StVKMembraneModel<0> instance0(V, F, 0.1, 10, 0.3);
   StVKMembraneModel<1> instance1(V, F, 0.9, 100, 0.4);
 
-  SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
-  SECTION("get_poisson_ratio") { REQUIRE(instance0.get_poisson_ratio() != instance1.get_poisson_ratio()); }
-  SECTION("get_young_modulus") { REQUIRE(instance0.get_young_modulus() != instance1.get_young_modulus()); }
-  SECTION("set_thickness")
+  SECTION("getThickness") { REQUIRE(instance1.getThickness() == 0.9); }
+  SECTION("getPoissonRatio") { REQUIRE(instance0.getPoissonRatio() != instance1.getPoissonRatio()); }
+  SECTION("getYoungModulus") { REQUIRE(instance0.getYoungModulus() != instance1.getYoungModulus()); }
+  SECTION("setThickness")
   {
-    instance0.set_thickness(0.3);
-    REQUIRE(instance0.get_thickness() == 0.3);
+    instance0.setThickness(0.3);
+    REQUIRE(instance0.getThickness() == 0.3);
   }
 }
 
@@ -52,13 +52,13 @@ TEST_CASE("NeoHookeanMembrane class")
   NeoHookeanMembraneModel<0> instance0(V, F, 0.1, 10, 0.3);
   NeoHookeanMembraneModel<1> instance1(V, F, 0.9, 100, 0.4);
 
-  SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
-  SECTION("get_poisson_ratio") { REQUIRE(instance0.get_poisson_ratio() != instance1.get_poisson_ratio()); }
-  SECTION("get_young_modulus") { REQUIRE(instance0.get_young_modulus() != instance1.get_young_modulus()); }
-  SECTION("set_thickness")
+  SECTION("getThickness") { REQUIRE(instance1.getThickness() == 0.9); }
+  SECTION("getPoissonRatio") { REQUIRE(instance0.getPoissonRatio() != instance1.getPoissonRatio()); }
+  SECTION("getYoungModulus") { REQUIRE(instance0.getYoungModulus() != instance1.getYoungModulus()); }
+  SECTION("setThickness")
   {
-    instance0.set_thickness(0.3);
-    REQUIRE(instance0.get_thickness() == 0.3);
+    instance0.setThickness(0.3);
+    REQUIRE(instance0.getThickness() == 0.3);
   }
 }
 
@@ -72,13 +72,13 @@ TEST_CASE("NHIncompressibleMembrane class")
   NHIncompressibleMembraneModel<0> instance0(V, F, 0.1, 10, 0.3);
   NHIncompressibleMembraneModel<1> instance1(V, F, 0.9, 100, 0.4);
 
-  SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
-  SECTION("get_poisson_ratio") { REQUIRE(instance0.get_poisson_ratio() != instance1.get_poisson_ratio()); }
-  SECTION("get_young_modulus") { REQUIRE(instance0.get_young_modulus() != instance1.get_young_modulus()); }
-  SECTION("set_thickness")
+  SECTION("getThickness") { REQUIRE(instance1.getThickness() == 0.9); }
+  SECTION("getPoissonRatio") { REQUIRE(instance0.getPoissonRatio() != instance1.getPoissonRatio()); }
+  SECTION("getYoungModulus") { REQUIRE(instance0.getYoungModulus() != instance1.getYoungModulus()); }
+  SECTION("setThickness")
   {
-    instance0.set_thickness(0.3);
-    REQUIRE(instance0.get_thickness() == 0.3);
+    instance0.setThickness(0.3);
+    REQUIRE(instance0.getThickness() == 0.3);
   }
 }
 
@@ -92,12 +92,12 @@ TEST_CASE("OrthotropicStVKMembrane class")
   OrthotropicStVKModel<0> instance0(V, F, 0.1, 10, 5, 0.3);
   OrthotropicStVKModel<1> instance1(V, F, 0.9, 100, 50, 0.4);
 
-  SECTION("get_thickness") { REQUIRE(instance1.get_thickness() == 0.9); }
-  SECTION("get_poisson_ratio") { REQUIRE(instance0.get_poisson_ratio() != instance1.get_poisson_ratio()); }
-  SECTION("set_thickness")
+  SECTION("getThickness") { REQUIRE(instance1.getThickness() == 0.9); }
+  SECTION("getPoissonRatio") { REQUIRE(instance0.getPoissonRatio() != instance1.getPoissonRatio()); }
+  SECTION("setThickness")
   {
-    instance0.set_thickness(0.3);
-    REQUIRE(instance0.get_thickness() == 0.3);
+    instance0.setThickness(0.3);
+    REQUIRE(instance0.getThickness() == 0.3);
   }
 }
 

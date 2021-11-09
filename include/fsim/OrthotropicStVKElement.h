@@ -44,19 +44,19 @@ public:
 
   /**
    * Computes the Green strain tensor E = \frac 1 2 (F^T F - I)  where F is the deformation gradient
+   * Uses Voigt's notation to express it as a vector
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return Green strain
    */
-  Eigen::Matrix2d strain(const Eigen::Ref<const Mat3<double>> V) const;
-  Eigen::Vector3d strain_voigt(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Vector3d strain(const Eigen::Ref<const Mat3<double>> V) const;
 
   /**
    * Computes the Second Piola-Kirchhoff stress tensor S = \frac{\partial f}{\partial E} where E is the Green strain
+   * Uses Voigt's notation to express it as a vector
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return second Piola-Kirchhoff stress
    */
-  Eigen::Matrix2d stress(const Eigen::Ref<const Mat3<double>> V) const;
-  Eigen::Vector3d stress_voigt(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Vector3d stress(const Eigen::Ref<const Mat3<double>> V) const;
 
   double coeff;
   Eigen::Matrix<double, 3, 2> _R;
@@ -87,20 +87,10 @@ OrthotropicStVKElement<id>::OrthotropicStVKElement(const Eigen::Ref<const Mat2<d
 }
 
 template <int id>
-Eigen::Matrix2d OrthotropicStVKElement<id>::strain(const Eigen::Ref<const Mat3<double>> V) const
+Eigen::Vector3d OrthotropicStVKElement<id>::strain(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
-  Matrix3d P; P << V.row(idx(0)), V.row(idx(1)), V.row(idx(2));
-  Matrix<double, 3, 2> F = P.transpose() * _R;
-
-  return 0.5 * (F.transpose() * F - Matrix2d::Identity());
-}
-
-template <int id>
-Eigen::Vector3d OrthotropicStVKElement<id>::strain_voigt(const Eigen::Ref<const Mat3<double>> V) const
-{
-  using namespace Eigen;
-  Matrix3d P; P << V.row(idx(0)), V.row(idx(1)), V.row(idx(2));
+  Matrix3d P = (Matrix3d(3, 3) << V.row(idx(0)), V.row(idx(1)), V.row(idx(2))).finished();
   Matrix<double, 3, 2> F = P.transpose() * _R;
 
   Vector3d res;
@@ -112,18 +102,10 @@ Eigen::Vector3d OrthotropicStVKElement<id>::strain_voigt(const Eigen::Ref<const 
 }
 
 template <int id>
-Eigen::Matrix2d OrthotropicStVKElement<id>::stress(const Eigen::Ref<const Mat3<double>> V) const
+Eigen::Vector3d OrthotropicStVKElement<id>::stress(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
-  Vector3d S = stress_voigt(V);
-  return (Matrix2d(2, 2) << S(0), S(2), S(2), S(1)).finished();
-}
-
-template <int id>
-Eigen::Vector3d OrthotropicStVKElement<id>::stress_voigt(const Eigen::Ref<const Mat3<double>> V) const
-{
-  using namespace Eigen;
-  Vector3d E = strain_voigt(V);
+  Vector3d E = strain(V);
   return _C * E;
 }
 
@@ -133,7 +115,7 @@ double OrthotropicStVKElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
-  Vector3d E = strain_voigt(V);
+  Vector3d E = strain(V);
 
   return 0.5 * coeff * E.dot(_C * E);
 }
@@ -144,12 +126,13 @@ Vec<double, 9> OrthotropicStVKElement<id>::gradient(const Eigen::Ref<const Eigen
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
-  Matrix2d S = stress(V);
+  Vector3d S = stress(V);
+  Matrix2d SMat = (Matrix2d(2, 2) << S(0), S(2), S(2), S(1)).finished();
 
-  Matrix3d P; P << V.row(idx(0)), V.row(idx(1)), V.row(idx(2));
+  Matrix3d P = (Matrix3d(3, 3) << V.row(idx(0)), V.row(idx(1)), V.row(idx(2))).finished();
   Matrix<double, 3, 2> F = P.transpose() * _R;
 
-  Matrix3d grad = coeff * F * (S * _R.transpose());
+  Matrix3d grad = coeff * F * (SMat * _R.transpose());
   return Map<Vec<double, 9>>(grad.data(), 9);
 }
 
@@ -159,17 +142,17 @@ Mat<double, 9, 9> OrthotropicStVKElement<id>::hessian(const Eigen::Ref<const Eig
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
-  Matrix2d S = stress(V);
+  Vector3d S = stress(V);
   Matrix3d P;
   P << V.row(idx(0)), V.row(idx(1)), V.row(idx(2));
   Matrix<double, 3, 2> F = P.transpose() * _R;
   Matrix2d E = 0.5 * (F.transpose() * F - Matrix2d::Identity());
 
-  Matrix3d A = _C(0, 0) * F.col(0) * F.col(0).transpose() + S(0, 0) * Matrix3d::Identity() +
+  Matrix3d A = _C(0, 0) * F.col(0) * F.col(0).transpose() + S(0) * Matrix3d::Identity() +
                _C(2, 2) * F.col(1) * F.col(1).transpose();
-  Matrix3d B = _C(1, 1) * F.col(1) * F.col(1).transpose() + S(1, 1) * Matrix3d::Identity() +
+  Matrix3d B = _C(1, 1) * F.col(1) * F.col(1).transpose() + S(1) * Matrix3d::Identity() +
                _C(2, 2) * F.col(0) * F.col(0).transpose();
-  Matrix3d C = _C(0, 1) * F.col(0) * F.col(1).transpose() + S(0, 1) * Matrix3d::Identity() +
+  Matrix3d C = _C(0, 1) * F.col(0) * F.col(1).transpose() + S(2) * Matrix3d::Identity() +
                _C(2, 2) * F.col(1) * F.col(0).transpose();
 
   Matrix<double, 9, 9> hess;

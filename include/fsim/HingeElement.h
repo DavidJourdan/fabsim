@@ -60,7 +60,7 @@ public:
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @param hessian  optional return parameter: derivative of the gradient
    */
-  LocalVector bend_angle_gradient(const Eigen::Ref<const Mat3<double>> V, LocalMatrix *hessian = nullptr) const;
+  LocalVector bendAngleGradient(const Eigen::Ref<const Mat3<double>> V, LocalMatrix *hessian = nullptr) const;
 
   double _coeff;
   HingeFormulation _hinge;

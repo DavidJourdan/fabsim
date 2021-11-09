@@ -81,40 +81,40 @@ struct BundledRodStencil
     f2.update(V.row(dofs(1)), V.row(dofs(2)));
   }
 
-  constexpr int nb_dofs() const { return stencil.nb_dofs(); }
+  constexpr int nbDOFs() const { return stencil.nbDOFs(); }
 
   void prepare_data(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
     f1.update(X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
     f2.update(X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
 
-    stencil.update_reference_twist(f1, f2);
+    stencil.updateReferenceTwist(f1, f2);
   }
 
   double energy(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
     ElasticRod::LocalFrame new_f1 =
-        ElasticRod::update_frame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
+        ElasticRod::updateFrame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
     ElasticRod::LocalFrame new_f2 =
-        ElasticRod::update_frame(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
+        ElasticRod::updateFrame(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
 
-    double ref_twist = stencil.get_reference_twist();
-    stencil.update_reference_twist(new_f1, new_f2);
+    double ref_twist = stencil.getReferenceTwist();
+    stencil.updateReferenceTwist(new_f1, new_f2);
     double res = stencil.energy(X, new_f1, new_f2);
-    stencil.set_reference_twist(ref_twist);
+    stencil.setReferenceTwist(ref_twist);
     return res;
   }
   RodStencil::LocalVector gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
     ElasticRod::LocalFrame new_f1 =
-        ElasticRod::update_frame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
+        ElasticRod::updateFrame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
     ElasticRod::LocalFrame new_f2 =
-        ElasticRod::update_frame(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
+        ElasticRod::updateFrame(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
 
-    double ref_twist = stencil.get_reference_twist();
-    stencil.update_reference_twist(new_f1, new_f2);
+    double ref_twist = stencil.getReferenceTwist();
+    stencil.updateReferenceTwist(new_f1, new_f2);
     auto res = stencil.gradient(X, new_f1, new_f2);
-    stencil.set_reference_twist(ref_twist);
+    stencil.setReferenceTwist(ref_twist);
     return res;
   }
   RodStencil::LocalMatrix hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
@@ -150,15 +150,13 @@ TEST_CASE("RodStencil")
   SECTION("Gradient") { test_gradient(rod, 1e-5); }
   // SECTION("Hessian") 
   // { 
-  //   VectorXd var(rod.nb_dofs());
-  //   MatrixXd hessian_computed = MatrixXd::Zero(rod.nb_dofs(), rod.nb_dofs());
-  //   MatrixXd hessian_numerical = MatrixXd::Zero(rod.nb_dofs(), rod.nb_dofs());
+  //   VectorXd var(rod.nbDOFs());
+  //   MatrixXd hessian_computed = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
+  //   MatrixXd hessian_numerical = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
 
-  //   std::uniform_real_distribution<double> dis(-1, 1);
-  //   std::mt19937 gen(std::random_device{}()); // Standard mersenne_twister_engine seeded with rd()
   //   for(int i = 0; i < 10; ++i)
   //   {
-  //     var = VectorXd::NullaryExpr(rod.nb_dofs(), [&]() { return dis(gen); });
+  //     var = VectorXd::NullaryExpr(rod.nbDOFs(), RandomRange(-1.0, 1.0));
   //     rod.prepare_data(var);
 
   //     hessian_computed += MatrixXd(rod.hessian(var));
@@ -225,7 +223,7 @@ struct BundledSpring
   BundledSpring(int i, int j, double length)
       : _spr(i, j, length) {}
 
-  constexpr int nb_dofs() const { return 6; }
+  constexpr int nbDOFs() const { return 6; }
   double energy(const Eigen::Ref<const Eigen::VectorXd> X) const { return _spr.energy(X); }
 
   Vec<double, 6> gradient(const Eigen::Ref<const Eigen::VectorXd> X) const

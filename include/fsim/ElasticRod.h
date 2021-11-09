@@ -75,22 +75,22 @@ public:
    * @param X  a flat vector stacking all degrees of freedom
    * @return  all the triplets needed to build the hessian
    */
-  std::vector<Eigen::Triplet<double>> hessian_triplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
-  void update_properties(const Eigen::Ref<const Eigen::VectorXd> X);
+  void updateProperties(const Eigen::Ref<const Eigen::VectorXd> X);
 
-  void get_reference_directors(Mat3<double> &D1, Mat3<double> &D2) const;
-  void get_rotated_directors(const Eigen::Ref<const Eigen::VectorXd> theta, Mat3<double> &P1, Mat3<double> &P2) const;
+  void getReferenceDirectors(Mat3<double> &D1, Mat3<double> &D2) const;
+  void getRotatedDirectors(const Eigen::Ref<const Eigen::VectorXd> theta, Mat3<double> &P1, Mat3<double> &P2) const;
 
-  std::vector<RodStencil> const &rod_stencils() const { return _stencils; };
-  std::vector<RodStencil> &rod_stencils() { return _stencils; };
+  std::vector<RodStencil> const &rodStencils() const { return _stencils; };
+  std::vector<RodStencil> &rodStencils() { return _stencils; };
 
   std::vector<Spring<true>> const &springs() const { return _springs; }
   std::vector<Spring<true>> &springs() { return _springs; }
 
-  Spring<true> const &get_spring(int id) const { return _springs[id - 3 * nV]; };
+  Spring<true> const &getSpring(int id) const { return _springs[id - 3 * nV]; };
 
-  int nb_edges() const { return _springs.size(); }
+  int nbEdges() const { return _springs.size(); }
 
   /**
    * Computes the Bishop frame, which is the geometrically most relaxed frame attached to the centerline of a curve
@@ -100,11 +100,11 @@ public:
    * if n isn't orthogonal to the first edge, the direction chosen to be the normal will be as close as possible to n
    * @return P1 and P2  nE by 3 lists of frame directors
    */
-  static void bishop_frame(const Eigen::Ref<const Mat3<double>> V,
-                           const Eigen::Ref<const Eigen::VectorXi> E,
-                           const Eigen::Vector3d &n,
-                           Mat3<double> &P1,
-                           Mat3<double> &P2);
+  static void bishopFrame(const Eigen::Ref<const Mat3<double>> V,
+                          const Eigen::Ref<const Eigen::VectorXi> E,
+                          const Eigen::Vector3d &n,
+                          Mat3<double> &P1,
+                          Mat3<double> &P2);
 
   /**
    * Returns curvature binormals
@@ -112,8 +112,8 @@ public:
    * @param E  nE + 1 by 1 list of rod vertex indices into P
    * @return KB nE - 1 by 3 list of curvature binormals
    */
-  static Mat3<double> curvature_binormals(const Eigen::Ref<const Mat3<double>> P,
-                                          const Eigen::Ref<const Eigen::VectorXi> E);
+  static Mat3<double> curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
+                                         const Eigen::Ref<const Eigen::VectorXi> E);
 
   struct LocalFrame
   {
@@ -145,9 +145,9 @@ public:
    * @param id index of the corresponding rotational degree of freedom
    * @return
    */
-  LocalFrame get_frame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const;
+  LocalFrame getFrame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const;
 
-  static LocalFrame update_frame(const LocalFrame &f, const Eigen::Vector3d &x0, const Eigen::Vector3d &x1)
+  static LocalFrame updateFrame(const LocalFrame &f, const Eigen::Vector3d &x0, const Eigen::Vector3d &x1)
   {
     LocalFrame f_updated;
     f_updated.t = (x1 - x0).normalized();

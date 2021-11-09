@@ -14,7 +14,7 @@
 namespace fsim
 {
 
-Eigen::Matrix<double, 2, 3> material_matrix(const ElasticRod::LocalFrame &f, double theta)
+Eigen::Matrix<double, 2, 3> materialMatrix(const ElasticRod::LocalFrame &f, double theta)
 {
   using namespace Eigen;
   Matrix<double, 2, 3> res;
@@ -42,7 +42,7 @@ RodStencil::RodStencil(const Eigen::Ref<const Mat3<double>> V,
   _stiffnesses *= young_modulus;
 
   Vector3d kb = 2 * f1.t.cross(f2.t) / (1 + f1.t.dot(f2.t));
-  _restK = (material_matrix(f1, 0) + material_matrix(f2, 0)) / 2 * kb;
+  _restK = (materialMatrix(f1, 0) + materialMatrix(f2, 0)) / 2 * kb;
 
   _ref_twist = 0;
 }
@@ -53,10 +53,9 @@ double RodStencil::energy(const Eigen::Ref<const Eigen::VectorXd> X,
 {
   using namespace Eigen;
 
-  Vector2d k = material_curvature(X, f1, f2);
+  Vector2d k = materialCurvature(X, f1, f2);
 
-  return ((k - _restK).dot(bend_matrix() * (k - _restK)) + twist_coeff() * pow(twist_angle(X), 2)) /
-         (2 * _vertex_length);
+  return ((k - _restK).dot(bendMatrix() * (k - _restK)) + twistCoeff() * pow(twistAngle(X), 2)) / (2 * _vertex_length);
 }
 
 RodStencil::LocalVector RodStencil::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
@@ -65,11 +64,11 @@ RodStencil::LocalVector RodStencil::gradient(const Eigen::Ref<const Eigen::Vecto
 {
   using namespace Eigen;
 
-  Vector2d k = material_curvature(X, f1, f2);
-  auto dK = material_curvature_derivative(X, f1, f2);
-  auto dT = twist_angle_derivative(X, f1, f2);
+  Vector2d k = materialCurvature(X, f1, f2);
+  auto dK = materialCurvatureDerivative(X, f1, f2);
+  auto dT = twistAngleDerivative(X, f1, f2);
 
-  return (dK * bend_matrix() * (k - _restK) + dT * twist_coeff() * twist_angle(X)) / _vertex_length;
+  return (dK * bendMatrix() * (k - _restK) + dT * twistCoeff() * twistAngle(X)) / _vertex_length;
 }
 
 RodStencil::LocalMatrix RodStencil::hessian(const Eigen::Ref<const Eigen::VectorXd> X,
@@ -79,16 +78,16 @@ RodStencil::LocalMatrix RodStencil::hessian(const Eigen::Ref<const Eigen::Vector
   using namespace Eigen;
 
   Matrix<double, 11, 11> ddK, ddT;
-  Matrix<double, 11, 2> dK = material_curvature_derivative(X, f1, f2, &ddK);
-  auto dT = twist_angle_derivative(X, f1, f2, &ddT);
+  Matrix<double, 11, 2> dK = materialCurvatureDerivative(X, f1, f2, &ddK);
+  auto dT = twistAngleDerivative(X, f1, f2, &ddT);
 
-  return (dK * bend_matrix() * dK.transpose() + ddK + twist_coeff() * (dT * dT.transpose() + twist_angle(X) * ddT)) /
+  return (dK * bendMatrix() * dK.transpose() + ddK + twistCoeff() * (dT * dT.transpose() + twistAngle(X) * ddT)) /
          _vertex_length;
 }
 
-Eigen::Vector2d RodStencil::material_curvature(const Eigen::Ref<const Eigen::VectorXd> X,
-                                               const ElasticRod::LocalFrame &f1,
-                                               const ElasticRod::LocalFrame &f2) const
+Eigen::Vector2d RodStencil::materialCurvature(const Eigen::Ref<const Eigen::VectorXd> X,
+                                              const ElasticRod::LocalFrame &f1,
+                                              const ElasticRod::LocalFrame &f2) const
 {
   using namespace Eigen;
 
@@ -102,13 +101,13 @@ Eigen::Vector2d RodStencil::material_curvature(const Eigen::Ref<const Eigen::Vec
     theta1 = X(idx(4));
   else
     theta1 = -X(idx(4));
-  return (material_matrix(f1, theta0) + material_matrix(f2, theta1)) / 2 * kb;
+  return (materialMatrix(f1, theta0) + materialMatrix(f2, theta1)) / 2 * kb;
 }
 
-Eigen::Matrix<double, 11, 2> RodStencil::material_curvature_derivative(const Eigen::Ref<const Eigen::VectorXd> X,
-                                                                       const ElasticRod::LocalFrame &f1,
-                                                                       const ElasticRod::LocalFrame &f2,
-                                                                       Eigen::Matrix<double, 11, 11> *ddK) const
+Eigen::Matrix<double, 11, 2> RodStencil::materialCurvatureDerivative(const Eigen::Ref<const Eigen::VectorXd> X,
+                                                                     const ElasticRod::LocalFrame &f1,
+                                                                     const ElasticRod::LocalFrame &f2,
+                                                                     Eigen::Matrix<double, 11, 11> *ddK) const
 {
   using namespace Eigen;
   double theta0, theta1;
@@ -121,13 +120,13 @@ Eigen::Matrix<double, 11, 2> RodStencil::material_curvature_derivative(const Eig
   else
     theta1 = -X(idx(4));
 
-  Matrix<double, 2, 3> M1 = material_matrix(f1, theta0);
-  Matrix<double, 2, 3> M2 = material_matrix(f2, theta1);
+  Matrix<double, 2, 3> M1 = materialMatrix(f1, theta0);
+  Matrix<double, 2, 3> M2 = materialMatrix(f2, theta1);
   double d = 1 + f1.t.dot(f2.t);
   Matrix<double, 2, 3> M = (M1 + M2) / d;
 
   Vector3d kb = 2 * f1.t.cross(f2.t) / d;
-  Vector2d k = (material_matrix(f1, theta0) + material_matrix(f2, theta1)) / 2 * kb;
+  Vector2d k = (materialMatrix(f1, theta0) + materialMatrix(f2, theta1)) / 2 * kb;
 
   Vector3d mean_t = (f1.t + f2.t) / d;
 
@@ -148,9 +147,9 @@ Eigen::Matrix<double, 11, 2> RodStencil::material_curvature_derivative(const Eig
   if(idx(1) > idx(2))
     dK.row(10) *= -1;
 
-  if(ddK) // compute second derivative wrt u = bend_matrix * (k - _restK)
+  if(ddK) // compute second derivative wrt u = bendMatrix * (k - _restK)
   {
-    Vector2d u = bend_matrix() * (k - _restK);
+    Vector2d u = bendMatrix() * (k - _restK);
 
     // \frac{ \partial^2 \kappa_i \cdot u }{ \partial x_j \partial x_k }
     Vector3d v = M.transpose() * u;
@@ -203,7 +202,7 @@ Eigen::Matrix<double, 11, 2> RodStencil::material_curvature_derivative(const Eig
   return dK;
 }
 
-double RodStencil::twist_angle(const Eigen::Ref<const Eigen::VectorXd> X) const
+double RodStencil::twistAngle(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   // to measure angles in a consistent way across shared degrees of freedom, we check for the order of vertex indices
   double theta0, theta1;
@@ -218,10 +217,10 @@ double RodStencil::twist_angle(const Eigen::Ref<const Eigen::VectorXd> X) const
   return theta1 - theta0 + _ref_twist;
 }
 
-Eigen::Matrix<double, 11, 1> RodStencil::twist_angle_derivative(const Eigen::Ref<const Eigen::VectorXd> X,
-                                                                const ElasticRod::LocalFrame &f1,
-                                                                const ElasticRod::LocalFrame &f2,
-                                                                Eigen::Matrix<double, 11, 11> *dderiv) const
+Eigen::Matrix<double, 11, 1> RodStencil::twistAngleDerivative(const Eigen::Ref<const Eigen::VectorXd> X,
+                                                              const ElasticRod::LocalFrame &f1,
+                                                              const ElasticRod::LocalFrame &f2,
+                                                              Eigen::Matrix<double, 11, 11> *dderiv) const
 {
   using namespace Eigen;
 
@@ -266,7 +265,7 @@ Eigen::Matrix<double, 11, 1> RodStencil::twist_angle_derivative(const Eigen::Ref
   return V;
 }
 
-void RodStencil::update_reference_twist(const ElasticRod::LocalFrame &f1, const ElasticRod::LocalFrame &f2)
+void RodStencil::updateReferenceTwist(const ElasticRod::LocalFrame &f1, const ElasticRod::LocalFrame &f2)
 {
   using namespace Eigen;
 

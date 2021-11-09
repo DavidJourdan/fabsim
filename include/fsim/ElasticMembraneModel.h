@@ -49,14 +49,14 @@ public:
                        const std::vector<double> &young_moduli,
                        double poisson_ratio);
 
-  int nb_dofs() const { return 3 * nV; }
-  void set_poisson_ratio(double poisson_ratio);
-  void set_young_modulus(double E);
-  void set_thickness(double t);
+  int nbDOFs() const { return 3 * nV; }
+  void setPoissonRatio(double poisson_ratio);
+  void setYoungModulus(double E);
+  void setThickness(double t);
 
-  double get_poisson_ratio() { return Element::nu; }
-  double get_young_modulus() { return _young_modulus; }
-  double get_thickness() { return _thickness; }
+  double getPoissonRatio() { return Element::nu; }
+  double getYoungModulus() { return _young_modulus; }
+  double getThickness() { return _thickness; }
 
 private:
   int nV, nF;
@@ -133,13 +133,13 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<
 }
 
 template <class Element>
-void ElasticMembraneModel<Element>::set_poisson_ratio(double poisson_ratio)
+void ElasticMembraneModel<Element>::setPoissonRatio(double poisson_ratio)
 {
   Element::nu = poisson_ratio;
 }
 
 template <class Element>
-void ElasticMembraneModel<Element>::set_young_modulus(double young_modulus)
+void ElasticMembraneModel<Element>::setYoungModulus(double young_modulus)
 {
   if(_young_modulus <= 0)
     throw std::runtime_error(
@@ -152,7 +152,7 @@ void ElasticMembraneModel<Element>::set_young_modulus(double young_modulus)
 }
 
 template <class Element>
-void ElasticMembraneModel<Element>::set_thickness(double t)
+void ElasticMembraneModel<Element>::setThickness(double t)
 {
   if(_thickness <= 0)
     throw std::runtime_error(

@@ -67,33 +67,33 @@ TEST_CASE("DiscreteShell class")
   SECTION("Thickness")
   {
     double t = GENERATE(take(2, random(0., 1.)));
-    shell.set_thickness(t);
-    REQUIRE(shell.get_thickness() == t);
+    shell.setThickness(t);
+    REQUIRE(shell.getThickness() == t);
 
     VectorXd var = GENERATE(take(2, filter(check_normals, vector_random(12))));
     double prev_energy = shell.energy(var);
 
-    shell.set_thickness(2 * t);
+    shell.setThickness(2 * t);
 
     REQUIRE(shell.energy(var) == Approx(8 * prev_energy).margin(1e-10));
   }
   SECTION("Young's Modulus")
   {
     double E = GENERATE(take(2, random(0., 1.)));
-    shell.set_young_modulus(E);
-    REQUIRE(shell.get_young_modulus() == E);
+    shell.setYoungModulus(E);
+    REQUIRE(shell.getYoungModulus() == E);
 
     VectorXd var = GENERATE(take(2, filter(check_normals, vector_random(12))));
     double prev_energy = shell.energy(var);
 
-    shell.set_young_modulus(2 * E);
+    shell.setYoungModulus(2 * E);
 
     REQUIRE(shell.energy(var) == Approx(2 * prev_energy).margin(1e-10));
   }
   SECTION("Poisson's ratio")
   {
     double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
-    shell.set_poisson_ratio(poisson_ratio);
-    REQUIRE(shell.get_poisson_ratio() == poisson_ratio);
+    shell.setPoissonRatio(poisson_ratio);
+    REQUIRE(shell.getPoissonRatio() == poisson_ratio);
   }
 }

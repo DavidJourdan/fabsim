@@ -21,6 +21,8 @@ namespace fsim
  * @return V  nV by 3 matrix of vertices
  * @return F  nF by 3 matrix of face indices
  */
+void readOFF(const std::string &file, Mat3<double> &V, Mat3<int> &F);
+void readOFF(const std::string &file, Mat3<double> &V, Mat4<int> &F);
 void readOFF(const std::string &file, Mat3<double> &V, Mat<int> &F);
 
 /**

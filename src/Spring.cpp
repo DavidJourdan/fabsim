@@ -9,7 +9,8 @@ namespace fsim
 {
 
 template <bool allowCompression>
-Spring<allowCompression>::Spring(int _i, int _j, double length) : i(_i), j(_j), rest_length(length) {}
+Spring<allowCompression>::Spring(int _i, int _j, double length) : i(_i), j(_j), rest_length(length)
+{}
 
 template <bool allowCompression>
 double Spring<allowCompression>::energy(const Eigen::Ref<const Eigen::VectorXd> pos) const

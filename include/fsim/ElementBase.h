@@ -32,8 +32,8 @@ public:
 
   Vec<int, nb_vtx + additional_dofs> idx;
 
-  constexpr int nb_dofs() const { return NB_DOFS; }
-  constexpr int nb_vertices() const { return NB_VERTICES; }
+  constexpr int nbDOFs() const { return NB_DOFS; }
+  constexpr int nbVertices() const { return NB_VERTICES; }
 };
 
 } // namespace fsim

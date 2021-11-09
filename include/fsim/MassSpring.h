@@ -33,9 +33,7 @@ public:
    * @param young_modulus  a non-negative weight on the energy, tells how important the effect of this model will be
    * compared to other terms
    */
-  MassSpringModel(const Eigen::Ref<const Mat3<double>> V,
-             const Eigen::Ref<const Mat3<int>> F,
-             double young_modulus);
+  MassSpringModel(const Eigen::Ref<const Mat3<double>> V, const Eigen::Ref<const Mat3<int>> F, double young_modulus);
   MassSpringModel() = default;
 
   /**
@@ -66,11 +64,11 @@ public:
    * @param X  a flat vector stacking all degrees of freedom
    * @return  all the triplets needed to build the hessian
    */
-  std::vector<Eigen::Triplet<double>> hessian_triplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
-  void set_young_modulus(double young_modulus) { _young_modulus = young_modulus; }
+  void setYoungModulus(double young_modulus) { _young_modulus = young_modulus; }
 
-  int nb_dofs() const { return 3 * nV; }
+  int nbDOFs() const { return 3 * nV; }
 
 private:
   double _young_modulus;

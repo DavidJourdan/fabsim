@@ -35,39 +35,38 @@ public:
    */
   DiscreteShell(const Eigen::Ref<const Mat3<double>> V,
                 const Eigen::Ref<const Mat3<int>> F,
+                double thickness,
                 double young_modulus,
-                double poisson_ratio,
-                double thickness);
+                double poisson_ratio);
   DiscreteShell() = default;
 
   // number of vertices
-  int nb_vertices() const { return nV; }
+  int nbVertices() const { return nV; }
   // number of edges
-  int nb_edges() const { return nE; }
+  int nbEdges() const { return nE; }
   // number of faces
-  int nb_faces() const { return nF; }
+  int nbFaces() const { return nF; }
   // number of degrees of freedom
-  int nb_dofs() const { return 3 * nV; }
+  int nbDOFs() const { return 3 * nV; }
 
   // set Young's modulus (positive coefficient)
-  void set_young_modulus(double young_modulus);
-  void set_young_modulus(std::vector<double> &young_moduli);
-  double get_young_modulus() { return _young_modulus; }
+  void setYoungModulus(double young_modulus);
+  double getYoungModulus() { return _young_modulus; }
 
   // set Poisson ratio (between 0 and 0.5)
-  void set_poisson_ratio(double poisson_ratio);
-  double get_poisson_ratio() { return _poisson_ratio; }
+  void setPoissonRatio(double poisson_ratio);
+  double getPoissonRatio() { return _poisson_ratio; }
 
   // set thickness of the membrane (controls the amount of bending) negative values are not allowed
-  void set_thickness(double thickness);
-  double get_thickness() { return _thickness; }
+  void setThickness(double thickness);
+  double getThickness() { return _thickness; }
 
   /**
    * Generates indices for the diamond stencil structure from the list of faces
    * @param F  nF by 3 list of face indices
    * @return  nE by 4 list of hinge indices, first 2 indices represent the shared edge between two faces
    */
-  static Mat4<int> hinge_indices(const Eigen::Ref<const Mat3<double>> V, const Eigen::Ref<const Mat3<int>> F);
+  static Mat4<int> hingeIndices(const Eigen::Ref<const Mat3<double>> V, const Eigen::Ref<const Mat3<int>> F);
 
 private:
   int nE, nV, nF;

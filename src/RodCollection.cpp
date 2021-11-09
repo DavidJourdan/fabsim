@@ -39,7 +39,7 @@ RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
   {
     Mat3<double> D1, D2;
     Map<VectorXi> E(const_cast<int *>(indices[i].data()), indices[i].size());
-    ElasticRod::bishop_frame(V, E, N.row(i), D1, D2);
+    ElasticRod::bishopFrame(V, E, N.row(i), D1, D2);
     for(int j = 0; j < E.size() - 1; ++j)
     {
       _frames.emplace_back((V.row(E(j + 1)) - V.row(E(j))).normalized(), D1.row(j), D2.row(j));

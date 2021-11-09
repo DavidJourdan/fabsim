@@ -13,9 +13,9 @@ namespace fsim
 template <class Formulation, bool FullHess>
 DiscreteShell<Formulation, FullHess>::DiscreteShell(const Eigen::Ref<const Mat3<double>> V,
                                                     const Eigen::Ref<const Mat3<int>> F,
+                                                    double thickness,
                                                     double young_modulus,
-                                                    double poisson_ratio,
-                                                    double thickness)
+                                                    double poisson_ratio)
     : _young_modulus(young_modulus), _thickness(thickness), _poisson_ratio(poisson_ratio)
 {
   using namespace Eigen;
@@ -23,7 +23,7 @@ DiscreteShell<Formulation, FullHess>::DiscreteShell(const Eigen::Ref<const Mat3<
   nV = V.rows();
   nF = F.rows();
 
-  MatrixXi E = hinge_indices(V, F);
+  MatrixXi E = hingeIndices(V, F);
   nE = E.rows();
 
   double flexural_energy = young_modulus * pow(thickness, 3) / 24 / (1 - pow(poisson_ratio, 2));
@@ -48,8 +48,8 @@ DiscreteShell<Formulation, FullHess>::DiscreteShell(const Eigen::Ref<const Mat3<
 }
 
 template <class Formulation, bool FullHess>
-Mat4<int> DiscreteShell<Formulation, FullHess>::hinge_indices(const Eigen::Ref<const Mat3<double>> V,
-                                                              const Eigen::Ref<const Mat3<int>> F)
+Mat4<int> DiscreteShell<Formulation, FullHess>::hingeIndices(const Eigen::Ref<const Mat3<double>> V,
+                                                             const Eigen::Ref<const Mat3<int>> F)
 {
   using namespace Eigen;
 
@@ -101,7 +101,7 @@ Mat4<int> DiscreteShell<Formulation, FullHess>::hinge_indices(const Eigen::Ref<c
 }
 
 template <class Formulation, bool FullHess>
-void DiscreteShell<Formulation, FullHess>::set_young_modulus(double young_modulus)
+void DiscreteShell<Formulation, FullHess>::setYoungModulus(double young_modulus)
 {
   assert(young_modulus > 0);
   for(auto &element: this->_elements)
@@ -112,18 +112,7 @@ void DiscreteShell<Formulation, FullHess>::set_young_modulus(double young_modulu
 }
 
 template <class Formulation, bool FullHess>
-void DiscreteShell<Formulation, FullHess>::set_young_modulus(std::vector<double> &young_moduli)
-{
-  assert(young_moduli.size() == this->_elements.size());
-  for(int i = 0; i < young_moduli.size(); ++i)
-    this->_elements[i]._coeff *= young_moduli[i] / _young_modulus;
-
-  if(young_moduli[0] != 0)
-    _young_modulus = young_moduli[0];
-}
-
-template <class Formulation, bool FullHess>
-void DiscreteShell<Formulation, FullHess>::set_poisson_ratio(double poisson_ratio)
+void DiscreteShell<Formulation, FullHess>::setPoissonRatio(double poisson_ratio)
 {
   assert(poisson_ratio > 0 && poisson_ratio <= 0.5);
   for(auto &element: this->_elements)
@@ -134,7 +123,7 @@ void DiscreteShell<Formulation, FullHess>::set_poisson_ratio(double poisson_rati
 }
 
 template <class Formulation, bool FullHess>
-void DiscreteShell<Formulation, FullHess>::set_thickness(double thickness)
+void DiscreteShell<Formulation, FullHess>::setThickness(double thickness)
 {
   assert(thickness > 0);
   for(auto &element: this->_elements)

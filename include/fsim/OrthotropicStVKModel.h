@@ -41,14 +41,14 @@ public:
                        double E2,
                        double poisson_ratio);
 
-  int nb_dofs() const { return 3 * nV; }
-  void set_poisson_ratio(double poisson_ratio);
-  void set_young_moduli(double E1, double E2);
-  void set_thickness(double t);
+  int nbDOFs() const { return 3 * nV; }
+  void setPoissonRatio(double poisson_ratio);
+  void setYoungModuli(double E1, double E2);
+  void setThickness(double t);
 
-  double get_poisson_ratio() { return _poisson_ratio; }
-  std::array<double, 2> get_young_moduli() { return {_E1, _E2}; }
-  double get_thickness() { return _thickness; }
+  double getPoissonRatio() const { return _poisson_ratio; }
+  std::array<double, 2> getYoungModuli() const { return {_E1, _E2}; }
+  double getThickness() const { return _thickness; }
 
 private:
   int nV;
@@ -79,13 +79,13 @@ OrthotropicStVKModel<id>::OrthotropicStVKModel(const Eigen::Ref<const Mat2<doubl
                                                double E1,
                                                double E2,
                                                double poisson_ratio)
-  : _poisson_ratio{poisson_ratio}, _E1{E1}, _E2{E2}
+    : _poisson_ratio{poisson_ratio}, _E1{E1}, _E2{E2}
 {
   using namespace Eigen;
 
   nV = V.rows();
 
-  if(OrthotropicStVKElement<id>::_C.norm() == 0)
+  if(OrthotropicStVKElement<id>::_C.norm() != 0)
     std::cerr << "Warning: overwriting elasticity tensor. Please declare your different instances as "
                  "OrthotropicStVKModel<0>, OrthotropicStVKModel<1>, etc.\n";
 
@@ -103,7 +103,7 @@ OrthotropicStVKModel<id>::OrthotropicStVKModel(const Eigen::Ref<const Mat2<doubl
 }
 
 template <int id>
-void OrthotropicStVKModel<id>::set_poisson_ratio(double poisson_ratio)
+void OrthotropicStVKModel<id>::setPoissonRatio(double poisson_ratio)
 {
   _poisson_ratio = poisson_ratio;
   
@@ -116,7 +116,7 @@ void OrthotropicStVKModel<id>::set_poisson_ratio(double poisson_ratio)
 }
 
 template <int id>
-void OrthotropicStVKModel<id>::set_young_moduli(double E1, double E2)
+void OrthotropicStVKModel<id>::setYoungModuli(double E1, double E2)
 {
   _E1 = E1;
   _E2 = E2;
@@ -130,7 +130,7 @@ void OrthotropicStVKModel<id>::set_young_moduli(double E1, double E2)
 }
 
 template <int id>
-void OrthotropicStVKModel<id>::set_thickness(double t)
+void OrthotropicStVKModel<id>::setThickness(double t)
 {
   if(_thickness <= 0)
     throw std::runtime_error(

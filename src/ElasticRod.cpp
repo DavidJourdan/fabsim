@@ -37,7 +37,7 @@ ElasticRod::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
 
   Mat3<double> D1, D2;
   Map<VectorXi> E(const_cast<int *>(indices.data()), indices.size());
-  ElasticRod::bishop_frame(V, E, N, D1, D2);
+  ElasticRod::bishopFrame(V, E, N, D1, D2);
   for(int j = 0; j < E.size() - 1; ++j)
   {
     _frames.emplace_back((V.row(E(j + 1)) - V.row(E(j))).normalized(), D1.row(j), D2.row(j));
@@ -79,19 +79,19 @@ double ElasticRod::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
   double result = 0;
   for(RodStencil &e: _stencils)
   {
-    double old_twist = e.get_reference_twist();
+    double old_twist = e.getReferenceTwist();
     // update properties
-    LocalFrame f1 = get_frame(X, e.idx(0), e.idx(1), e.idx(3));
+    LocalFrame f1 = getFrame(X, e.idx(0), e.idx(1), e.idx(3));
     f1.update(X.segment<3>(3 * e.idx(0)), X.segment<3>(3 * e.idx(1)));
-    LocalFrame f2 = get_frame(X, e.idx(1), e.idx(2), e.idx(4));
+    LocalFrame f2 = getFrame(X, e.idx(1), e.idx(2), e.idx(4));
     f2.update(X.segment<3>(3 * e.idx(1)), X.segment<3>(3 * e.idx(2)));
 
-    e.update_reference_twist(f1, f2);
+    e.updateReferenceTwist(f1, f2);
 
     result += e.energy(X, f1, f2);
 
     // restore previous state
-    e.set_reference_twist(old_twist);
+    e.setReferenceTwist(old_twist);
   }
 
   for(const auto &s: _springs)
@@ -106,11 +106,11 @@ void ElasticRod::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<
 
   for(RodStencil &e: _stencils)
   {
-    LocalFrame f1 = get_frame(X, e.idx(0), e.idx(1), e.idx(3));
-    LocalFrame f2 = get_frame(X, e.idx(1), e.idx(2), e.idx(4));
+    LocalFrame f1 = getFrame(X, e.idx(0), e.idx(1), e.idx(3));
+    LocalFrame f2 = getFrame(X, e.idx(1), e.idx(2), e.idx(4));
     auto grad = e.gradient(X, f1, f2);
 
-    int n = e.nb_vertices();
+    int n = e.nbVertices();
     for(int j = 0; j < n; ++j)
       Y.segment<3>(3 * e.idx(j)) += grad.segment<3>(3 * j);
 
@@ -139,14 +139,14 @@ Eigen::SparseMatrix<double> ElasticRod::hessian(const Eigen::Ref<const Eigen::Ve
 {
   using namespace Eigen;
 
-  std::vector<Triplet<double>> triplets = hessian_triplets(X);
+  std::vector<Triplet<double>> triplets = hessianTriplets(X);
 
   SparseMatrix<double> hess(X.size(), X.size());
   hess.setFromTriplets(triplets.begin(), triplets.end());
   return hess;
 }
 
-std::vector<Eigen::Triplet<double>> ElasticRod::hessian_triplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+std::vector<Eigen::Triplet<double>> ElasticRod::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -155,11 +155,11 @@ std::vector<Eigen::Triplet<double>> ElasticRod::hessian_triplets(const Eigen::Re
   triplets.reserve(11 * 11 * _stencils.size() + 6 * 6 * _springs.size());
   for(auto &e: _stencils)
   {
-    LocalFrame f1 = get_frame(X, e.idx(0), e.idx(1), e.idx(3));
-    LocalFrame f2 = get_frame(X, e.idx(1), e.idx(2), e.idx(4));
+    LocalFrame f1 = getFrame(X, e.idx(0), e.idx(1), e.idx(3));
+    LocalFrame f2 = getFrame(X, e.idx(1), e.idx(2), e.idx(4));
     auto hess = e.hessian(X, f1, f2);
 
-    int n = e.nb_vertices();
+    int n = e.nbVertices();
     for(int j = 0; j < n; ++j)
       for(int k = 0; k < n; ++k)
         for(int l = 0; l < 3; ++l)
@@ -196,7 +196,7 @@ std::vector<Eigen::Triplet<double>> ElasticRod::hessian_triplets(const Eigen::Re
   return triplets;
 }
 
-void ElasticRod::update_properties(const Eigen::Ref<const Eigen::VectorXd> X)
+void ElasticRod::updateProperties(const Eigen::Ref<const Eigen::VectorXd> X)
 {
   int k = 0;
   for(auto &spring: _springs)
@@ -206,13 +206,13 @@ void ElasticRod::update_properties(const Eigen::Ref<const Eigen::VectorXd> X)
 
   for(auto &e: _stencils)
   {
-    LocalFrame f1 = get_frame(X, e.idx(0), e.idx(1), e.idx(3));
-    LocalFrame f2 = get_frame(X, e.idx(1), e.idx(2), e.idx(4));
-    e.update_reference_twist(f1, f2);
+    LocalFrame f1 = getFrame(X, e.idx(0), e.idx(1), e.idx(3));
+    LocalFrame f2 = getFrame(X, e.idx(1), e.idx(2), e.idx(4));
+    e.updateReferenceTwist(f1, f2);
   }
 }
 
-void ElasticRod::get_reference_directors(Mat3<double> &D1, Mat3<double> &D2) const
+void ElasticRod::getReferenceDirectors(Mat3<double> &D1, Mat3<double> &D2) const
 {
   using namespace Eigen;
   D1.resize(_frames.size(), 3);
@@ -224,9 +224,9 @@ void ElasticRod::get_reference_directors(Mat3<double> &D1, Mat3<double> &D2) con
   }
 }
 
-void ElasticRod::get_rotated_directors(const Eigen::Ref<const Eigen::VectorXd> theta,
-                                       Mat3<double> &P1,
-                                       Mat3<double> &P2) const
+void ElasticRod::getRotatedDirectors(const Eigen::Ref<const Eigen::VectorXd> theta,
+                                     Mat3<double> &P1,
+                                     Mat3<double> &P2) const
 {
   using namespace Eigen;
   P1.resize(_frames.size(), 3);
@@ -238,7 +238,7 @@ void ElasticRod::get_rotated_directors(const Eigen::Ref<const Eigen::VectorXd> t
   }
 }
 
-ElasticRod::LocalFrame ElasticRod::get_frame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const
+ElasticRod::LocalFrame ElasticRod::getFrame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const
 {
   LocalFrame f = _frames[id - 3 * nV];
   if(f.t.dot(X.segment<3>(3 * x1) - X.segment<3>(3 * x0)) < 0)
@@ -249,11 +249,11 @@ ElasticRod::LocalFrame ElasticRod::get_frame(const Eigen::Ref<const Eigen::Vecto
   return f;
 }
 
-void ElasticRod::bishop_frame(const Eigen::Ref<const Mat3<double>> V,
-                              const Eigen::Ref<const Eigen::VectorXi> E,
-                              const Eigen::Vector3d &n,
-                              Mat3<double> &P1,
-                              Mat3<double> &P2)
+void ElasticRod::bishopFrame(const Eigen::Ref<const Mat3<double>> V,
+                             const Eigen::Ref<const Eigen::VectorXi> E,
+                             const Eigen::Vector3d &n,
+                             Mat3<double> &P1,
+                             Mat3<double> &P2)
 {
   using namespace Eigen;
   int nE = E.rows() - 1; // number of edges
@@ -284,8 +284,8 @@ void ElasticRod::bishop_frame(const Eigen::Ref<const Mat3<double>> V,
   }
 }
 
-Mat3<double> ElasticRod::curvature_binormals(const Eigen::Ref<const Mat3<double>> P,
-                                             const Eigen::Ref<const Eigen::VectorXi> E)
+Mat3<double> ElasticRod::curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
+                                            const Eigen::Ref<const Eigen::VectorXi> E)
 {
   using namespace Eigen;
   Mat3<double> KB(E.size() - 2, 3);

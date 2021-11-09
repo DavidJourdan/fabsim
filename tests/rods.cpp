@@ -28,16 +28,16 @@ TEST_CASE("ElasticRod")
     Vector3d t0 = (X.segment<3>(3) - X.segment<3>(0)).normalized();
     Vector3d t1 = (X.segment<3>(6) - X.segment<3>(3)).normalized();
 
-    rod.update_properties(X);
+    rod.updateProperties(X);
     Mat3<double> D1, D2;
-    rod.get_reference_directors(D1, D2);
+    rod.getReferenceDirectors(D1, D2);
 
     REQUIRE(t0.dot(D1.row(0)) == Approx(0).margin(1e-10));
     REQUIRE(t0.dot(D2.row(0)) == Approx(0).margin(1e-10));
     REQUIRE(t1.dot(D1.row(1)) == Approx(0).margin(1e-10));
     REQUIRE(t1.dot(D2.row(1)) == Approx(0).margin(1e-10));
 
-    rod.get_rotated_directors(theta, D1, D2);
+    rod.getRotatedDirectors(theta, D1, D2);
 
     REQUIRE(t0.dot(D1.row(0)) == Approx(0).margin(1e-10));
     REQUIRE(t0.dot(D2.row(0)) == Approx(0).margin(1e-10));
@@ -89,8 +89,8 @@ TEST_CASE("ElasticRod")
 
   //   REQUIRE(rod.energy(X) == Approx(e2.energy(Y)));
 
-  //   rod.update_properties(X);
-  //   e2.update_properties(Y);
+  //   rod.updateProperties(X);
+  //   e2.updateProperties(Y);
 
   //   VectorXd grad_e = rod.gradient(X);
   //   VectorXd grad_e2 = e2.gradient(Y);
@@ -116,7 +116,7 @@ TEST_CASE("Class equivalences")
   MatrixXd n = GENERATE(take(2, vector_random(3))).normalized();
 
   Mat3<double> D1, D2;
-  ElasticRod::bishop_frame(V, Vector3i(0, 1, 2), n, D1, D2);
+  ElasticRod::bishopFrame(V, Vector3i(0, 1, 2), n, D1, D2);
   ElasticRod::LocalFrame f1{(V.row(1) - V.row(0)).normalized(), D1.row(0), D2.row(0)};
   ElasticRod::LocalFrame f2{(V.row(2) - V.row(1)).normalized(), D1.row(1), D2.row(1)};
 
@@ -125,15 +125,15 @@ TEST_CASE("Class equivalences")
   RodStencil stencil(V, f1, f2, dofs, Vector2d(W_n.sum() / 2, W_b.sum() / 2), young_modulus);
 
   VectorXd X = GENERATE(take(2, vector_random(11)));
-  ElasticRod::LocalFrame new_f1 = ElasticRod::update_frame(f1, X.segment<3>(0), X.segment<3>(3));
-  ElasticRod::LocalFrame new_f2 = ElasticRod::update_frame(f2, X.segment<3>(3), X.segment<3>(6));
+  ElasticRod::LocalFrame new_f1 = ElasticRod::updateFrame(f1, X.segment<3>(0), X.segment<3>(3));
+  ElasticRod::LocalFrame new_f2 = ElasticRod::updateFrame(f2, X.segment<3>(3), X.segment<3>(6));
 
-  stencil.update_reference_twist(new_f1, new_f2);
+  stencil.updateReferenceTwist(new_f1, new_f2);
   
   SECTION("RodStencil ~ ElasticRod")
   {
     ElasticRod rod(V, Vector3i(0, 1, 2), n, W_n, W_b, young_modulus, 0);
-    rod.update_properties(X);
+    rod.updateProperties(X);
 
     SECTION("Energy") { REQUIRE(rod.energy(X) == Approx(stencil.energy(X, new_f1, new_f2))); }
     SECTION("Gradient") { REQUIRE_THAT(rod.gradient(X), ApproxEquals(stencil.gradient(X, new_f1, new_f2))); }
@@ -146,7 +146,7 @@ TEST_CASE("Class equivalences")
   //     (MatrixX2i(2, 2) << 0, 1, 1, 0).finished(), 
   //     (Mat3<double>(2, 3) << n.transpose(), n.transpose()).finished(), 
   //     {W_n(0), W_n(1)}, {W_b(0), W_b(1)}, young_modulus, 0);
-  //   rodCol.update_properties(X);
+  //   rodCol.updateProperties(X);
 
   //   SECTION("Energy") { REQUIRE(rodCol.energy(X) == Approx(stencil.energy(X, new_f1, new_f2))); }
   //   SECTION("Gradient") { REQUIRE_THAT(rodCol.gradient(X), ApproxEquals(stencil.gradient(X, new_f1, new_f2))); }

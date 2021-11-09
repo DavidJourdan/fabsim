@@ -46,11 +46,11 @@ public:
     using namespace Eigen;
     Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
     if(mat == MaterialType::StVK)
-      return energy_stvk(V);
+      return energyStVK(V);
     if(mat == MaterialType::NeoHookean)
-      return energy_neohookean(V);
+      return energyNeoHookean(V);
     if(mat == MaterialType::NeoHookeanIncompressible)
-      return energy_incompressible_neohookean(V);
+      return energyIncompressibleNeoHookean(V);
     else
       return 0;
   }
@@ -64,11 +64,11 @@ public:
     using namespace Eigen;
     Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
     if(mat == MaterialType::StVK)
-      return gradient_stvk(V);
+      return gradientStVK(V);
     if(mat == MaterialType::NeoHookean)
-      return gradient_neohookean(V);
+      return gradientNeoHookean(V);
     if(mat == MaterialType::NeoHookeanIncompressible)
-      return gradient_incompressible_neohookean(V);
+      return gradientIncompressibleNeoHookean(V);
     else
       return LocalVector{};
   }
@@ -82,11 +82,11 @@ public:
     using namespace Eigen;
     Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
     if(mat == MaterialType::StVK)
-      return hessian_stvk(V);
+      return hessianStVK(V);
     if(mat == MaterialType::NeoHookean)
-      return hessian_neohookean(V);
+      return hessianNeoHookean(V);
     if(mat == MaterialType::NeoHookeanIncompressible)
-      return hessian_incompressible_neohookean(V);
+      return hessianIncompressibleNeoHookean(V);
     else
       return LocalMatrix{};
   }
@@ -112,10 +112,10 @@ public:
    * @param min_dir  minimum strain direction
    * @param eigs  eigenvalues (in ascending order)
    */
-  void principal_strains(const Eigen::Ref<const Mat3<double>> V,
-                         Eigen::Vector3d &max_dir,
-                         Eigen::Vector3d &min_dir,
-                         Eigen::Vector2d &eigs) const;
+  void principalStrains(const Eigen::Ref<const Mat3<double>> V,
+                        Eigen::Vector3d &max_dir,
+                        Eigen::Vector3d &min_dir,
+                        Eigen::Vector2d &eigs) const;
 
   /**
    * Computes the principal stress directions and their corresponding eigenvalues
@@ -124,32 +124,32 @@ public:
    * @param min_dir  minimum stress direction
    * @param eigs  eigenvalues (in ascending order)
    */
-  void principal_stresses(const Eigen::Ref<const Mat3<double>> V,
-                          Eigen::Vector3d &max_dir,
-                          Eigen::Vector3d &min_dir,
-                          Eigen::Vector2d &eigs) const;
+  void principalStresses(const Eigen::Ref<const Mat3<double>> V,
+                         Eigen::Vector3d &max_dir,
+                         Eigen::Vector3d &min_dir,
+                         Eigen::Vector2d &eigs) const;
 
   static double nu;
   double coeff;
 
 protected:
-  void principal_directions_and_eigenvalues(const Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix2d> &solver,
-                                            const Eigen::Ref<const Mat3<double>> V,
-                                            Eigen::Vector3d &max_dir,
-                                            Eigen::Vector3d &min_dir,
-                                            Eigen::Vector2d &eigs) const;
+  void principalDirectionsAndEigenvalues(const Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix2d> &solver,
+                                         const Eigen::Ref<const Mat3<double>> V,
+                                         Eigen::Vector3d &max_dir,
+                                         Eigen::Vector3d &min_dir,
+                                         Eigen::Vector2d &eigs) const;
 
-  double energy_stvk(const Eigen::Ref<const Mat3<double>> V) const;
-  double energy_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
-  double energy_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
+  double energyStVK(const Eigen::Ref<const Mat3<double>> V) const;
+  double energyNeoHookean(const Eigen::Ref<const Mat3<double>> V) const;
+  double energyIncompressibleNeoHookean(const Eigen::Ref<const Mat3<double>> V) const;
 
-  LocalVector gradient_stvk(const Eigen::Ref<const Mat3<double>> V) const;
-  LocalVector gradient_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
-  LocalVector gradient_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
+  LocalVector gradientStVK(const Eigen::Ref<const Mat3<double>> V) const;
+  LocalVector gradientNeoHookean(const Eigen::Ref<const Mat3<double>> V) const;
+  LocalVector gradientIncompressibleNeoHookean(const Eigen::Ref<const Mat3<double>> V) const;
 
-  LocalMatrix hessian_stvk(const Eigen::Ref<const Mat3<double>> V) const;
-  LocalMatrix hessian_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
-  LocalMatrix hessian_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const;
+  LocalMatrix hessianStVK(const Eigen::Ref<const Mat3<double>> V) const;
+  LocalMatrix hessianNeoHookean(const Eigen::Ref<const Mat3<double>> V) const;
+  LocalMatrix hessianIncompressibleNeoHookean(const Eigen::Ref<const Mat3<double>> V) const;
 
   Eigen::Matrix2d abar_inv;
 };
@@ -184,7 +184,7 @@ TriangleElement<mat, id>::TriangleElement(const Eigen::Ref<const Mat3<double>> V
 }
 
 template <MaterialType mat, int id>
-double TriangleElement<mat, id>::energy_stvk(const Eigen::Ref<const Mat3<double>> V) const
+double TriangleElement<mat, id>::energyStVK(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -195,7 +195,7 @@ double TriangleElement<mat, id>::energy_stvk(const Eigen::Ref<const Mat3<double>
 }
 
 template <MaterialType mat, int id>
-double TriangleElement<mat, id>::energy_neohookean(const Eigen::Ref<const Mat3<double>> V) const
+double TriangleElement<mat, id>::energyNeoHookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -206,7 +206,7 @@ double TriangleElement<mat, id>::energy_neohookean(const Eigen::Ref<const Mat3<d
 }
 
 template <MaterialType mat, int id>
-double TriangleElement<mat, id>::energy_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const
+double TriangleElement<mat, id>::energyIncompressibleNeoHookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -217,7 +217,7 @@ double TriangleElement<mat, id>::energy_incompressible_neohookean(const Eigen::R
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalVector
-TriangleElement<mat, id>::gradient_stvk(const Eigen::Ref<const Mat3<double>> V) const
+TriangleElement<mat, id>::gradientStVK(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -233,7 +233,7 @@ TriangleElement<mat, id>::gradient_stvk(const Eigen::Ref<const Mat3<double>> V) 
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalVector
-TriangleElement<mat, id>::gradient_neohookean(const Eigen::Ref<const Mat3<double>> V) const
+TriangleElement<mat, id>::gradientNeoHookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -249,7 +249,7 @@ TriangleElement<mat, id>::gradient_neohookean(const Eigen::Ref<const Mat3<double
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalVector
-TriangleElement<mat, id>::gradient_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const
+TriangleElement<mat, id>::gradientIncompressibleNeoHookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -266,7 +266,7 @@ TriangleElement<mat, id>::gradient_incompressible_neohookean(const Eigen::Ref<co
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalMatrix
-TriangleElement<mat, id>::hessian_stvk(const Eigen::Ref<const Mat3<double>> V) const
+TriangleElement<mat, id>::hessianStVK(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -296,7 +296,7 @@ TriangleElement<mat, id>::hessian_stvk(const Eigen::Ref<const Mat3<double>> V) c
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalMatrix
-TriangleElement<mat, id>::hessian_neohookean(const Eigen::Ref<const Mat3<double>> V) const
+TriangleElement<mat, id>::hessianNeoHookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -324,7 +324,7 @@ TriangleElement<mat, id>::hessian_neohookean(const Eigen::Ref<const Mat3<double>
 
 template <MaterialType mat, int id>
 typename TriangleElement<mat, id>::LocalMatrix
-TriangleElement<mat, id>::hessian_incompressible_neohookean(const Eigen::Ref<const Mat3<double>> V) const
+TriangleElement<mat, id>::hessianIncompressibleNeoHookean(const Eigen::Ref<const Mat3<double>> V) const
 {
   using namespace Eigen;
 
@@ -388,14 +388,15 @@ Eigen::Matrix2d TriangleElement<mat, id>::stress(const Eigen::Ref<const Mat3<dou
   {
     double J = sqrt((a * abar_inv).determinant());
     double trC = (abar_inv * a).trace() / J;
-    return coeff / (2 * (1 + nu)) * (Matrix2d::Identity() / J + (1e4 * J * (J - 1) - trC / 2) * (abar_inv * a).inverse());
+    return coeff / (2 * (1 + nu)) *
+           (Matrix2d::Identity() / J + (1e4 * J * (J - 1) - trC / 2) * (abar_inv * a).inverse());
   }
   else
     return Matrix2d{};
 }
 
 template <MaterialType mat, int id>
-void TriangleElement<mat, id>::principal_directions_and_eigenvalues(
+void TriangleElement<mat, id>::principalDirectionsAndEigenvalues(
     const Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix2d> &eigensolver,
     const Eigen::Ref<const Mat3<double>> V,
     Eigen::Vector3d &max_dir,
@@ -427,22 +428,22 @@ void TriangleElement<mat, id>::principal_directions_and_eigenvalues(
 }
 
 template <MaterialType mat, int id>
-void TriangleElement<mat, id>::principal_strains(const Eigen::Ref<const Mat3<double>> V,
-                                                 Eigen::Vector3d &max_dir,
-                                                 Eigen::Vector3d &min_dir,
-                                                 Eigen::Vector2d &eigs) const
+void TriangleElement<mat, id>::principalStrains(const Eigen::Ref<const Mat3<double>> V,
+                                                Eigen::Vector3d &max_dir,
+                                                Eigen::Vector3d &min_dir,
+                                                Eigen::Vector2d &eigs) const
 {
   using namespace Eigen;
   Matrix2d abar = abar_inv.inverse();
-  return principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * strain(V), abar), V,
-                                              max_dir, min_dir, eigs);
+  return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * strain(V), abar), V,
+                                           max_dir, min_dir, eigs);
 }
 
 template <MaterialType mat, int id>
-void TriangleElement<mat, id>::principal_stresses(const Eigen::Ref<const Mat3<double>> V,
-                                                  Eigen::Vector3d &max_dir,
-                                                  Eigen::Vector3d &min_dir,
-                                                  Eigen::Vector2d &eigs) const
+void TriangleElement<mat, id>::principalStresses(const Eigen::Ref<const Mat3<double>> V,
+                                                 Eigen::Vector3d &max_dir,
+                                                 Eigen::Vector3d &min_dir,
+                                                 Eigen::Vector2d &eigs) const
 {
   using namespace Eigen;
 
@@ -450,14 +451,14 @@ void TriangleElement<mat, id>::principal_stresses(const Eigen::Ref<const Mat3<do
   Matrix2d a = first_fundamental_form(V, idx);
 
   if(mat == MaterialType::StVK)
-    return principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * stress(V), abar), V,
-                                                max_dir, min_dir, eigs);
+    return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * stress(V), abar), V,
+                                             max_dir, min_dir, eigs);
   else if(mat == MaterialType::NeoHookean)
-    return principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), V,
-                                                max_dir, min_dir, eigs);
+    return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), V, max_dir,
+                                             min_dir, eigs);
   else if(mat == MaterialType::NeoHookeanIncompressible)
-    return principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), V,
-                                                max_dir, min_dir, eigs);
+    return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), V, max_dir,
+                                             min_dir, eigs);
 }
 
 } // namespace fsim

@@ -14,8 +14,8 @@ namespace fsim
 
 template <bool allow_compression>
 MassSpringModel<allow_compression>::MassSpringModel(const Eigen::Ref<const Mat3<double>> V,
-                                          const Eigen::Ref<const Mat3<int>> F,
-                                          double young_modulus)
+                                                    const Eigen::Ref<const Mat3<int>> F,
+                                                    double young_modulus)
     : _young_modulus(young_modulus)
 {
   using namespace Eigen;
@@ -60,7 +60,7 @@ double MassSpringModel<allow_compression>::energy(const Eigen::Ref<const Eigen::
 
 template <bool allow_compression>
 void MassSpringModel<allow_compression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
-                                             Eigen::Ref<Eigen::VectorXd> Y) const
+                                                  Eigen::Ref<Eigen::VectorXd> Y) const
 {
   using namespace Eigen;
   assert(X.size() == 3 * nV);
@@ -85,7 +85,7 @@ Eigen::VectorXd MassSpringModel<allow_compression>::gradient(const Eigen::Ref<co
 
 template <bool allow_compression>
 std::vector<Eigen::Triplet<double>>
-MassSpringModel<allow_compression>::hessian_triplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+MassSpringModel<allow_compression>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -116,7 +116,7 @@ Eigen::SparseMatrix<double> MassSpringModel<allow_compression>::hessian(const Ei
 {
   assert(X.size() == 3 * nV);
   Eigen::SparseMatrix<double> hess(3 * nV, 3 * nV);
-  std::vector<Eigen::Triplet<double>> triplets = hessian_triplets(X);
+  std::vector<Eigen::Triplet<double>> triplets = hessianTriplets(X);
   hess.setFromTriplets(triplets.begin(), triplets.end());
   hess.makeCompressed();
   return hess;

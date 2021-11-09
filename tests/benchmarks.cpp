@@ -27,7 +27,7 @@ TEMPLATE_TEST_CASE("ElasticMembraneModel", "", StVKMembrane, NeoHookeanMembrane,
   BENCHMARK_ADVANCED("hessian triplets")(Catch::Benchmark::Chronometer meter)
   {
     VectorXd X = GENERATE(take(1, vector_random(nX)));
-    meter.measure([&membrane, &X] { return membrane.hessian_triplets(X); });
+    meter.measure([&membrane, &X] { return membrane.hessianTriplets(X); });
   };
 }
 
@@ -45,7 +45,7 @@ TEST_CASE("OrthotropicStVKModel")
   BENCHMARK_ADVANCED("membrane triplets")(Catch::Benchmark::Chronometer meter)
   {
     VectorXd X = GENERATE(take(1, vector_random(nX)));
-    meter.measure([&membrane, &X] { return membrane.hessian_triplets(X); });
+    meter.measure([&membrane, &X] { return membrane.hessianTriplets(X); });
   };
 }
 
@@ -63,7 +63,7 @@ TEMPLATE_TEST_CASE("DiscreteShell", "", SquaredAngleFormulation, TanAngleFormula
   BENCHMARK_ADVANCED("shell triplets")(Catch::Benchmark::Chronometer meter)
   {
     VectorXd X = GENERATE(take(1, vector_random(nX)));
-    meter.measure([&shell, &X] { return shell.hessian_triplets(X); });
+    meter.measure([&shell, &X] { return shell.hessianTriplets(X); });
   };
 }
 
@@ -81,6 +81,6 @@ TEST_CASE("MassSpring")
   BENCHMARK_ADVANCED("membrane triplets")(Catch::Benchmark::Chronometer meter)
   {
     VectorXd X = GENERATE(take(1, vector_random(nX)));
-    meter.measure([&membrane, &X] { return membrane.hessian_triplets(X); });
+    meter.measure([&membrane, &X] { return membrane.hessianTriplets(X); });
   };
 }

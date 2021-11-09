@@ -47,7 +47,7 @@ public:
    * @param X  a flat vector stacking all degrees of freedom
    * @return  all the triplets needed to build the hessian
    */
-  std::vector<Eigen::Triplet<double>> hessian_triplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   std::vector<Element> get_elements() { return _elements; };
 
@@ -78,7 +78,7 @@ void ModelBase<Element>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eig
   {
     auto grad = element.gradient(X);
 
-    int nV = element.nb_vertices();
+    int nV = element.nbVertices();
     for(int j = 0; j < nV; ++j)
       Y.segment<3>(3 * element.idx(j)) += grad.template segment<3>(3 * j);
 
@@ -102,7 +102,7 @@ Eigen::SparseMatrix<double> ModelBase<Element>::hessian(const Eigen::Ref<const E
 {
   using namespace Eigen;
 
-  std::vector<Triplet<double>> triplets = hessian_triplets(X);
+  std::vector<Triplet<double>> triplets = hessianTriplets(X);
 
   SparseMatrix<double> hess(X.size(), X.size());
   hess.setFromTriplets(triplets.begin(), triplets.end());
@@ -110,8 +110,7 @@ Eigen::SparseMatrix<double> ModelBase<Element>::hessian(const Eigen::Ref<const E
 }
 
 template <class Element>
-std::vector<Eigen::Triplet<double>>
-ModelBase<Element>::hessian_triplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+std::vector<Eigen::Triplet<double>> ModelBase<Element>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -122,7 +121,7 @@ ModelBase<Element>::hessian_triplets(const Eigen::Ref<const Eigen::VectorXd> X) 
   {
     auto hess = e.hessian(X);
 
-    int nV = e.nb_vertices();
+    int nV = e.nbVertices();
     for(int j = 0; j < nV; ++j)
       for(int k = 0; k < nV; ++k)
         for(int l = 0; l < 3; ++l)

@@ -35,8 +35,7 @@ struct RandomRange
 {
   RandomRange(Scalar low, Scalar high) : dis(low, high), gen()
   {
-    std::random_device rd;    // Will be used to obtain a seed for the random number engine
-    gen = std::mt19937(rd()); // Standard mersenne_twister_engine seeded with rd()
+    gen = std::mt19937(std::random_device{}()); // Standard mersenne_twister_engine
   }
   const Scalar operator()() const { return dis(gen); }
   mutable std::uniform_real_distribution<Scalar> dis;
@@ -48,8 +47,7 @@ class RandomVectorGenerator : public Catch::Generators::IGenerator<Eigen::Vector
 public:
   RandomVectorGenerator(int size, double _min, double _max) : dis(_min, _max), gen()
   {
-    std::random_device rd;    // Will be used to obtain a seed for the random number engine
-    gen = std::mt19937(rd()); // Standard mersenne_twister_engine seeded with rd()
+    gen = std::mt19937(std::random_device{}()); // Standard mersenne_twister_engine
     current_value = Eigen::VectorXd::NullaryExpr(size, [this]() { return dis(gen); });
     static_cast<void>(next());
   }
@@ -86,8 +84,7 @@ class RandomMatrixGenerator : public Catch::Generators::IGenerator<Eigen::Matrix
 public:
   RandomMatrixGenerator(int nRows, int nCols, double _min, double _max) : dis(_min, _max), gen()
   {
-    std::random_device rd;    // Will be used to obtain a seed for the random number engine
-    gen = std::mt19937(rd()); // Standard mersenne_twister_engine seeded with rd()
+    gen = std::mt19937(std::random_device{}()); // Standard mersenne_twister_engine
     current_value = Eigen::MatrixXd::NullaryExpr(nRows, nCols, [this]() { return dis(gen); });
     static_cast<void>(next());
   }
@@ -186,15 +183,13 @@ void test_gradient(const Element &e,
 {
   using namespace Eigen;
 
-  VectorXd var(e.nb_dofs());
-  VectorXd gradient_computed = VectorXd::Zero(e.nb_dofs());
-  VectorXd gradient_numerical = VectorXd::Zero(e.nb_dofs());
+  VectorXd var(e.nbDOFs());
+  VectorXd gradient_computed = VectorXd::Zero(e.nbDOFs());
+  VectorXd gradient_numerical = VectorXd::Zero(e.nbDOFs());
 
-  std::uniform_real_distribution<double> dis(-1, 1);
-  std::mt19937 gen(std::random_device{}()); // Standard mersenne_twister_engine seeded with rd()
   for(int i = 0; i < 10; ++i)
   {
-    var = VectorXd::NullaryExpr(e.nb_dofs(), [&]() { return dis(gen); });
+    var = VectorXd::NullaryExpr(e.nbDOFs(), RandomRange(-1.0, 1.0));
     if(filter(var))
     {
       if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
@@ -228,15 +223,13 @@ void test_hessian(const Element &e,
                   const std::function<bool(const Eigen::VectorXd &)> &filter = no_op)
 {
   using namespace Eigen;
-  VectorXd var(e.nb_dofs());
-  MatrixXd hessian_computed = MatrixXd::Zero(e.nb_dofs(), e.nb_dofs());
-  MatrixXd hessian_numerical = MatrixXd::Zero(e.nb_dofs(), e.nb_dofs());
+  VectorXd var(e.nbDOFs());
+  MatrixXd hessian_computed = MatrixXd::Zero(e.nbDOFs(), e.nbDOFs());
+  MatrixXd hessian_numerical = MatrixXd::Zero(e.nbDOFs(), e.nbDOFs());
 
-  std::uniform_real_distribution<double> dis(-1, 1);
-  std::mt19937 gen(std::random_device{}()); // Standard mersenne_twister_engine seeded with rd()
   for(int i = 0; i < 10; ++i)
   {
-    var = VectorXd::NullaryExpr(e.nb_dofs(), [&]() { return dis(gen); });
+    var = VectorXd::NullaryExpr(e.nbDOFs(), RandomRange(-1.0, 1.0));
     if(filter(var))
     {
       if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
