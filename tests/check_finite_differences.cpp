@@ -4,7 +4,6 @@
 #include <fsim/DiscreteShell.h>
 #include <fsim/ElasticMembraneModel.h>
 #include <fsim/ElasticRod.h>
-#include <fsim/RodCollection.h>
 #include <fsim/RodStencil.h>
 #include <fsim/TriangleElement.h>
 #include <fsim/OrthotropicStVKElement.h>
@@ -96,10 +95,10 @@ struct BundledRodStencil
 
   double energy(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
-    ElasticRod::LocalFrame new_f1 =
-        ElasticRod::updateFrame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
-    ElasticRod::LocalFrame new_f2 =
-        ElasticRod::updateFrame(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
+    LocalFrame new_f1 =
+        updateFrame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
+    LocalFrame new_f2 =
+        updateFrame(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
 
     double ref_twist = stencil.getReferenceTwist();
     stencil.updateReferenceTwist(new_f1, new_f2);
@@ -109,10 +108,10 @@ struct BundledRodStencil
   }
   RodStencil::LocalVector gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
-    ElasticRod::LocalFrame new_f1 =
-        ElasticRod::updateFrame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
-    ElasticRod::LocalFrame new_f2 =
-        ElasticRod::updateFrame(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
+    LocalFrame new_f1 =
+        updateFrame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
+    LocalFrame new_f2 =
+        updateFrame(f2, X.segment<3>(3 * stencil.idx(1)), X.segment<3>(3 * stencil.idx(2)));
 
     double ref_twist = stencil.getReferenceTwist();
     stencil.updateReferenceTwist(new_f1, new_f2);
@@ -129,8 +128,8 @@ struct BundledRodStencil
   static const int NB_DOFS = 11;
 
   mutable RodStencil stencil;
-  mutable ElasticRod::LocalFrame f1;
-  mutable ElasticRod::LocalFrame f2;
+  mutable LocalFrame f1;
+  mutable LocalFrame f2;
 };
 
 TEST_CASE("RodStencil")
@@ -150,31 +149,33 @@ TEST_CASE("RodStencil")
 
   BundledRodStencil rod(V, t1, n1, dofs, widths, young_modulus);
 
+  RodStencil::mass = 1;
+
   SECTION("Gradient") { test_gradient(rod, 1e-5); }
-  // SECTION("Hessian") 
-  // { 
-  //   VectorXd var(rod.nbDOFs());
-  //   MatrixXd hessian_computed = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
-  //   MatrixXd hessian_numerical = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
+  SECTION("Hessian") 
+  { 
+    VectorXd var(rod.nbDOFs());
+    MatrixXd hessian_computed = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
+    MatrixXd hessian_numerical = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
 
-  //   for(int i = 0; i < 10; ++i)
-  //   {
-  //     var = VectorXd::NullaryExpr(rod.nbDOFs(), RandomRange(-1.0, 1.0));
-  //     rod.prepare_data(var);
+    for(int i = 0; i < 10; ++i)
+    {
+      var = VectorXd::NullaryExpr(rod.nbDOFs(), RandomRange(-1.0, 1.0));
+      rod.prepare_data(var);
 
-  //     hessian_computed += MatrixXd(rod.hessian(var));
-  //     hessian_numerical += sym(MatrixXd(finite_differences([&rod](const Eigen::VectorXd &X) { return rod.gradient(X); }, var)));
-  //   }
+      hessian_computed += MatrixXd(rod.hessian(var));
+      hessian_numerical += sym(MatrixXd(finite_differences([&rod](const Eigen::VectorXd &X) { return rod.gradient(X); }, var)));
+    }
 
-  //   hessian_computed /= 10;
-  //   hessian_numerical /= 10;
-  //   MatrixXd diff = hessian_computed - hessian_numerical;
+    hessian_computed /= 10;
+    hessian_numerical /= 10;
+    MatrixXd diff = hessian_computed - hessian_numerical;
 
-  //   INFO("Numerical hessian\n" << hessian_numerical);
-  //   INFO("Computed hessian\n" << hessian_computed);
-  //   INFO("Difference\n" << diff);
-  //   REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-5));
-  //  }
+    INFO("Numerical hessian\n" << hessian_numerical);
+    INFO("Computed hessian\n" << hessian_computed);
+    INFO("Difference\n" << diff);
+    REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-5));
+   }
 }
 
 // SHELLS

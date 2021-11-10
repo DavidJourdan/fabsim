@@ -13,8 +13,9 @@
 
 #pragma once
 
+#include "LocalFrame.h"
+#include "RodStencil.h"
 #include "Spring.h"
-#include "util/geometry.h"
 #include "util/typedefs.h"
 
 #include <Eigen/Dense>
@@ -25,26 +26,27 @@
 namespace fsim
 {
 
-class RodStencil;
+enum class CrossSection { Square, Circle };
 
+template <CrossSection c = CrossSection::Square>
 class ElasticRod
 {
 public:
   ElasticRod(const Eigen::Ref<const Mat3<double>> V,
              const Eigen::Ref<const Eigen::VectorXi> indices,
-             const Eigen::Vector3d &N,
-             const Eigen::Ref<const Eigen::VectorXd> normal_widths,
-             const Eigen::Ref<const Eigen::VectorXd> binormal_widths,
+             const Eigen::Vector3d &n,
+             double thickness,
+             double width,
              double young_modulus,
-             double incompressibility);
+             double mass = 0);
 
   ElasticRod(const Eigen::Ref<const Mat3<double>> V,
-             const Eigen::Ref<const Eigen::VectorXi> indices,
-             const Eigen::Vector3d N,
-             double w_n,
-             double w_b,
+             const Eigen::Vector3d &n,
+             double thickness,
+             double width,
              double young_modulus,
-             double incompressibility);
+             double mass = 0);
+
   ElasticRod() = default;
 
   /**
@@ -87,8 +89,9 @@ public:
 
   std::vector<Spring<true>> const &springs() const { return _springs; }
   std::vector<Spring<true>> &springs() { return _springs; }
-
-  Spring<true> const &getSpring(int id) const { return _springs[id - 3 * nV]; };
+  
+  double getMass() const { return RodStencil::mass; };
+  void setMass(double mass) { RodStencil::mass = mass; };
 
   int nbEdges() const { return _springs.size(); }
 
@@ -115,27 +118,6 @@ public:
   static Mat3<double> curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
                                          const Eigen::Ref<const Eigen::VectorXi> E);
 
-  struct LocalFrame
-  {
-    LocalFrame(const Eigen::Vector3d &_t, const Eigen::Vector3d &_d1, const Eigen::Vector3d &_d2)
-        : t(_t), d1(_d1), d2(_d2)
-    {}
-    LocalFrame() = default;
-
-    void update(const Eigen::Vector3d &x0, const Eigen::Vector3d &x1)
-    {
-      using namespace fsim;
-      Eigen::Vector3d t_new = (x1 - x0).normalized();
-      d1 = parallel_transport(d1, t, t_new);
-      d2 = t_new.cross(d1);
-      t = t_new;
-    }
-
-    Eigen::Vector3d t;
-    Eigen::Vector3d d1;
-    Eigen::Vector3d d2;
-  };
-
   /**
    * Returns a LocalFrame, uniquely identified by the index of the rotational degree of freedom corresponding to its
    * twist, oriented from vertex x0 to vertex x1
@@ -146,15 +128,6 @@ public:
    * @return
    */
   LocalFrame getFrame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const;
-
-  static LocalFrame updateFrame(const LocalFrame &f, const Eigen::Vector3d &x0, const Eigen::Vector3d &x1)
-  {
-    LocalFrame f_updated;
-    f_updated.t = (x1 - x0).normalized();
-    f_updated.d1 = parallel_transport(f.d1, f.t, f_updated.t);
-    f_updated.d2 = f_updated.t.cross(f_updated.d1);
-    return f_updated;
-  }
 
 protected:
   mutable std::vector<RodStencil> _stencils;

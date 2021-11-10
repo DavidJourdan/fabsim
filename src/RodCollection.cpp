@@ -25,11 +25,11 @@ RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                              const std::vector<std::vector<double>> &normal_widths,
                              const std::vector<std::vector<double>> &binormal_widths,
                              double young_modulus,
-                             double incompressibility)
+                             double mass)
 {
   using namespace Eigen;
 
-  _stretch_modulus = incompressibility;
+  _stretch_modulus = 1e3 * young_modulus / 2;
   nV = V.rows();
   int nR = indices.size();
   assert(normal_widths.size() == nR && binormal_widths.size() == nR);
@@ -39,7 +39,7 @@ RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
   {
     Mat3<double> D1, D2;
     Map<VectorXi> E(const_cast<int *>(indices[i].data()), indices[i].size());
-    ElasticRod::bishopFrame(V, E, N.row(i), D1, D2);
+    ElasticRod<>::bishopFrame(V, E, N.row(i), D1, D2);
     for(int j = 0; j < E.size() - 1; ++j)
     {
       _frames.emplace_back((V.row(E(j + 1)) - V.row(E(j))).normalized(), D1.row(j), D2.row(j));
@@ -126,8 +126,8 @@ RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                              const std::vector<double> &W_n,
                              const std::vector<double> &W_b,
                              double young_modulus,
-                             double incompressibility)
-    : RodCollection(V, indices, C, N, constant(W_n, indices), constant(W_b, indices), young_modulus, incompressibility)
+                             double mass)
+    : RodCollection(V, indices, C, N, constant(W_n, indices), constant(W_b, indices), young_modulus, mass)
 {}
 
 RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
@@ -137,7 +137,7 @@ RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                              double w_n,
                              double w_b,
                              double young_modulus,
-                             double incompressibility)
+                             double mass)
     : RodCollection(V,
                     indices,
                     C,
@@ -145,7 +145,7 @@ RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                     std::vector<double>(indices.size(), w_n),
                     std::vector<double>(indices.size(), w_b),
                     young_modulus,
-                    incompressibility)
+                    mass)
 {}
 
 } // namespace fsim

@@ -19,25 +19,27 @@
 namespace fsim
 {
 
-ElasticRod::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
+template <CrossSection c>
+ElasticRod<c>::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
                        const Eigen::Ref<const Eigen::VectorXi> indices,
-                       const Eigen::Vector3d &N,
-                       const Eigen::Ref<const Eigen::VectorXd> normal_widths,
-                       const Eigen::Ref<const Eigen::VectorXd> binormal_widths,
+                       const Eigen::Vector3d &n,
+                       double thickness,
+                       double width,
                        double young_modulus,
-                       double incompressibility)
-    : _stretch_modulus(incompressibility)
+                       double mass)
+    : _stretch_modulus(1e3 * young_modulus * thickness * width)
 {
   using namespace Eigen;
 
+  RodStencil::mass = mass;
+
   nV = V.rows();
   int nR = indices.size();
-  assert(normal_widths.size() == nR && binormal_widths.size() == nR);
   MatrixX2i extremal_edges(nR, 2); // rod extremal edge indices
 
   Mat3<double> D1, D2;
   Map<VectorXi> E(const_cast<int *>(indices.data()), indices.size());
-  ElasticRod::bishopFrame(V, E, N, D1, D2);
+  ElasticRod<>::bishopFrame(V, E, n, D1, D2);
   for(int j = 0; j < E.size() - 1; ++j)
   {
     _frames.emplace_back((V.row(E(j + 1)) - V.row(E(j))).normalized(), D1.row(j), D2.row(j));
@@ -48,31 +50,30 @@ ElasticRod::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
   {
     Matrix<int, 5, 1> dofs;
     dofs << E(j - 1), E(j), E(j + 1), 3 * nV + j - 1, 3 * nV + j;
-    double wn = (normal_widths[j - 1] + normal_widths[j]) / 2;
-    double wb = (binormal_widths[j - 1] + binormal_widths[j]) / 2;
-    _stencils.emplace_back(V, _frames[j - 1], _frames[j], dofs, Vector2d(wn, wb), young_modulus);
+    _stencils.emplace_back(V, _frames[j - 1], _frames[j], dofs, Vector2d(thickness, width), young_modulus);
   }
 
   assert(_springs.size() == _frames.size());
 }
 
-ElasticRod::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
-                       const Eigen::Ref<const Eigen::VectorXi> indices,
-                       const Eigen::Vector3d N,
-                       double w_n,
-                       double w_b,
+template <CrossSection c>
+ElasticRod<c>::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
+                       const Eigen::Vector3d &n,
+                       double thickness,
+                       double width,
                        double young_modulus,
-                       double incompressibility)
+                       double mass)
     : ElasticRod(V,
-                 indices,
-                 N,
-                 Eigen::VectorXd::Constant(indices.size(), w_n),
-                 Eigen::VectorXd::Constant(indices.size(), w_b),
+                 Eigen::VectorXi::LinSpaced(V.rows(), 0, V.rows() - 1),
+                 n,
+                 thickness,
+                 width,
                  young_modulus,
-                 incompressibility)
+                 mass)
 {}
 
-double ElasticRod::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <CrossSection c>
+double ElasticRod<c>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -100,7 +101,8 @@ double ElasticRod::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
   return result;
 }
 
-void ElasticRod::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const
+template <CrossSection c>
+void ElasticRod<c>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const
 {
   using namespace Eigen;
 
@@ -126,7 +128,8 @@ void ElasticRod::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<
   }
 }
 
-Eigen::VectorXd ElasticRod::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <CrossSection c>
+Eigen::VectorXd ElasticRod<c>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -135,7 +138,8 @@ Eigen::VectorXd ElasticRod::gradient(const Eigen::Ref<const Eigen::VectorXd> X) 
   return Y;
 }
 
-Eigen::SparseMatrix<double> ElasticRod::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <CrossSection c>
+Eigen::SparseMatrix<double> ElasticRod<c>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -146,7 +150,8 @@ Eigen::SparseMatrix<double> ElasticRod::hessian(const Eigen::Ref<const Eigen::Ve
   return hess;
 }
 
-std::vector<Eigen::Triplet<double>> ElasticRod::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <CrossSection c>
+std::vector<Eigen::Triplet<double>> ElasticRod<c>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -196,7 +201,8 @@ std::vector<Eigen::Triplet<double>> ElasticRod::hessianTriplets(const Eigen::Ref
   return triplets;
 }
 
-void ElasticRod::updateProperties(const Eigen::Ref<const Eigen::VectorXd> X)
+template <CrossSection c>
+void ElasticRod<c>::updateProperties(const Eigen::Ref<const Eigen::VectorXd> X)
 {
   int k = 0;
   for(auto &spring: _springs)
@@ -212,7 +218,8 @@ void ElasticRod::updateProperties(const Eigen::Ref<const Eigen::VectorXd> X)
   }
 }
 
-void ElasticRod::getReferenceDirectors(Mat3<double> &D1, Mat3<double> &D2) const
+template <CrossSection c>
+void ElasticRod<c>::getReferenceDirectors(Mat3<double> &D1, Mat3<double> &D2) const
 {
   using namespace Eigen;
   D1.resize(_frames.size(), 3);
@@ -224,7 +231,8 @@ void ElasticRod::getReferenceDirectors(Mat3<double> &D1, Mat3<double> &D2) const
   }
 }
 
-void ElasticRod::getRotatedDirectors(const Eigen::Ref<const Eigen::VectorXd> theta,
+template <CrossSection c>
+void ElasticRod<c>::getRotatedDirectors(const Eigen::Ref<const Eigen::VectorXd> theta,
                                      Mat3<double> &P1,
                                      Mat3<double> &P2) const
 {
@@ -238,7 +246,8 @@ void ElasticRod::getRotatedDirectors(const Eigen::Ref<const Eigen::VectorXd> the
   }
 }
 
-ElasticRod::LocalFrame ElasticRod::getFrame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const
+template <CrossSection c>
+LocalFrame ElasticRod<c>::getFrame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const
 {
   LocalFrame f = _frames[id - 3 * nV];
   if(f.t.dot(X.segment<3>(3 * x1) - X.segment<3>(3 * x0)) < 0)
@@ -249,7 +258,8 @@ ElasticRod::LocalFrame ElasticRod::getFrame(const Eigen::Ref<const Eigen::Vector
   return f;
 }
 
-void ElasticRod::bishopFrame(const Eigen::Ref<const Mat3<double>> V,
+template <CrossSection c>
+void ElasticRod<c>::bishopFrame(const Eigen::Ref<const Mat3<double>> V,
                              const Eigen::Ref<const Eigen::VectorXi> E,
                              const Eigen::Vector3d &n,
                              Mat3<double> &P1,
@@ -284,7 +294,8 @@ void ElasticRod::bishopFrame(const Eigen::Ref<const Mat3<double>> V,
   }
 }
 
-Mat3<double> ElasticRod::curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
+template <CrossSection c>
+Mat3<double> ElasticRod<c>::curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
                                             const Eigen::Ref<const Eigen::VectorXi> E)
 {
   using namespace Eigen;
@@ -298,5 +309,9 @@ Mat3<double> ElasticRod::curvatureBinormals(const Eigen::Ref<const Mat3<double>>
   }
   return KB;
 }
+
+// instantiation
+template class ElasticRod<CrossSection::Square>;
+template class ElasticRod<CrossSection::Circle>;
 
 } // namespace fsim

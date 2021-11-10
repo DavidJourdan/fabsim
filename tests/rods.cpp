@@ -15,10 +15,9 @@ TEST_CASE("ElasticRod")
   double young_modulus = 1;
   MatrixXd V = GENERATE(take(2, matrix_random(3, 3)));
   V.col(2).setZero();
-  Vector2d W_n = GENERATE(take(2, vector_random(2)));
-  Vector2d W_b = GENERATE(take(2, vector_random(2)));
+  Vector2d widths = GENERATE(take(2, vector_random(2)));
   Vector3d n = Vector3d::UnitZ();
-  ElasticRod rod(V, Vector3i(0, 1, 2), n, W_n, W_n, young_modulus, 0);
+  ElasticRod rod(V, n, widths(0), widths(1), young_modulus);
 
   SECTION("Orthonormal frames")
   {
@@ -81,7 +80,7 @@ TEST_CASE("ElasticRod")
 
   // SECTION("Rods are independent of index ordering")
   // {
-  //   ElasticRod e2(V, Vector3i(2, 1, 0), n, W_n, W_n, young_modulus, 0);
+  //   ElasticRod e2(V, Vector3i(2, 1, 0), n, W_n, W_n, young_modulus);
   //   VectorXd X = GENERATE(take(10, vector_random(11)));
   //   VectorXd Y = X;
   //   Y(9) = -X(10);
@@ -105,54 +104,44 @@ TEST_CASE("ElasticRod")
   // }
 }
 
-TEST_CASE("Class equivalences")
-{
-  using namespace Eigen;
+// TEST_CASE("Class equivalences")
+// {
+//   using namespace Eigen;
 
-  double young_modulus = 1;
-  MatrixXd V = GENERATE(take(2, matrix_random(3, 3)));
-  Vector2d W_n = GENERATE(take(2, vector_random(2, 0, 1)));
-  Vector2d W_b = GENERATE(take(2, vector_random(2, 0, 1)));
-  MatrixXd n = GENERATE(take(2, vector_random(3))).normalized();
+//   double young_modulus = 1;
+//   MatrixXd V = GENERATE(take(2, matrix_random(3, 3)));
+//   Vector2d W_n = GENERATE(take(2, vector_random(2, 0, 1)));
+//   Vector2d W_b = GENERATE(take(2, vector_random(2, 0, 1)));
+//   MatrixXd n = GENERATE(take(2, vector_random(3))).normalized();
 
-  Mat3<double> D1, D2;
-  ElasticRod::bishopFrame(V, Vector3i(0, 1, 2), n, D1, D2);
-  ElasticRod::LocalFrame f1{(V.row(1) - V.row(0)).normalized(), D1.row(0), D2.row(0)};
-  ElasticRod::LocalFrame f2{(V.row(2) - V.row(1)).normalized(), D1.row(1), D2.row(1)};
+//   Mat3<double> D1, D2;
+//   ElasticRod<>::bishopFrame(V, Vector3i(0, 1, 2), n, D1, D2);
+//   LocalFrame f1{(V.row(1) - V.row(0)).normalized(), D1.row(0), D2.row(0)};
+//   LocalFrame f2{(V.row(2) - V.row(1)).normalized(), D1.row(1), D2.row(1)};
 
-  VectorXi dofs(5);
-  dofs << 0, 1, 2, 9, 10;
-  RodStencil stencil(V, f1, f2, dofs, Vector2d(W_n.sum() / 2, W_b.sum() / 2), young_modulus);
+//   VectorXi dofs(5);
+//   dofs << 0, 1, 2, 9, 10;
+//   RodStencil stencil(V, f1, f2, dofs, Vector2d(W_n.sum() / 2, W_b.sum() / 2), young_modulus);
 
-  VectorXd X = GENERATE(take(2, vector_random(11)));
-  ElasticRod::LocalFrame new_f1 = ElasticRod::updateFrame(f1, X.segment<3>(0), X.segment<3>(3));
-  ElasticRod::LocalFrame new_f2 = ElasticRod::updateFrame(f2, X.segment<3>(3), X.segment<3>(6));
+//   VectorXd X = GENERATE(take(2, vector_random(11)));
+//   LocalFrame new_f1 = updateFrame(f1, X.segment<3>(0), X.segment<3>(3));
+//   LocalFrame new_f2 = updateFrame(f2, X.segment<3>(3), X.segment<3>(6));
 
-  stencil.updateReferenceTwist(new_f1, new_f2);
-  
-  SECTION("RodStencil ~ ElasticRod")
-  {
-    ElasticRod rod(V, Vector3i(0, 1, 2), n, W_n, W_b, young_modulus, 0);
-    rod.updateProperties(X);
+//   stencil.updateReferenceTwist(new_f1, new_f2);
 
-    SECTION("Energy") { REQUIRE(rod.energy(X) == Approx(stencil.energy(X, new_f1, new_f2))); }
-    SECTION("Gradient") { REQUIRE_THAT(rod.gradient(X), ApproxEquals(stencil.gradient(X, new_f1, new_f2))); }
-    SECTION("Hessian") { REQUIRE_THAT(rod.hessian(X), ApproxEquals(stencil.hessian(X, new_f1, new_f2))); }
-  }
+//   SECTION("RodStencil ~ RodCollection")
+//   {
+//     RodCollection rodCol(V, {{0, 1}, {1, 2}}, 
+//       (MatrixX2i(2, 2) << 0, 1, 1, 0).finished(), 
+//       (Mat3<double>(2, 3) << n.transpose(), n.transpose()).finished(), 
+//       {W_n(0), W_n(1)}, {W_b(0), W_b(1)}, young_modulus);
+//     rodCol.updateProperties(X);
 
-  // SECTION("RodStencil ~ RodCollection")
-  // {
-  //   RodCollection rodCol(V, {{0, 1}, {1, 2}}, 
-  //     (MatrixX2i(2, 2) << 0, 1, 1, 0).finished(), 
-  //     (Mat3<double>(2, 3) << n.transpose(), n.transpose()).finished(), 
-  //     {W_n(0), W_n(1)}, {W_b(0), W_b(1)}, young_modulus, 0);
-  //   rodCol.updateProperties(X);
-
-  //   SECTION("Energy") { REQUIRE(rodCol.energy(X) == Approx(stencil.energy(X, new_f1, new_f2))); }
-  //   SECTION("Gradient") { REQUIRE_THAT(rodCol.gradient(X), ApproxEquals(stencil.gradient(X, new_f1, new_f2))); }
-  //   SECTION("Hessian") { REQUIRE_THAT(rodCol.hessian(X), ApproxEquals(stencil.hessian(X, new_f1, new_f2))); }
-  // }
-}
+//     SECTION("Energy") { REQUIRE(rodCol.energy(X) == Approx(stencil.energy(X, new_f1, new_f2))); }
+//     SECTION("Gradient") { REQUIRE_THAT(rodCol.gradient(X), ApproxEquals(stencil.gradient(X, new_f1, new_f2))); }
+//     SECTION("Hessian") { REQUIRE_THAT(rodCol.hessian(X), ApproxEquals(stencil.hessian(X, new_f1, new_f2))); }
+//   }
+// }
 
 TEST_CASE("Parallel transport")
 {
@@ -191,7 +180,7 @@ TEST_CASE("Local Frames")
   Vector3d t = GENERATE(take(2, vector_random(3))).normalized();
   Vector3d n = GENERATE(take(2, vector_random(3))).normalized();
   n = (n - n.dot(t) * t).normalized(); // make sure the frame is orthogonal
-  ElasticRod::LocalFrame f{t, n, t.cross(n)};
+  LocalFrame f{t, n, t.cross(n)};
 
   Vector3d x0 = GENERATE(take(2, vector_random(3)));
   Vector3d x1 = GENERATE(take(2, vector_random(3)));

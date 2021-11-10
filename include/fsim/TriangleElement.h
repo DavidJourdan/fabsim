@@ -32,9 +32,7 @@ public:
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @param face  list of 3 indices, one per vertex of the triangle
    */
-  TriangleElement(const Eigen::Ref<const Mat3<double>> V,
-                  const Eigen::Vector3i &face,
-                  double thickness);
+  TriangleElement(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector3i &face, double thickness);
 
   /**
    * @param X  a flat vector stacking all degrees of freedom
@@ -131,9 +129,9 @@ public:
                          Eigen::Vector3d &min_dir,
                          Eigen::Vector2d &eigs) const;
 
-  static double nu; // Poisson's ratio
+  static double nu;   // Poisson's ratio
   static double mass; // mass per unit volume
-  static double E; // Young's modulus
+  static double E;    // Young's modulus
   double coeff;
 
 protected:
@@ -349,7 +347,7 @@ TriangleElement<mat, id>::hessianIncompressibleNeoHookean(const Eigen::Ref<const
   double a_det = a.determinant();
 
   Matrix<double, 9, 9> hess = (3 * trC / 4 + k * J / 2) * aderiv.transpose() * Map<Vector4d>(a_inv.data()) *
-                                     Map<RowVector4d>(a_inv.data()) * aderiv;
+                              Map<RowVector4d>(a_inv.data()) * aderiv;
 
   Matrix<double, 4, 9> a_deriv_adj;
   a_deriv_adj << aderiv.row(3), -aderiv.row(1), -aderiv.row(2), aderiv.row(0);
@@ -391,7 +389,8 @@ Eigen::Matrix2d TriangleElement<mat, id>::stress(const Eigen::Ref<const Mat3<dou
   else if(mat == MaterialType::NeoHookean)
   {
     double lnJ = log((a * abar_inv).determinant()) / 2;
-    return coeff * E / (2 * (1 + nu)) * (Matrix2d::Identity() + (abar_inv * a).inverse() * (2 * nu / (1 - nu) * lnJ - 1));
+    return coeff * E / (2 * (1 + nu)) *
+           (Matrix2d::Identity() + (abar_inv * a).inverse() * (2 * nu / (1 - nu) * lnJ - 1));
   }
   else if(mat == MaterialType::NeoHookeanIncompressible)
   {

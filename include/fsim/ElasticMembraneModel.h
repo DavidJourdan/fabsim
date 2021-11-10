@@ -85,12 +85,7 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<
                                                     double young_modulus,
                                                     double poisson_ratio,
                                                     double mass)
-    : ElasticMembraneModel(V,
-                           F,
-                           std::vector<double>(F.rows(), thickness),
-                           young_modulus,
-                           poisson_ratio,
-                           mass)
+    : ElasticMembraneModel(V, F, std::vector<double>(F.rows(), thickness), young_modulus, poisson_ratio, mass)
 {
   _thickness = thickness;
 }
@@ -106,8 +101,8 @@ ElasticMembraneModel<Element>::ElasticMembraneModel(const Eigen::Ref<const Mat3<
   nV = V.rows();
   nF = F.rows();
 
-  if(Element::E != 0 && Element::E != young_modulus || Element::nu != 0 && Element::nu != poisson_ratio 
-  || Element::mass != 0 && Element::mass != mass)
+  if(Element::E != 0 && Element::E != young_modulus || Element::nu != 0 && Element::nu != poisson_ratio ||
+     Element::mass != 0 && Element::mass != mass)
     std::cerr << "Warning: overwriting properties. Please declare your different instances as e.g. "
                  "StVKMembraneModel<0>, StVKMembraneModel<1>, etc.\n";
   Element::E = young_modulus;

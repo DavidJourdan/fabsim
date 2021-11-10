@@ -26,7 +26,7 @@
 namespace fsim
 {
 
-class RodCollection : public ElasticRod
+class RodCollection : public ElasticRod<>
 {
 public:
   RodCollection(const Eigen::Ref<const Mat3<double>> V,
@@ -36,7 +36,7 @@ public:
                 const std::vector<std::vector<double>> &normal_widths,
                 const std::vector<std::vector<double>> &binormal_widths,
                 double young_modulus,
-                double incompressibility);
+                double mass = 0);
 
   RodCollection(const Eigen::Ref<const Mat3<double>> V,
                 const std::vector<std::vector<int>> &indices,
@@ -45,7 +45,7 @@ public:
                 const std::vector<double> &normal_widths,
                 const std::vector<double> &binormal_widths,
                 double young_modulus,
-                double incompressibility);
+                double mass = 0);
 
   RodCollection(const Eigen::Ref<const Mat3<double>> V,
                 const std::vector<std::vector<int>> &indices,
@@ -54,8 +54,7 @@ public:
                 double w_n,
                 double w_b,
                 double young_modulus,
-                double incompressibility);
-  RodCollection() = default;
+                double mass = 0);
 };
 
 } // namespace fsim

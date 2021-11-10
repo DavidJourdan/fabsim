@@ -19,6 +19,7 @@ set (EXTRA_LIBS ${EXTRA_LIBS} Eigen3::Eigen)
 file(GLOB BASE ${FABSIM_SOURCE_DIR}/DiscreteShell.cpp
                ${FABSIM_SOURCE_DIR}/ElasticRod.cpp
                ${FABSIM_SOURCE_DIR}/HingeElement.cpp
+               ${FABSIM_SOURCE_DIR}/LocalFrame.cpp
                ${FABSIM_SOURCE_DIR}/MassSpring.cpp
                ${FABSIM_SOURCE_DIR}/RodCollection.cpp
                ${FABSIM_SOURCE_DIR}/RodStencil.cpp
