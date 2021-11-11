@@ -12,12 +12,11 @@ TEST_CASE("ElasticRod")
 {
   using namespace Eigen;
 
-  double young_modulus = 1;
   MatrixXd V = GENERATE(take(2, matrix_random(3, 3)));
   V.col(2).setZero();
-  Vector2d widths = GENERATE(take(2, vector_random(2)));
+  VectorXd params = GENERATE(take(2, vector_random(3)));
   Vector3d n = Vector3d::UnitZ();
-  ElasticRod rod(V, n, widths(0), widths(1), young_modulus);
+  ElasticRod rod(V, n, {params(0), params(1), params(2)});
 
   SECTION("Orthonormal frames")
   {
@@ -102,6 +101,61 @@ TEST_CASE("ElasticRod")
   //   REQUIRE(grad_e(10) == Approx(grad_e2(9)));
   //   REQUIRE_THAT(hess_e.block(0,0,9,9), ApproxEquals(hess_e2.block(0,0,9,9)));
   // }
+}
+
+TEST_CASE("RodCollection")
+{
+  using namespace Eigen;
+
+  MatrixXd V = GENERATE(take(2, matrix_random(3, 3)));
+  V.col(2).setZero();
+  VectorXd params = GENERATE(take(2, vector_random(3)));
+  Mat3<double> N(2, 3);
+  N << 0, 0, 1, 0, 0, 1;
+  std::vector<std::vector<int>> indices = {{0, 1}, {1, 2}};
+  Mat2<int> C(2, 2);
+  C << 0, 1, 1, 0;
+  RodCollection rod(V, indices, C, N, {params(0), params(1), params(2)});
+
+  SECTION("Orthonormal frames")
+  {
+    VectorXd X = GENERATE(take(10, vector_random(9)));
+    Vector2d theta = GENERATE(take(1, vector_random(2)));
+
+    Vector3d t0 = (X.segment<3>(3) - X.segment<3>(0)).normalized();
+    Vector3d t1 = (X.segment<3>(6) - X.segment<3>(3)).normalized();
+
+    rod.updateProperties(X);
+    Mat3<double> D1, D2;
+    rod.getReferenceDirectors(D1, D2);
+
+    REQUIRE(t0.dot(D1.row(0)) == Approx(0).margin(1e-10));
+    REQUIRE(t0.dot(D2.row(0)) == Approx(0).margin(1e-10));
+    REQUIRE(t1.dot(D1.row(1)) == Approx(0).margin(1e-10));
+    REQUIRE(t1.dot(D2.row(1)) == Approx(0).margin(1e-10));
+
+    rod.getRotatedDirectors(theta, D1, D2);
+
+    REQUIRE(t0.dot(D1.row(0)) == Approx(0).margin(1e-10));
+    REQUIRE(t0.dot(D2.row(0)) == Approx(0).margin(1e-10));
+    REQUIRE(t1.dot(D1.row(1)) == Approx(0).margin(1e-10));
+    REQUIRE(t1.dot(D2.row(1)) == Approx(0).margin(1e-10));
+
+    REQUIRE_THAT(D1.rowwise().norm(), ApproxEquals(Vector2d(1, 1)));
+    REQUIRE_THAT(D2.rowwise().norm(), ApproxEquals(Vector2d(1, 1)));
+  }
+
+  SECTION("Translate invariance")
+  {
+    VectorXd var = GENERATE(take(2, vector_random(11)));
+
+    Vector3d randomDir = GENERATE(take(2, vector_random(3)));
+    VectorXd var2 = var;
+    for(int i = 0; i < 3; ++i)
+      var2.segment<3>(3 * i) += randomDir;
+
+    REQUIRE(rod.energy(var) == Approx(rod.energy(var2)).epsilon(1e-10));
+  }
 }
 
 // TEST_CASE("Class equivalences")

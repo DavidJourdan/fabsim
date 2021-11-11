@@ -26,35 +26,51 @@
 namespace fsim
 {
 
-class RodCollection : public ElasticRod<>
+class RodCollection : public ElasticRod
 {
 public:
   RodCollection(const Eigen::Ref<const Mat3<double>> V,
                 const std::vector<std::vector<int>> &indices,
-                const Eigen::MatrixX2i &C,
+                const Eigen::Ref<const Mat2<int>> C,
                 const Eigen::Ref<const Mat3<double>> N,
-                const std::vector<std::vector<double>> &normal_widths,
-                const std::vector<std::vector<double>> &binormal_widths,
+                const std::vector<double> &thicknesses,
+                const std::vector<double> &widths,
                 double young_modulus,
-                double mass = 0);
+                double mass = 0,
+                CrossSection c = CrossSection::Circle);
 
   RodCollection(const Eigen::Ref<const Mat3<double>> V,
                 const std::vector<std::vector<int>> &indices,
-                const Eigen::MatrixX2i &C,
+                const Eigen::Ref<const Mat2<int>> C,
                 const Eigen::Ref<const Mat3<double>> N,
-                const std::vector<double> &normal_widths,
-                const std::vector<double> &binormal_widths,
-                double young_modulus,
-                double mass = 0);
+                const RodParams &p);
 
-  RodCollection(const Eigen::Ref<const Mat3<double>> V,
-                const std::vector<std::vector<int>> &indices,
-                const Eigen::MatrixX2i &C,
-                const Eigen::Ref<const Mat3<double>> N,
-                double w_n,
-                double w_b,
-                double young_modulus,
-                double mass = 0);
+  /**
+   * energy function of this material model   f : \R^n -> \R
+   * @param X  a flat vector stacking all degrees of freedom
+   * @return  the energy of this model evaluated at X
+   */
+  double energy(const Eigen::Ref<const Eigen::VectorXd> X) const override;
+
+  /**
+   * gradient of the energy  \nabla f : \R^n -> \R^n
+   * @param X  a flat vector stacking all degrees of freedom
+   * @param Y  gradient (or sum of gradients) vector in which we will add the gradient of energy evaluated at X
+   * @return Y
+   */
+  void gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const override;
+  Eigen::VectorXd gradient(const Eigen::Ref<const Eigen::VectorXd> X) const override;
+
+  /**
+   * (row, column, value) triplets used to build the sparse hessian matrix
+   * @param X  a flat vector stacking all degrees of freedom
+   * @return  all the triplets needed to build the hessian
+   */
+  std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const override;
+
+private:
+  // contains cross-section stiffnesses and number of elements per rod
+  std::vector<std::tuple<double, double, int>> rodData;
 };
 
 } // namespace fsim

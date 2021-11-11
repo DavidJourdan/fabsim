@@ -6,8 +6,7 @@
 #include "fsim/RodStencil.h"
 
 #include "fsim/ElasticRod.h"
-
-#include <fsim/util/geometry.h>
+#include "fsim/util/geometry.h"
 
 #include <iostream>
 
@@ -15,6 +14,8 @@ namespace fsim
 {
 
 // matrix of material directors
+namespace
+{
 Eigen::Matrix<double, 2, 3> materialMatrix(const LocalFrame &f, double theta)
 {
   using namespace Eigen;
@@ -23,13 +24,12 @@ Eigen::Matrix<double, 2, 3> materialMatrix(const LocalFrame &f, double theta)
   res.row(1) = -cos(theta) * f.d1 - sin(theta) * f.d2;
   return res;
 }
+} // namespace
 
 RodStencil::RodStencil(const Eigen::Ref<const Mat3<double>> V,
                        const LocalFrame &f1,
                        const LocalFrame &f2,
-                       const Eigen::Matrix<int, 5, 1> &dofs,
-                       const Eigen::Vector2d &widths,
-                       double young_modulus)
+                       const Eigen::Matrix<int, 5, 1> &dofs)
 {
   using namespace Eigen;
 
@@ -39,8 +39,6 @@ RodStencil::RodStencil(const Eigen::Ref<const Mat3<double>> V,
   Vector3d x2 = V.row(idx(2));
 
   _vertex_length = (x1 - x0).norm() + (x2 - x1).norm();
-  _stiffnesses << pow(widths(0), 3) * widths(1) / 12., pow(widths(1), 3) * widths(0) / 12.;
-  _stiffnesses *= young_modulus;
 
   Vector3d kb = 2 * f1.t.cross(f2.t) / (1 + f1.t.dot(f2.t));
   _restK = (materialMatrix(f1, 0) + materialMatrix(f2, 0)) / 2 * kb;
@@ -48,20 +46,28 @@ RodStencil::RodStencil(const Eigen::Ref<const Mat3<double>> V,
   _ref_twist = 0;
 }
 
-double RodStencil::mass = 0;
-
-double RodStencil::energy(const Eigen::Ref<const Eigen::VectorXd> X, const LocalFrame &f1, const LocalFrame &f2) const
+double RodStencil::energy(const Eigen::Ref<const Eigen::VectorXd> X,
+                          const LocalFrame &f1,
+                          const LocalFrame &f2,
+                          const Eigen::Vector2d &stiffnesses,
+                          double mass) const
 {
   using namespace Eigen;
 
   Vector2d k = materialCurvature(X, f1, f2);
 
-  return ((k - _restK).dot(bendMatrix() * (k - _restK)) + twistCoeff() * pow(twistAngle(X), 2)) / (2 * _vertex_length)
-    + 9.81 * mass * X(3 * idx(1) + 2) * _vertex_length / 2;
+  DiagonalMatrix<double, 2> bendMatrix(stiffnesses);
+  double twistCoeff = stiffnesses.sum() / 2;
+
+  return ((k - _restK).dot(bendMatrix * (k - _restK)) + twistCoeff * pow(twistAngle(X), 2)) / (2 * _vertex_length) +
+         9.81 * mass * X(3 * idx(1) + 2) * _vertex_length / 2;
 }
 
-RodStencil::LocalVector
-RodStencil::gradient(const Eigen::Ref<const Eigen::VectorXd> X, const LocalFrame &f1, const LocalFrame &f2) const
+Vec<double, 11> RodStencil::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
+                                     const LocalFrame &f1,
+                                     const LocalFrame &f2,
+                                     const Eigen::Vector2d &stiffnesses,
+                                     double mass) const
 {
   using namespace Eigen;
 
@@ -69,22 +75,31 @@ RodStencil::gradient(const Eigen::Ref<const Eigen::VectorXd> X, const LocalFrame
   auto dK = materialCurvatureDerivative(X, f1, f2);
   auto dT = twistAngleDerivative(X, f1, f2);
 
-  LocalVector res = (dK * bendMatrix() * (k - _restK) + dT * twistCoeff() * twistAngle(X)) / _vertex_length;
+  DiagonalMatrix<double, 2> bendMatrix(stiffnesses);
+  double twistCoeff = stiffnesses.sum() / 2;
+
+  LocalVector res = (dK * bendMatrix * (k - _restK) + dT * twistCoeff * twistAngle(X)) / _vertex_length;
   res(5) += 9.81 * mass * _vertex_length / 2;
 
   return res;
 }
 
-RodStencil::LocalMatrix
-RodStencil::hessian(const Eigen::Ref<const Eigen::VectorXd> X, const LocalFrame &f1, const LocalFrame &f2) const
+Mat<double, 11, 11> RodStencil::hessian(const Eigen::Ref<const Eigen::VectorXd> X,
+                                        const LocalFrame &f1,
+                                        const LocalFrame &f2,
+                                        const Eigen::Vector2d &stiffnesses,
+                                        double mass) const
 {
   using namespace Eigen;
 
   Matrix<double, 11, 11> ddK, ddT;
-  Matrix<double, 11, 2> dK = materialCurvatureDerivative(X, f1, f2, &ddK);
+  Matrix<double, 11, 2> dK = materialCurvatureDerivative(X, f1, f2, stiffnesses, &ddK);
   auto dT = twistAngleDerivative(X, f1, f2, &ddT);
 
-  return (dK * bendMatrix() * dK.transpose() + ddK + twistCoeff() * (dT * dT.transpose() + twistAngle(X) * ddT)) /
+  DiagonalMatrix<double, 2> bendMatrix(stiffnesses);
+  double twistCoeff = stiffnesses.sum() / 2;
+
+  return (dK * bendMatrix * dK.transpose() + ddK + twistCoeff * (dT * dT.transpose() + twistAngle(X) * ddT)) /
          _vertex_length;
 }
 
@@ -110,6 +125,7 @@ Eigen::Vector2d RodStencil::materialCurvature(const Eigen::Ref<const Eigen::Vect
 Eigen::Matrix<double, 11, 2> RodStencil::materialCurvatureDerivative(const Eigen::Ref<const Eigen::VectorXd> X,
                                                                      const LocalFrame &f1,
                                                                      const LocalFrame &f2,
+                                                                     const Eigen::Vector2d stiffnesses,
                                                                      Eigen::Matrix<double, 11, 11> *ddK) const
 {
   using namespace Eigen;
@@ -152,18 +168,16 @@ Eigen::Matrix<double, 11, 2> RodStencil::materialCurvatureDerivative(const Eigen
 
   if(ddK) // compute second derivative wrt u = bendMatrix * (k - _restK)
   {
-    Vector2d u = bendMatrix() * (k - _restK);
+    Vector2d u = DiagonalMatrix<double, 2>(stiffnesses) * (k - _restK);
 
     // \frac{ \partial^2 \kappa_i \cdot u }{ \partial x_j \partial x_k }
     Vector3d v = M.transpose() * u;
     double c = u.dot(k);
     Matrix3d A = (2 * c * outer_prod(mean_t, mean_t) - 2 * sym(outer_prod(f2.t.cross(v), mean_t)) -
-                  c / d * (Matrix3d::Identity() - outer_prod(f1.t, f1.t)) +
-                  0.5 * sym(outer_prod<3, 3>(kb, M1.transpose() * u))) /
+                  c / d * (Matrix3d::Identity() - outer_prod(f1.t, f1.t)) + 0.5 * sym(kb * u.transpose() * M1)) /
                  l0 / l0;
     Matrix3d B = (2 * c * outer_prod(mean_t, mean_t) + 2 * sym(outer_prod(f1.t.cross(v), mean_t)) -
-                  c / d * (Matrix3d::Identity() - outer_prod(f2.t, f2.t)) +
-                  0.5 * sym(outer_prod<3, 3>(kb, M2.transpose() * u))) /
+                  c / d * (Matrix3d::Identity() - outer_prod(f2.t, f2.t)) + 0.5 * sym(kb * u.transpose() * M2)) /
                  l1 / l1;
     Matrix3d C = (2 * c * outer_prod(mean_t, mean_t) + outer_prod(mean_t, f1.t.cross(v)) -
                   c / d * (Matrix3d::Identity() + outer_prod(f1.t, f2.t)) - outer_prod(f2.t.cross(v), mean_t) -
@@ -191,8 +205,8 @@ Eigen::Matrix<double, 11, 2> RodStencil::materialCurvatureDerivative(const Eigen
 
     // \frac{ \partial^2 \kappa_i \cdot u }{ \partial\theta_i \partial\x_k }
     v = -u(1) * M2.row(0) + u(0) * M2.row(1);
-    ddK->block<3, 1>(0, 10) = (f2.t.cross(v) / d + v.dot(kb) / 2 * mean_t) / l0;
-    ddK->block<3, 1>(6, 10) = (f1.t.cross(v) / d - v.dot(kb) / 2 * mean_t) / l1;
+    ddK->block<3, 1>(0, 10) = (-f2.t.cross(v) / d + mean_t * v.dot(kb) / 2) / l0;
+    ddK->block<3, 1>(6, 10) = (-f1.t.cross(v) / d - mean_t * v.dot(kb) / 2) / l1;
     ddK->block<3, 1>(3, 10) = -ddK->block<3, 1>(0, 10) - ddK->block<3, 1>(6, 10);
 
     if(idx(0) > idx(1))

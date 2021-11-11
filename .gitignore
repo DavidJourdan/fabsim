@@ -2,6 +2,7 @@ build/
 
 .idea/
 .vscode/
+.cache/
 
 .DS_Store
 include/.DS_Store

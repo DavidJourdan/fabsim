@@ -76,9 +76,9 @@ struct BundledRodStencil
                     const Eigen::Vector3d &t,
                     const Eigen::Vector3d &n,
                     const Eigen::Matrix<int, 5, 1> &dofs,
-                    const Eigen::Vector2d &widths,
-                    double young_modulus)
-      : f1(t, n, t.cross(n)), f2(f1), stencil(V, f1, f2, dofs, widths, young_modulus)
+                    const Eigen::Vector2d &s, 
+                    double m)
+      : f1(t, n, t.cross(n)), f2(f1), stencil(V, f1, f2, dofs), stiffness(s), mass(m)
   {
     f2.update(V.row(dofs(1)), V.row(dofs(2)));
   }
@@ -102,7 +102,7 @@ struct BundledRodStencil
 
     double ref_twist = stencil.getReferenceTwist();
     stencil.updateReferenceTwist(new_f1, new_f2);
-    double res = stencil.energy(X, new_f1, new_f2);
+    double res = stencil.energy(X, new_f1, new_f2, stiffness, mass);
     stencil.setReferenceTwist(ref_twist);
     return res;
   }
@@ -115,13 +115,13 @@ struct BundledRodStencil
 
     double ref_twist = stencil.getReferenceTwist();
     stencil.updateReferenceTwist(new_f1, new_f2);
-    auto res = stencil.gradient(X, new_f1, new_f2);
+    auto res = stencil.gradient(X, new_f1, new_f2, stiffness, mass);
     stencil.setReferenceTwist(ref_twist);
     return res;
   }
   RodStencil::LocalMatrix hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
-    return stencil.hessian(X, f1, f2);
+    return stencil.hessian(X, f1, f2, stiffness, mass);
   }
 
   static const int NB_VERTICES = 3;
@@ -130,6 +130,8 @@ struct BundledRodStencil
   mutable RodStencil stencil;
   mutable LocalFrame f1;
   mutable LocalFrame f2;
+  double mass;
+  Eigen::Vector2d stiffness;
 };
 
 TEST_CASE("RodStencil")
@@ -139,6 +141,7 @@ TEST_CASE("RodStencil")
   Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
   Vector2d widths = GENERATE(take(2, vector_random(2, 0, 1)));
   double young_modulus = GENERATE(take(2, random(0., 1.)));
+  double mass = GENERATE(take(2, random(0., 1.)));
 
   Vector3d n1 = GENERATE(take(2, vector_random(3))).normalized();
   Vector3d t1 = (V.row(1) - V.row(0)).normalized();
@@ -147,9 +150,10 @@ TEST_CASE("RodStencil")
   VectorXi dofs(5);
   dofs << 0, 1, 2, 9, 10;
 
-  BundledRodStencil rod(V, t1, n1, dofs, widths, young_modulus);
+  Vector2d stiffnesses(pow(widths(0), 3) * widths(1), pow(widths(1), 3) * widths(0));
+  stiffnesses *= young_modulus / 12;
 
-  RodStencil::mass = 1;
+  BundledRodStencil rod(V, t1, n1, dofs, stiffnesses, mass);
 
   SECTION("Gradient") { test_gradient(rod, 1e-5); }
   SECTION("Hessian") 
@@ -175,7 +179,7 @@ TEST_CASE("RodStencil")
     INFO("Computed hessian\n" << hessian_computed);
     INFO("Difference\n" << diff);
     REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-5));
-   }
+  }
 }
 
 // SHELLS

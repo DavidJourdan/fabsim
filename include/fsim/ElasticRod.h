@@ -28,24 +28,24 @@ namespace fsim
 
 enum class CrossSection { Square, Circle };
 
-template <CrossSection c = CrossSection::Square>
+struct RodParams
+{
+  double thickness;
+  double width;
+  double E;
+  double mass = 0;
+  CrossSection crossSection = CrossSection::Circle;
+};
+
 class ElasticRod
 {
 public:
   ElasticRod(const Eigen::Ref<const Mat3<double>> V,
              const Eigen::Ref<const Eigen::VectorXi> indices,
              const Eigen::Vector3d &n,
-             double thickness,
-             double width,
-             double young_modulus,
-             double mass = 0);
+             const RodParams &p);
 
-  ElasticRod(const Eigen::Ref<const Mat3<double>> V,
-             const Eigen::Vector3d &n,
-             double thickness,
-             double width,
-             double young_modulus,
-             double mass = 0);
+  ElasticRod(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector3d &n, const RodParams &p);
 
   ElasticRod() = default;
 
@@ -54,7 +54,7 @@ public:
    * @param X  a flat vector stacking all degrees of freedom
    * @return  the energy of this model evaluated at X
    */
-  double energy(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  virtual double energy(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   /**
    * gradient of the energy  \nabla f : \R^n -> \R^n
@@ -62,8 +62,8 @@ public:
    * @param Y  gradient (or sum of gradients) vector in which we will add the gradient of energy evaluated at X
    * @return Y
    */
-  void gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const;
-  Eigen::VectorXd gradient(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  virtual void gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const;
+  virtual Eigen::VectorXd gradient(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   /**
    * hessian of the energy  \nabla^2 f : \R^n -> \R^{n \times n}
@@ -77,7 +77,7 @@ public:
    * @param X  a flat vector stacking all degrees of freedom
    * @return  all the triplets needed to build the hessian
    */
-  std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  virtual std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   void updateProperties(const Eigen::Ref<const Eigen::VectorXd> X);
 
@@ -89,9 +89,14 @@ public:
 
   std::vector<Spring<true>> const &springs() const { return _springs; }
   std::vector<Spring<true>> &springs() { return _springs; }
-  
-  double getMass() const { return RodStencil::mass; };
-  void setMass(double mass) { RodStencil::mass = mass; };
+
+  double getMass() const { return _mass; };
+  void setMass(double mass) { _mass = mass; };
+
+  Eigen::Vector2d stiffness(const Eigen::Vector2d &stiff) { return _stiffness; }
+  Eigen::Vector2d const &stiffness() const { return _stiffness; }
+
+  void setParams(const RodParams &params);
 
   int nbEdges() const { return _springs.size(); }
 
@@ -127,14 +132,16 @@ public:
    * @param id index of the corresponding rotational degree of freedom
    * @return
    */
-  LocalFrame getFrame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int id) const;
+  LocalFrame getFrame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int k) const;
 
 protected:
-  mutable std::vector<RodStencil> _stencils;
-  std::vector<Spring<true>> _springs;
-  std::vector<LocalFrame> _frames;
   int nV; // total number of vertices in the simulation (includes non-rod vertices)
   double _stretch_modulus;
+  double _mass;
+  Eigen::Vector2d _stiffness;
+  mutable std::vector<RodStencil> _stencils;
+  std::vector<LocalFrame> _frames;
+  std::vector<Spring<true>> _springs;
 };
 
 } // namespace fsim

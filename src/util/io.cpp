@@ -237,7 +237,7 @@ void saveOFF(const std::string &file, const Eigen::Ref<const Mat3<double>> V, co
       elementSize = "4 ";
     else
       return;
-    
+
     mesh_stream << "OFF\n"
                 << V.rows() << " " << F.rows() << " 0\n"
                 << V.format(IOFormat(FullPrecision, DontAlignCols, " ", "\n", "", "", "", "\n"))

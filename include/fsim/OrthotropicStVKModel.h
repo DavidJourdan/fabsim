@@ -10,6 +10,7 @@
 #include "OrthotropicStVKElement.h"
 
 #include <array>
+#include <iostream>
 
 namespace fsim
 {
@@ -112,7 +113,7 @@ template <int id>
 void OrthotropicStVKModel<id>::setPoissonRatio(double poisson_ratio)
 {
   _poisson_ratio = poisson_ratio;
-  
+
   OrthotropicStVKElement<id>::_C << 
     _E1, _poisson_ratio * sqrt(_E1 * _E2), 0, 
     _poisson_ratio * sqrt(_E1 * _E2), _E2, 0, 0, 
