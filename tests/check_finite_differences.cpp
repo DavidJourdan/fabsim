@@ -5,7 +5,9 @@
 #include <fsim/ElasticMembrane.h>
 #include <fsim/ElasticRod.h>
 #include <fsim/RodStencil.h>
-#include <fsim/TriangleElement.h>
+#include <fsim/StVKElement.h>
+#include <fsim/NeoHookeanElement.h>
+#include <fsim/IncompressibleNeoHookeanElement.h>
 #include <fsim/OrthotropicStVKElement.h>
 #include <fsim/Spring.h>
 #include <fsim/util/typedefs.h>
@@ -14,7 +16,7 @@ using namespace fsim;
 
 // MEMBRANES
 
-TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, NeoHookeanIncompressibleElement<>)
+TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, IncompressibleNeoHookeanElement<>)
 {
   using namespace Eigen;
 

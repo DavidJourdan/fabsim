@@ -6,7 +6,9 @@
 #pragma once
 
 #include "ModelBase.h"
-#include "TriangleElement.h"
+#include "StVKElement.h"
+#include "NeoHookeanElement.h"
+#include "IncompressibleNeoHookeanElement.h"
 #include "util/typedefs.h"
 
 #include <exception>
@@ -19,8 +21,8 @@ namespace fsim
  * template class for isotropic membrane models (e.g. StVK, neohookean...)
  * @tparam Element  triangle stencil class such as StVKElement, NeoHookeanElement, etc.
  */
-template <class Element>
-class ElasticMembrane : public ModelBase<Element>
+template <template <int id> class Element, int id = 0>
+class ElasticMembrane : public ModelBase<Element<id>>
 {
 public:
   /**
@@ -51,18 +53,18 @@ public:
 
   // set Poisson ratio (between 0 and 0.5)
   void setPoissonRatio(double poisson_ratio);
-  double getPoissonRatio() const { return Element::nu; }
+  double getPoissonRatio() const { return Element<id>::nu; }
 
   // set Young's modulus (positive coefficient)
   void setYoungModulus(double E);
-  double getYoungModulus() const { return Element::E; }
+  double getYoungModulus() const { return Element<id>::E; }
 
   // set thickness of the membrane (controls the amount of stretching and the total weight) negative values are not allowed
   void setThickness(double t);
   double getThickness() const { return _thickness; }
 
   void setMass(double mass);
-  double getMass() const { return Element::mass; }
+  double getMass() const { return Element<id>::mass; }
 
 private:
   int nV, nF;
@@ -76,14 +78,14 @@ private:
 // different Lamé coefficents, please declare them as e.g. StVKMembrane<0>, StVKMembrane<1>, etc.
 
 template <int id = 0>
-using StVKMembrane = ElasticMembrane<StVKElement<id>>;
+using StVKMembrane = ElasticMembrane<StVKElement, id>;
 template <int id = 0>
-using NeoHookeanMembrane = ElasticMembrane<NeoHookeanElement<id>>;
+using NeoHookeanMembrane = ElasticMembrane<NeoHookeanElement, id>;
 template <int id = 0>
-using NeoHookeanIncompressibleMembrane = ElasticMembrane<NeoHookeanIncompressibleElement<id>>;
+using IncompressibleNeoHookeanMembrane = ElasticMembrane<IncompressibleNeoHookeanElement, id>;
 
-template <class Element>
-ElasticMembrane<Element>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V,
+template <template <int id> class Element, int id>
+ElasticMembrane<Element, id>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V,
                                           const Eigen::Ref<const Mat3<int>> F,
                                           double thickness,
                                           double young_modulus,
@@ -94,8 +96,8 @@ ElasticMembrane<Element>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V
   _thickness = thickness;
 }
 
-template <class Element>
-ElasticMembrane<Element>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V,
+template <template <int id> class Element, int id>
+ElasticMembrane<Element, id>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V,
                                           const Eigen::Ref<const Mat3<int>> F,
                                           const std::vector<double> &thicknesses,
                                           double young_modulus,
@@ -105,39 +107,39 @@ ElasticMembrane<Element>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V
   nV = V.rows();
   nF = F.rows();
 
-  if(Element::E != 0 && Element::E != young_modulus || Element::nu != 0 && Element::nu != poisson_ratio ||
-     Element::mass != 0 && Element::mass != mass)
+  if(Element<id>::E != 0 && Element<id>::E != young_modulus || Element<id>::nu != 0 && Element<id>::nu != poisson_ratio ||
+     Element<id>::mass != 0 && Element<id>::mass != mass)
     std::cerr << "Warning: overwriting properties. Please declare your different instances as e.g. "
                  "StVKMembrane<0>, StVKMembrane<1>, etc.\n";
-  Element::E = young_modulus;
-  Element::nu = poisson_ratio;
-  Element::mass = mass;
+  Element<id>::E = young_modulus;
+  Element<id>::nu = poisson_ratio;
+  Element<id>::mass = mass;
 
   this->_elements.reserve(nF);
   for(int i = 0; i < nF; ++i)
     this->_elements.emplace_back(V, F.row(i), thicknesses[i]);
 }
 
-template <class Element>
-void ElasticMembrane<Element>::setPoissonRatio(double poisson_ratio)
+template <template <int id> class Element, int id>
+void ElasticMembrane<Element, id>::setPoissonRatio(double poisson_ratio)
 {
-  Element::nu = poisson_ratio;
+  Element<id>::nu = poisson_ratio;
 }
 
-template <class Element>
-void ElasticMembrane<Element>::setYoungModulus(double young_modulus)
+template <template <int id> class Element, int id>
+void ElasticMembrane<Element, id>::setYoungModulus(double young_modulus)
 {
-  Element::E = young_modulus;
+  Element<id>::E = young_modulus;
 }
 
-template <class Element>
-void ElasticMembrane<Element>::setMass(double mass)
+template <template <int id> class Element, int id>
+void ElasticMembrane<Element, id>::setMass(double mass)
 {
-  Element::mass = mass;
+  Element<id>::mass = mass;
 }
 
-template <class Element>
-void ElasticMembrane<Element>::setThickness(double t)
+template <template <int id> class Element, int id>
+void ElasticMembrane<Element, id>::setThickness(double t)
 {
   if(_thickness <= 0)
     throw std::runtime_error(
