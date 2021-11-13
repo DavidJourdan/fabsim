@@ -6,14 +6,14 @@
 #include "helpers.h"
 
 #include <fsim/util/io.h>
-#include <fsim/ElasticMembraneModel.h>
-#include <fsim/DiscreteShell.h>
+#include <fsim/ElasticMembrane.h>
+#include <fsim/ElasticShell.h>
 #include <fsim/MassSpring.h>
 #include <fsim/OrthotropicStVKModel.h>
 
 using namespace fsim;
 
-TEMPLATE_TEST_CASE("ElasticMembraneModel", "", StVKMembrane, NeoHookeanMembrane, NHIncompressibleMembrane)
+TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane<>, NeoHookeanMembrane<>, NeoHookeanIncompressibleMembrane<>)
 {
   using namespace Eigen;
 
@@ -49,7 +49,7 @@ TEST_CASE("OrthotropicStVKModel")
   };
 }
 
-TEMPLATE_TEST_CASE("DiscreteShell", "", SquaredAngleFormulation, TanAngleFormulation)
+TEMPLATE_TEST_CASE("ElasticShell", "", SquaredAngleFormulation, TanAngleFormulation)
 {
   using namespace Eigen;
 
@@ -57,7 +57,7 @@ TEMPLATE_TEST_CASE("DiscreteShell", "", SquaredAngleFormulation, TanAngleFormula
   Mat3<int> F;
   readOFF("../tests/mesh.off", V, F);
 
-  DiscreteShell<TestType, true> shell(V, F, 10, 0.3, 0.1);
+  ElasticShell<TestType, true> shell(V, F, 10, 0.3, 0.1);
 
   static int nX = 3 * V.rows();
   BENCHMARK_ADVANCED("shell triplets")(Catch::Benchmark::Chronometer meter)

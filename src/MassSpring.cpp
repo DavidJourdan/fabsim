@@ -5,15 +5,13 @@
 
 #include "fsim/MassSpring.h"
 
-#include "fsim/util/vector_utils.h"
-
 #include <algorithm>
 
 namespace fsim
 {
 
-template <bool allow_compression>
-MassSpringModel<allow_compression>::MassSpringModel(const Eigen::Ref<const Mat3<double>> V,
+template <bool MeasureCompression>
+MassSpring<MeasureCompression>::MassSpring(const Eigen::Ref<const Mat3<double>> V,
                                                     const Eigen::Ref<const Mat3<int>> F,
                                                     double young_modulus)
     : _young_modulus(young_modulus)
@@ -47,8 +45,8 @@ MassSpringModel<allow_compression>::MassSpringModel(const Eigen::Ref<const Mat3<
   }
 }
 
-template <bool allow_compression>
-double MassSpringModel<allow_compression>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <bool MeasureCompression>
+double MassSpring<MeasureCompression>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   double w = 0.0;
   // Spring
@@ -58,8 +56,8 @@ double MassSpringModel<allow_compression>::energy(const Eigen::Ref<const Eigen::
   return w;
 }
 
-template <bool allow_compression>
-void MassSpringModel<allow_compression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
+template <bool MeasureCompression>
+void MassSpring<MeasureCompression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
                                                   Eigen::Ref<Eigen::VectorXd> Y) const
 {
   using namespace Eigen;
@@ -73,8 +71,8 @@ void MassSpringModel<allow_compression>::gradient(const Eigen::Ref<const Eigen::
   }
 }
 
-template <bool allow_compression>
-Eigen::VectorXd MassSpringModel<allow_compression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <bool MeasureCompression>
+Eigen::VectorXd MassSpring<MeasureCompression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -83,9 +81,9 @@ Eigen::VectorXd MassSpringModel<allow_compression>::gradient(const Eigen::Ref<co
   return Y;
 }
 
-template <bool allow_compression>
+template <bool MeasureCompression>
 std::vector<Eigen::Triplet<double>>
-MassSpringModel<allow_compression>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+MassSpring<MeasureCompression>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -97,13 +95,18 @@ MassSpringModel<allow_compression>::hessianTriplets(const Eigen::Ref<const Eigen
     auto s = _springs[k];
     Matrix3d h = _young_modulus * s.hessian(X);
 
+    if(s.i < s.j)
+      for(int a = 0; a < 3; ++a)
+        for(int b = 0; b < 3; ++b)
+          triplets[3 * (3 * (3 * k + a) + b) + 0] = Triplet<double>(3 * s.i + a, 3 * s.j + b, h(a, b));
+    else
+      for(int a = 0; a < 3; ++a)
+        for(int b = 0; b < 3; ++b)
+          triplets[3 * (3 * (3 * k + a) + b) + 0] = Triplet<double>(3 * s.j + a, 3 * s.i + b, h(a, b));
+    
     for(int a = 0; a < 3; ++a)
       for(int b = 0; b < 3; ++b)
       {
-        if(s.i < s.j)
-          triplets[3 * (3 * (3 * k + a) + b) + 0] = Triplet<double>(3 * s.i + a, 3 * s.j + b, h(a, b));
-        else
-          triplets[3 * (3 * (3 * k + a) + b) + 0] = Triplet<double>(3 * s.j + a, 3 * s.i + b, h(a, b));
         triplets[3 * (3 * (3 * k + a) + b) + 1] = Triplet<double>(3 * s.i + a, 3 * s.i + b, -h(a, b));
         triplets[3 * (3 * (3 * k + a) + b) + 2] = Triplet<double>(3 * s.j + a, 3 * s.j + b, -h(a, b));
       }
@@ -111,8 +114,8 @@ MassSpringModel<allow_compression>::hessianTriplets(const Eigen::Ref<const Eigen
   return triplets;
 }
 
-template <bool allow_compression>
-Eigen::SparseMatrix<double> MassSpringModel<allow_compression>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <bool MeasureCompression>
+Eigen::SparseMatrix<double> MassSpring<MeasureCompression>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   assert(X.size() == 3 * nV);
   Eigen::SparseMatrix<double> hess(3 * nV, 3 * nV);
@@ -123,7 +126,7 @@ Eigen::SparseMatrix<double> MassSpringModel<allow_compression>::hessian(const Ei
 }
 
 // instantiation
-template class MassSpringModel<true>;
-template class MassSpringModel<false>;
+template class MassSpring<true>;
+template class MassSpring<false>;
 
 } // namespace fsim

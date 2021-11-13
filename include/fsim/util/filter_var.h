@@ -18,15 +18,7 @@ namespace fsim
  * @param X  list of variables
  * @param indices  list of indices such that if i is in indices, then X(i) = 0
  */
-template <typename DerivedX>
-void filter_var(Eigen::PlainObjectBase<DerivedX> &X, const std::vector<int> &indices)
-{
-  assert(X.cols() == 1);
-  for(auto index: indices)
-  {
-    X(index) = 0;
-  }
-}
+void filter_var(Eigen::Ref<Eigen::VectorXd> X, const std::vector<int> &indices);
 
 /**
  * removes the entries of the specified indices from M (sets lines and columns to 0, diagonal to 1)
@@ -34,7 +26,6 @@ void filter_var(Eigen::PlainObjectBase<DerivedX> &X, const std::vector<int> &ind
  * @param M  sparse matrix
  * @param indices  list of indices such that if i is in indices, then X(i) = 0
  */
-template <typename scalar>
-void filter_var(Eigen::SparseMatrix<scalar> &M, const std::vector<int> &indices);
+void filter_var(Eigen::SparseMatrix<double> &M, const std::vector<int> &indices);
 
 } // namespace fsim

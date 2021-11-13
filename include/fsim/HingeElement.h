@@ -23,9 +23,9 @@ class SquaredAngleFormulation;
  * Stencil for hinge-based shell energies such as Discrete Shells
  * @tparam HingeFormulation  implementation for the shell energy: either (\theta - \bar\theta)^2
  * or (2 \tan\theta/2 - 2 \tan\bar\theta/2)^2
- * @tparam full_hessian  whether or not ot compute the full hessian or a quadratic approximation
+ * @tparam fullHessian  whether or not ot compute the full hessian or a quadratic approximation
  */
-template <class HingeFormulation = TanAngleFormulation, bool full_hessian = true>
+template <class HingeFormulation = TanAngleFormulation, bool fullHessian = true>
 class HingeElement : public ElementBase<4>
 {
 public:

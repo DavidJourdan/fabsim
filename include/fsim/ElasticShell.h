@@ -1,4 +1,4 @@
-// DiscreteShell.h
+// ElasticShell.h
 //
 // Implementation of the Discrete Shells material model of Grinspun et al. as presented in
 // "Discrete shells" (https://doi.org/10.5555/846276.846284), see also "Discrete bending forces and
@@ -13,32 +13,36 @@
 #include "ModelBase.h"
 #include "util/typedefs.h"
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
 #include <Eigen/SparseCore>
-
-#include <vector>
 
 namespace fsim
 {
 
-template <class Formulation = TanAngleFormulation, bool FullHess = true>
-class DiscreteShell : public ModelBase<HingeElement<Formulation, FullHess>>
+/**
+ * Implementation of the classic Discrete Shells model
+ * @tparam Formulation  Either use the tangent or the square of the bending angle as a penalty
+ * @tparam fullHess  Wether to compute the full matrix of second derivatives or use a quadratic approximation
+ * If true, the Newton solver will converge faster when it's close to the solution but the hessian might be non-SPD
+ */
+template <class Formulation = TanAngleFormulation, bool fullHess = true>
+class ElasticShell : public ModelBase<HingeElement<Formulation, fullHess>>
 {
 public:
   /**
-   * DiscreteRod constructor
+   * ElasticShell constructor
    * @param V  nV by 3 list of vertex positions
    * @param F  nF by 3 list of face indices
+   * @param thickness  membrane's thickness
    * @param young_modulus  membrane's Young's modulus, controls the resistance to bending
    * @param poisson_ratio  membrane's Poisson's ratio
-   * @param thickness  membrane's thickness
    */
-  DiscreteShell(const Eigen::Ref<const Mat3<double>> V,
-                const Eigen::Ref<const Mat3<int>> F,
-                double thickness,
-                double young_modulus,
-                double poisson_ratio);
-  DiscreteShell() = default;
+  ElasticShell(const Eigen::Ref<const Mat3<double>> V,
+               const Eigen::Ref<const Mat3<int>> F,
+               double thickness,
+               double young_modulus,
+               double poisson_ratio);
+  ElasticShell() = default;
 
   // number of vertices
   int nbVertices() const { return nV; }
@@ -74,7 +78,5 @@ private:
   double _poisson_ratio;
   double _thickness;
 };
-
-using ElasticShell = DiscreteShell<TanAngleFormulation, true>;
 
 } // namespace fsim

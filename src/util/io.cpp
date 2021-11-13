@@ -281,15 +281,13 @@ void saveROD(const std::string &file, const std::vector<std::vector<int>> &rod_i
  */
 void saveOBJ(const std::string &file,
              const Eigen::Ref<const Mat3<double>> V,
-             const Eigen::Ref<const Mat<int>> F,
-             const std::vector<std::vector<int>> &rod_indices)
+             const Eigen::Ref<const Mat<int>> F)
 {
   using namespace Eigen;
   assert(V.cols() == 3 && "V should have 3 columns");
 
   std::ofstream mesh_stream(file + ".obj");
-  std::ofstream rod_stream(file + "_rod.obj");
-  if(!mesh_stream.is_open() || !rod_stream.is_open())
+  if(!mesh_stream.is_open())
   {
     std::cerr << "IOError: could not open " << file << std::endl;
   }
@@ -298,21 +296,10 @@ void saveOBJ(const std::string &file,
     for(int i = 0; i < V.rows(); ++i)
     {
       mesh_stream << "v " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << "\n";
-      rod_stream << "v " << V(i, 0) << " " << V(i, 1) << " " << V(i, 2) << "\n";
     }
 
     for(int i = 0; i < F.rows(); ++i)
       mesh_stream << "f " << F(i, 0) + 1 << " " << F(i, 1) + 1 << " " << F(i, 2) + 1 << "\n";
-
-    for(auto &indices: rod_indices)
-    {
-      rod_stream << "l ";
-      for(int i: indices)
-      {
-        rod_stream << i + 1 << " ";
-      }
-      rod_stream << std::endl;
-    }
   }
 }
 

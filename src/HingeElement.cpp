@@ -10,8 +10,8 @@
 namespace fsim
 {
 
-template <class Formulation, bool FullHess>
-HingeElement<Formulation, FullHess>::HingeElement(const Eigen::Ref<const Mat3<double>> V,
+template <class Formulation, bool fullHess>
+HingeElement<Formulation, fullHess>::HingeElement(const Eigen::Ref<const Mat3<double>> V,
                                                   const Eigen::Vector4i &E,
                                                   double coeff)
     : _coeff{coeff}, _hinge(V, E)
@@ -19,8 +19,8 @@ HingeElement<Formulation, FullHess>::HingeElement(const Eigen::Ref<const Mat3<do
   idx = E;
 }
 
-template <class Formulation, bool FullHess>
-double HingeElement<Formulation, FullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <class Formulation, bool fullHess>
+double HingeElement<Formulation, fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -32,9 +32,9 @@ double HingeElement<Formulation, FullHess>::energy(const Eigen::Ref<const Eigen:
   return _coeff * _hinge.func(n0, n1, axis);
 }
 
-template <class Formulation, bool FullHess>
-typename HingeElement<Formulation, FullHess>::LocalVector
-HingeElement<Formulation, FullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <class Formulation, bool fullHess>
+typename HingeElement<Formulation, fullHess>::LocalVector
+HingeElement<Formulation, fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
@@ -45,16 +45,16 @@ HingeElement<Formulation, FullHess>::gradient(const Eigen::Ref<const Eigen::Vect
   return _coeff * _hinge.deriv(n0, n1, axis) * bendAngleGradient(V);
 }
 
-template <class Formulation, bool FullHess>
-typename HingeElement<Formulation, FullHess>::LocalMatrix
-HingeElement<Formulation, FullHess>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <class Formulation, bool fullHess>
+typename HingeElement<Formulation, fullHess>::LocalMatrix
+HingeElement<Formulation, fullHess>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
   LocalMatrix bend_hess;
   LocalVector bend_grad;
-  if(FullHess)
+  if(fullHess)
     bend_grad = bendAngleGradient(V, &bend_hess);
   else
     bend_grad = bendAngleGradient(V);
@@ -67,16 +67,16 @@ HingeElement<Formulation, FullHess>::hessian(const Eigen::Ref<const Eigen::Vecto
   deriv = _hinge.deriv(n0, n1, axis, &dderiv);
 
   LocalMatrix hess = dderiv * bend_grad * bend_grad.transpose();
-  if(FullHess)
+  if(fullHess)
   {
     hess += deriv * bend_hess;
   }
   return _coeff * hess;
 }
 
-template <class Formulation, bool FullHess>
-typename HingeElement<Formulation, FullHess>::LocalVector
-HingeElement<Formulation, FullHess>::bendAngleGradient(const Eigen::Ref<const Mat3<double>> V,
+template <class Formulation, bool fullHess>
+typename HingeElement<Formulation, fullHess>::LocalVector
+HingeElement<Formulation, fullHess>::bendAngleGradient(const Eigen::Ref<const Mat3<double>> V,
                                                        LocalMatrix *hessian) const
 {
   using namespace Eigen;

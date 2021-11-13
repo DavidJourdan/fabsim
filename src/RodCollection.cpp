@@ -13,7 +13,8 @@
 namespace fsim
 {
 
-RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
+template <bool fullHess>
+RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                              const std::vector<std::vector<int>> &indices,
                              const Eigen::Ref<const Mat2<int>> C,
                              const Eigen::Ref<const Mat3<double>> N,
@@ -37,7 +38,7 @@ RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
   {
     Mat3<double> D1, D2;
     Map<VectorXi> E(const_cast<int *>(indices[i].data()), indices[i].size());
-    ElasticRod::bishopFrame(V, E, N.row(i), D1, D2);
+    ElasticRod<>::bishopFrame(V, E, N.row(i), D1, D2);
     for(int j = 0; j < E.size() - 1; ++j)
     {
       this->_frames.emplace_back((V.row(E(j + 1)) - V.row(E(j))).normalized(), D1.row(j), D2.row(j));
@@ -124,7 +125,8 @@ RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
   assert(this->_springs.size() == this->_frames.size());
 }
 
-RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
+template <bool fullHess>
+RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                              const std::vector<std::vector<int>> &indices,
                              const Eigen::Ref<const Mat2<int>> C,
                              const Eigen::Ref<const Mat3<double>> N,
@@ -143,7 +145,7 @@ RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
   {
     Mat3<double> D1, D2;
     Map<VectorXi> E(const_cast<int *>(indices[i].data()), indices[i].size());
-    ElasticRod::bishopFrame(V, E, N.row(i), D1, D2);
+    ElasticRod<>::bishopFrame(V, E, N.row(i), D1, D2);
     for(int j = 0; j < E.size() - 1; ++j)
     {
       this->_frames.emplace_back((V.row(E(j + 1)) - V.row(E(j))).normalized(), D1.row(j), D2.row(j));
@@ -227,7 +229,8 @@ RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
   assert(this->_springs.size() == this->_frames.size());
 }
 
-double RodCollection::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <bool fullHess>
+double RodCollection<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -237,28 +240,29 @@ double RodCollection::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
     for(int i = k; i < k + std::get<2>(data); ++i)
     {
-      auto e = _stencils[i]; // make a copy
+      auto e = this->_stencils[i]; // make a copy
 
       // update properties
-      LocalFrame f1 = getFrame(X, e.idx(0), e.idx(1), e.idx(3));
+      LocalFrame f1 = this->getFrame(X, e.idx(0), e.idx(1), e.idx(3));
       f1.update(X.segment<3>(3 * e.idx(0)), X.segment<3>(3 * e.idx(1)));
-      LocalFrame f2 = getFrame(X, e.idx(1), e.idx(2), e.idx(4));
+      LocalFrame f2 = this->getFrame(X, e.idx(1), e.idx(2), e.idx(4));
       f2.update(X.segment<3>(3 * e.idx(1)), X.segment<3>(3 * e.idx(2)));
 
       e.updateReferenceTwist(f1, f2);
 
-      result += e.energy(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), _mass);
+      result += e.energy(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), this->_mass);
     }
     k += std::get<2>(data);
   }
 
-  for(const auto &s: _springs)
-    result += _stretch_modulus * s.energy(X);
+  for(const auto &s: this->_springs)
+    result += this->_stretch_modulus * s.energy(X);
 
   return result;
 }
 
-void RodCollection::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const
+template <bool fullHess>
+void RodCollection<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const
 {
   using namespace Eigen;
 
@@ -268,29 +272,29 @@ void RodCollection::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::R
     for(int i = k; i < k + std::get<2>(data); ++i)
     {
       auto& e = this->_stencils[i];
-      LocalFrame f1 = getFrame(X, e.idx(0), e.idx(1), e.idx(3));
-      LocalFrame f2 = getFrame(X, e.idx(1), e.idx(2), e.idx(4));
-      auto grad = e.gradient(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), _mass);
+      LocalFrame f1 = this->getFrame(X, e.idx(0), e.idx(1), e.idx(3));
+      LocalFrame f2 = this->getFrame(X, e.idx(1), e.idx(2), e.idx(4));
+      auto grad = e.gradient(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), this->_mass);
 
-      int n = e.nbVertices();
-      for(int j = 0; j < n; ++j)
-        Y.segment<3>(3 * e.idx(j)) += grad.segment<3>(3 * j);
+      for(int j = 0; j < 3; ++j)
+        Y.segment<3>(3 * e.idx(j)) += grad.template segment<3>(3 * j);
 
-      for(int j = 0; j < e.idx.size() - n; ++j)
-        Y(e.idx(n + j)) += grad(3 * n + j);
+      Y(e.idx(3)) += grad(9);
+      Y(e.idx(4)) += grad(10);
     }
     k += std::get<2>(data);
   }
 
-  for(const auto &s: _springs)
+  for(const auto &s: this->_springs)
   {
-    Vector3d force = _stretch_modulus * s.force(X);
+    Vector3d force = this->_stretch_modulus * s.force(X);
     Y.segment<3>(3 * s.i) -= force;
     Y.segment<3>(3 * s.j) += force;
   }
 }
 
-Eigen::VectorXd RodCollection::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <bool fullHess>
+Eigen::VectorXd RodCollection<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -299,7 +303,8 @@ Eigen::VectorXd RodCollection::gradient(const Eigen::Ref<const Eigen::VectorXd> 
   return Y;
 }
 
-std::vector<Eigen::Triplet<double>> RodCollection::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <bool fullHess>
+std::vector<Eigen::Triplet<double>> RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -365,5 +370,8 @@ std::vector<Eigen::Triplet<double>> RodCollection::hessianTriplets(const Eigen::
 
   return triplets;
 }
+
+template class RodCollection<true>;
+template class RodCollection<false>;
 
 } // namespace fsim

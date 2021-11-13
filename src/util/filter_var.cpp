@@ -12,8 +12,15 @@
 namespace fsim
 {
 
-template <typename scalar>
-void filter_var(Eigen::SparseMatrix<scalar> &M, const std::vector<int> &indices)
+void filter_var(Eigen::Ref<Eigen::VectorXd> X, const std::vector<int> &indices)
+{
+  for(auto index: indices)
+  {
+    X(index) = 0;
+  }
+}
+
+void filter_var(Eigen::SparseMatrix<double> &M, const std::vector<int> &indices)
 {
   if(!std::is_sorted(indices.begin(), indices.end()))
     throw(std::invalid_argument("indices are not sorted"));
@@ -33,6 +40,4 @@ void filter_var(Eigen::SparseMatrix<scalar> &M, const std::vector<int> &indices)
   M.makeCompressed();
 }
 
-template void filter_var(Eigen::SparseMatrix<double> &M, const std::vector<int> &indices);
-template void filter_var(Eigen::SparseMatrix<float> &M, const std::vector<int> &indices);
 } // namespace fsim

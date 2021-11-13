@@ -1,7 +1,7 @@
 #include "catch.hpp"
 #include "helpers.h"
 
-#include <fsim/DiscreteShell.h>
+#include <fsim/ElasticShell.h>
 #include <fsim/util/geometry.h>
 
 using namespace fsim;
@@ -50,7 +50,7 @@ TEST_CASE("signed angle")
   REQUIRE(signed_angle(u, v, axis) == Approx(angle).epsilon(1e-10));
 }
 
-TEST_CASE("DiscreteShell class")
+TEST_CASE("ElasticShell class")
 {
   using namespace Eigen;
 
@@ -62,7 +62,7 @@ TEST_CASE("DiscreteShell class")
   double young_modulus = GENERATE(take(2, random(0., 1.)));
   double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
   double thickness = GENERATE(take(2, random(0., 1.)));
-  ElasticShell shell(V, F, young_modulus, poisson_ratio, thickness);
+  ElasticShell<> shell(V, F, young_modulus, poisson_ratio, thickness);
 
   SECTION("Thickness")
   {

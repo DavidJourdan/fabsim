@@ -30,16 +30,29 @@ enum class CrossSection { Square, Circle };
 
 struct RodParams
 {
-  double thickness;
-  double width;
-  double E;
-  double mass = 0;
-  CrossSection crossSection = CrossSection::Circle;
+  double thickness;  // rod's thickness (aka 'normal width')
+  double width;      // rod's width (aka 'binormal width')
+  double E;  // Young's modulus
+  double mass = 0;  // mass per unit volume
+  CrossSection crossSection = CrossSection::Circle;  // shape of the cross-section (can be elliptic or rectangular)
 };
 
+/**
+ * Implementation of the Discrete Elastic Rods model
+ * @tparam fullHess  Wether to compute the full matrix of second derivatives or use a quadratic approximation
+ * If true, the Newton solver will converge faster when it's close to the solution but the hessian might be non-SPD
+ */
+template <bool fullHess = true>
 class ElasticRod
 {
 public:
+  /**
+   * ElasticRod constructor
+   * @param V  nV by 3 list of vertex positions
+   * @param F  nF by 3 list of face indices
+   * @param n  normal of the first edge, used to define the rest of the frames through parallel transport
+   * @param p  rod's parameters
+   */
   ElasticRod(const Eigen::Ref<const Mat3<double>> V,
              const Eigen::Ref<const Eigen::VectorXi> indices,
              const Eigen::Vector3d &n,
@@ -79,13 +92,18 @@ public:
    */
   virtual std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
+  /**
+   * updates the attached material frames and their accumulated twist
+   * @param X  a flat vector stacking all degrees of freedom
+   */
   void updateProperties(const Eigen::Ref<const Eigen::VectorXd> X);
 
+  // returns the (rotated or not) frame directors D1 and D2 stacked in an nV by 3 matrix
   void getReferenceDirectors(Mat3<double> &D1, Mat3<double> &D2) const;
   void getRotatedDirectors(const Eigen::Ref<const Eigen::VectorXd> theta, Mat3<double> &P1, Mat3<double> &P2) const;
 
-  std::vector<RodStencil> const &rodStencils() const { return _stencils; };
-  std::vector<RodStencil> &rodStencils() { return _stencils; };
+  std::vector<RodStencil<fullHess>> const &rodStencils() const { return _stencils; };
+  std::vector<RodStencil<fullHess>> &rodStencils() { return _stencils; };
 
   std::vector<Spring<true>> const &springs() const { return _springs; }
   std::vector<Spring<true>> &springs() { return _springs; }
@@ -93,11 +111,13 @@ public:
   double getMass() const { return _mass; };
   void setMass(double mass) { _mass = mass; };
 
+  // returns the "stiffnesses", correspond the second moments of area used to define the stiffness as a function of cross-sections
   Eigen::Vector2d stiffness(const Eigen::Vector2d &stiff) { return _stiffness; }
   Eigen::Vector2d const &stiffness() const { return _stiffness; }
 
   void setParams(const RodParams &params);
 
+  // number of edges
   int nbEdges() const { return _springs.size(); }
 
   /**
@@ -118,7 +138,7 @@ public:
    * Returns curvature binormals
    * @param P  nP by 3 list of vertex positions, including but not limited to rod vertex positions
    * @param E  nE + 1 by 1 list of rod vertex indices into P
-   * @return KB nE - 1 by 3 list of curvature binormals
+   * @return  nE - 1 by 3 list of curvature binormals
    */
   static Mat3<double> curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
                                          const Eigen::Ref<const Eigen::VectorXi> E);
@@ -129,7 +149,7 @@ public:
    * @param X a flat vector stacking all degrees of freedom
    * @param x0 index of the 'from' vertex
    * @param x1 index of the 'to' vertex
-   * @param id index of the corresponding rotational degree of freedom
+   * @param k index of the corresponding rotational degree of freedom
    * @return
    */
   LocalFrame getFrame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int k) const;
@@ -139,7 +159,7 @@ protected:
   double _stretch_modulus;
   double _mass;
   Eigen::Vector2d _stiffness;
-  mutable std::vector<RodStencil> _stencils;
+  mutable std::vector<RodStencil<fullHess>> _stencils;
   std::vector<LocalFrame> _frames;
   std::vector<Spring<true>> _springs;
 };

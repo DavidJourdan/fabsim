@@ -1,8 +1,8 @@
 #include "catch.hpp"
 #include "helpers.h"
 
-#include <fsim/DiscreteShell.h>
-#include <fsim/ElasticMembraneModel.h>
+#include <fsim/ElasticShell.h>
+#include <fsim/ElasticMembrane.h>
 #include <fsim/ElasticRod.h>
 #include <fsim/RodStencil.h>
 #include <fsim/TriangleElement.h>
@@ -14,7 +14,7 @@ using namespace fsim;
 
 // MEMBRANES
 
-TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, NHIncompressibleElement<>)
+TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, NeoHookeanIncompressibleElement<>)
 {
   using namespace Eigen;
 
@@ -30,22 +30,6 @@ TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, NH
 
   SECTION("Gradient") { test_gradient(e, 1e-5); }
   SECTION("Hessian") { test_hessian(e, 1e-5); }
-}
-
-TEMPLATE_TEST_CASE("ElasticMembraneModel", "", StVKMembrane, NeoHookeanMembrane, NHIncompressibleMembrane)
-{
-  using namespace Eigen;
-
-  Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
-  Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
-  double thickness = GENERATE(take(2, random(0., 1.)));
-  double young_modulus = GENERATE(take(2, random(0., 1.)));
-  double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
-
-  TestType membrane(V, F, thickness, young_modulus, poisson_ratio);
-
-  SECTION("Gradient") { test_gradient(membrane, 1e-5); }
-  SECTION("Hessian") { test_hessian(membrane, 1e-5); }
 }
 
 TEST_CASE("OrthotropicStVKElement", "[StVK]")
@@ -106,7 +90,7 @@ struct BundledRodStencil
     stencil.setReferenceTwist(ref_twist);
     return res;
   }
-  RodStencil::LocalVector gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+  RodStencil<>::LocalVector gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
     LocalFrame new_f1 =
         updateFrame(f1, X.segment<3>(3 * stencil.idx(0)), X.segment<3>(3 * stencil.idx(1)));
@@ -119,7 +103,7 @@ struct BundledRodStencil
     stencil.setReferenceTwist(ref_twist);
     return res;
   }
-  RodStencil::LocalMatrix hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+  RodStencil<>::LocalMatrix hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
   {
     return stencil.hessian(X, f1, f2, stiffness, mass);
   }
@@ -127,7 +111,7 @@ struct BundledRodStencil
   static const int NB_VERTICES = 3;
   static const int NB_DOFS = 11;
 
-  mutable RodStencil stencil;
+  mutable RodStencil<> stencil;
   mutable LocalFrame f1;
   mutable LocalFrame f2;
   double mass;
@@ -204,24 +188,6 @@ TEMPLATE_TEST_CASE("HingeElement", "", SquaredAngleFormulation, TanAngleFormulat
 
   SECTION("Gradient") { test_gradient(e1, 5e-5, check_normals); }
   SECTION("Hessian") { test_hessian(e1, 5e-5, check_normals); }
-}
-
-TEMPLATE_TEST_CASE("DiscreteShell class", "", SquaredAngleFormulation, TanAngleFormulation)
-{
-  using namespace Eigen;
-
-  VectorXd X = GENERATE(take(2, filter(check_normals, vector_random(12))));
-  Map<Mat3<double>> V(X.data(), 4, 3);
-  MatrixX3i F(2, 3);
-  F << 0, 1, 2, 0, 2, 3;
-
-  double young_modulus = GENERATE(take(2, random(0., 1.)));
-  double poisson_ratio = GENERATE(take(2, random(0.01, 0.5)));
-  double thickness = GENERATE(take(2, random(0., 1.)));
-  DiscreteShell<TestType, true> shell(V, F, young_modulus, poisson_ratio, thickness);
-
-  SECTION("Gradient") { test_gradient(shell, 5e-5, check_normals); }
-  SECTION("Hessian") { test_hessian(shell, 5e-5, check_normals); }
 }
 
 // SPRINGS

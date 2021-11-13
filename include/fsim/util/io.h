@@ -19,7 +19,7 @@ namespace fsim
  * Read OFF file and store vertex and face information into V and F
  * @param file  path to file where V and F information is stored
  * @return V  nV by 3 matrix of vertices
- * @return F  nF by 3 matrix of face indices
+ * @return F  nF by 3 (or 4) matrix of face (or tet) indices
  */
 void readOFF(const std::string &file, Mat3<double> &V, Mat3<int> &F);
 void readOFF(const std::string &file, Mat3<double> &V, Mat4<int> &F);
@@ -56,7 +56,6 @@ void saveROD(const std::string &file, const std::vector<std::vector<int>> &rod_i
  */
 void saveOBJ(const std::string &file,
              const Eigen::Ref<const Mat3<double>> V,
-             const Eigen::Ref<const Mat<int>> F,
-             const std::vector<std::vector<int>> &rod_indices);
+             const Eigen::Ref<const Mat<int>> F);
 
 } // namespace fsim

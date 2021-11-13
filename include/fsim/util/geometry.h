@@ -6,6 +6,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include "fsim/util/typedefs.h"
 
 namespace fsim
 {
@@ -77,7 +78,7 @@ bool point_in_segment(const Eigen::Vector3d &x, const Eigen::Vector3d &a, const 
  * @return  norm of x
  */
 template <int n = 3>
-double normalize(Eigen::Matrix<double, n, 1> &x)
+double normalize(Vec<double, n> &x)
 {
   double norm = x.norm();
   x /= norm;
@@ -91,7 +92,7 @@ double normalize(Eigen::Matrix<double, n, 1> &x)
  * @return  $$M = x \cdot y^T$$
  */
 template <int i = 3, int j = 3>
-auto outer_prod(const Eigen::Matrix<double, i, 1> &x, const Eigen::Matrix<double, j, 1> &y)
+auto outer_prod(const Vec<double, i> &x, const Vec<double, j> &y)
 {
   return x * y.transpose();
 }

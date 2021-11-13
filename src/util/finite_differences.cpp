@@ -35,10 +35,35 @@ Eigen::VectorXd finite_differences(const std::function<double(const Eigen::Ref<c
   return derivative;
 }
 
-Eigen::SparseMatrix<double, Eigen::ColMajor>
+Eigen::MatrixXd
 finite_differences(const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
                    const Eigen::Ref<const Eigen::VectorXd> var,
                    bool parallelism_enabled)
+{
+  using namespace Eigen;
+  const double epsilon = 1.1e-8;
+  int n = var.size();
+
+  VectorXd func_var = func(var);
+  MatrixXd derivative(func_var.size(), n);
+
+#pragma omp parallel for if(n > 50 && parallelism_enabled)
+  for(int i = 0; i < n; ++i)
+  {
+    VectorXd e = VectorXd::Zero(n);
+    e(i) = epsilon;
+    VectorXd diff = (func(var + e) - func_var) / epsilon;
+
+    derivative.col(i) = diff;
+  }
+  return derivative;
+}
+
+
+Eigen::SparseMatrix<double>
+finite_differences_sparse(const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
+                          const Eigen::Ref<const Eigen::VectorXd> var,
+                          bool parallelism_enabled)
 {
   using namespace Eigen;
   const double epsilon = 1.1e-8;
@@ -73,7 +98,7 @@ void derivative_check(const std::function<double(const Eigen::Ref<const Eigen::V
 
 void derivative_check(
     const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
-    const std::function<Eigen::SparseMatrix<double>(const Eigen::Ref<const Eigen::VectorXd>)> &derivative,
+    const std::function<Eigen::MatrixXd(const Eigen::Ref<const Eigen::VectorXd>)> &derivative,
     const Eigen::Ref<const Eigen::VectorXd> var,
     bool dump_matrices)
 {
@@ -111,47 +136,35 @@ void derivative_check(const std::function<double(const Eigen::Ref<const Eigen::V
 
 void derivative_check(
     const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
-    const std::function<Eigen::SparseMatrix<double>(const Eigen::Ref<const Eigen::VectorXd>)> &derivative,
+    const std::function<Eigen::MatrixXd(const Eigen::Ref<const Eigen::VectorXd>)> &derivative,
     const Eigen::Ref<const Eigen::VectorXd> var,
     std::vector<int> &indices_to_be_filtered,
     bool dump_matrices)
 {
   using namespace Eigen;
-  SparseMatrix<double> diff = finite_differences(func, var);
+  MatrixXd diff = finite_differences(func, var);
   filter_var(diff, indices_to_be_filtered);
 
   if(dump_matrices)
   {
     std::cout << "FINITE DIFFERENCES\n" << std::defaultfloat;
-    std::cout << MatrixXd(diff) << "\n\n";
+    std::cout << diff << "\n\n";
     std::cout << "HESSIAN\n";
-    std::cout << MatrixXd(derivative(var)) << "\n\n";
+    std::cout << derivative(var) << "\n\n";
     diff -= derivative(var);
     std::cout << "FINITE DIFFERENCES - HESSIAN\n";
-    std::cout << MatrixXd(diff) << "\n\n";
+    std::cout << diff << "\n\n";
   }
   else
     diff -= derivative(var);
 
-  std::cout << "Average error: " << std::sqrt(diff.squaredNorm() / diff.nonZeros()) << std::endl;
+  std::cout << "Average error: " << diff.cwiseAbs().sum() / var.size() << std::endl;
 
   double max = 0;
   int row_max = 0;
   int col_max = 0;
 
-  for(int k = 0; k < diff.outerSize(); ++k)
-  {
-    for(SparseMatrix<double>::InnerIterator it(diff, k); it; ++it)
-    {
-      if(std::abs(it.value()) > max)
-      {
-        max = std::abs(it.value());
-        row_max = it.row();
-        col_max = it.col();
-      }
-    }
-  }
-
+  double max_error = diff.cwiseAbs().maxCoeff(&row_max, &col_max);
   std::cout << "Max error at (" << row_max << ", " << col_max << "): " << max << std::endl;
 }
 

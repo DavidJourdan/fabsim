@@ -1,17 +1,17 @@
-// DiscreteShell.cpp
+// ElasticShell.cpp
 //
 // Author: David Jourdan (david.jourdan@inria.fr)
 // Created: 09/11/19
 
-#include "fsim/DiscreteShell.h"
+#include "fsim/ElasticShell.h"
 
 #include "fsim/util/geometry.h"
 
 namespace fsim
 {
 
-template <class Formulation, bool FullHess>
-DiscreteShell<Formulation, FullHess>::DiscreteShell(const Eigen::Ref<const Mat3<double>> V,
+template <class Formulation, bool fullHess>
+ElasticShell<Formulation, fullHess>::ElasticShell(const Eigen::Ref<const Mat3<double>> V,
                                                     const Eigen::Ref<const Mat3<int>> F,
                                                     double thickness,
                                                     double young_modulus,
@@ -47,8 +47,8 @@ DiscreteShell<Formulation, FullHess>::DiscreteShell(const Eigen::Ref<const Mat3<
   }
 }
 
-template <class Formulation, bool FullHess>
-Mat4<int> DiscreteShell<Formulation, FullHess>::hingeIndices(const Eigen::Ref<const Mat3<double>> V,
+template <class Formulation, bool fullHess>
+Mat4<int> ElasticShell<Formulation, fullHess>::hingeIndices(const Eigen::Ref<const Mat3<double>> V,
                                                              const Eigen::Ref<const Mat3<int>> F)
 {
   using namespace Eigen;
@@ -100,8 +100,8 @@ Mat4<int> DiscreteShell<Formulation, FullHess>::hingeIndices(const Eigen::Ref<co
   return E;
 }
 
-template <class Formulation, bool FullHess>
-void DiscreteShell<Formulation, FullHess>::setYoungModulus(double young_modulus)
+template <class Formulation, bool fullHess>
+void ElasticShell<Formulation, fullHess>::setYoungModulus(double young_modulus)
 {
   assert(young_modulus > 0);
   for(auto &element: this->_elements)
@@ -111,8 +111,8 @@ void DiscreteShell<Formulation, FullHess>::setYoungModulus(double young_modulus)
   _young_modulus = young_modulus;
 }
 
-template <class Formulation, bool FullHess>
-void DiscreteShell<Formulation, FullHess>::setPoissonRatio(double poisson_ratio)
+template <class Formulation, bool fullHess>
+void ElasticShell<Formulation, fullHess>::setPoissonRatio(double poisson_ratio)
 {
   assert(poisson_ratio > 0 && poisson_ratio <= 0.5);
   for(auto &element: this->_elements)
@@ -122,8 +122,8 @@ void DiscreteShell<Formulation, FullHess>::setPoissonRatio(double poisson_ratio)
   _poisson_ratio = poisson_ratio;
 }
 
-template <class Formulation, bool FullHess>
-void DiscreteShell<Formulation, FullHess>::setThickness(double thickness)
+template <class Formulation, bool fullHess>
+void ElasticShell<Formulation, fullHess>::setThickness(double thickness)
 {
   assert(thickness > 0);
   for(auto &element: this->_elements)
@@ -133,9 +133,9 @@ void DiscreteShell<Formulation, FullHess>::setThickness(double thickness)
   _thickness = thickness;
 }
 
-template class DiscreteShell<TanAngleFormulation, true>;
-template class DiscreteShell<TanAngleFormulation, false>;
-template class DiscreteShell<SquaredAngleFormulation, true>;
-template class DiscreteShell<SquaredAngleFormulation, false>;
+template class ElasticShell<TanAngleFormulation, true>;
+template class ElasticShell<TanAngleFormulation, false>;
+template class ElasticShell<SquaredAngleFormulation, true>;
+template class ElasticShell<SquaredAngleFormulation, false>;
 
 } // namespace fsim

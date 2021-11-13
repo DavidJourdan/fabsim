@@ -13,6 +13,7 @@
 namespace fsim
 {
 
+template <bool fullHess = true>
 class RodStencil : public ElementBase<3, 2>
 {
 public:

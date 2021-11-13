@@ -16,19 +16,20 @@ namespace fsim
 {
 
 template <int id = 0>
-class OrthotropicStVKModel : public ModelBase<OrthotropicStVKElement<id>>
+class OrthotropicStVKMembrane : public ModelBase<OrthotropicStVKElement<id>>
 {
 public:
   /**
-   * constructor for OrthotropicStVKModel
+   * constructor for OrthotropicStVKMembrane
    * @param V  nV by 3 list of vertex positions
    * @param F  nF by 3 list of face indices
    * @param thicknesses  membrane's thickness (per-triangle value)
    * @param E1  0 degree Young's modulus
    * @param E2  90 degrees Young's modulus
    * @param poisson_ratio  membrane's Poisson's ratio
+   * @param mass  membrane's mass (defaults to 0 to disable gravity)
    */
-  OrthotropicStVKModel(const Eigen::Ref<const Mat2<double>> V,
+  OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
                        const Eigen::Ref<const Mat3<int>> F,
                        double thickness,
                        double E1,
@@ -36,7 +37,7 @@ public:
                        double poisson_ratio,
                        double mass = 0);
 
-  OrthotropicStVKModel(const Eigen::Ref<const Mat2<double>> V,
+  OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
                        const Eigen::Ref<const Mat3<int>> F,
                        const std::vector<double> &thicknesses,
                        double E1,
@@ -44,15 +45,22 @@ public:
                        double poisson_ratio,
                        double mass = 0);
 
+  // number of degrees of freedom
   int nbDOFs() const { return 3 * nV; }
-  void setPoissonRatio(double poisson_ratio);
-  void setYoungModuli(double E1, double E2);
-  void setThickness(double t);
-  void setMass(double mass);
 
+  // set Poisson ratio (between 0 and 0.5)
+  void setPoissonRatio(double poisson_ratio);
   double getPoissonRatio() const { return _poisson_ratio; }
+  
+  // set Young's moduli (E1 and E2 respectively control the horizontal and vertical stiffness)
+  void setYoungModuli(double E1, double E2);
   std::array<double, 2> getYoungModuli() const { return {_E1, _E2}; }
+  
+  // set thickness of the membrane (controls the amount of stretching and the total weight) negative values are not allowed
+  void setThickness(double t);
   double getThickness() const { return _thickness; }
+
+  void setMass(double mass);
   double getMass() const { return OrthotropicStVKElement<id>::mass; }
 
 private:
@@ -63,23 +71,21 @@ private:
   double _E2;
 };
 
-using OrthotropicStVKMembrane = OrthotropicStVKModel<0>;
-
 template <int id>
-OrthotropicStVKModel<id>::OrthotropicStVKModel(const Eigen::Ref<const Mat2<double>> V,
+OrthotropicStVKMembrane<id>::OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
                                                const Eigen::Ref<const Mat3<int>> F,
                                                double thickness,
                                                double E1,
                                                double E2,
                                                double poisson_ratio,
                                                double mass)
-    : OrthotropicStVKModel(V, F, std::vector<double>(F.rows(), thickness), E1, E2, poisson_ratio, mass)
+    : OrthotropicStVKMembrane(V, F, std::vector<double>(F.rows(), thickness), E1, E2, poisson_ratio, mass)
 {
   _thickness = thickness;
 }
 
 template <int id>
-OrthotropicStVKModel<id>::OrthotropicStVKModel(const Eigen::Ref<const Mat2<double>> V,
+OrthotropicStVKMembrane<id>::OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
                                                const Eigen::Ref<const Mat3<int>> F,
                                                const std::vector<double> &thicknesses,
                                                double E1,
@@ -94,7 +100,7 @@ OrthotropicStVKModel<id>::OrthotropicStVKModel(const Eigen::Ref<const Mat2<doubl
 
   if(OrthotropicStVKElement<id>::_C.norm() != 0)
     std::cerr << "Warning: overwriting elasticity tensor. Please declare your different instances as "
-                 "OrthotropicStVKModel<0>, OrthotropicStVKModel<1>, etc.\n";
+                 "OrthotropicStVKMembrane<0>, OrthotropicStVKMembrane<1>, etc.\n";
 
   OrthotropicStVKElement<id>::_C << 
     E1, poisson_ratio * sqrt(E1 * E2), 0, 
@@ -110,7 +116,7 @@ OrthotropicStVKModel<id>::OrthotropicStVKModel(const Eigen::Ref<const Mat2<doubl
 }
 
 template <int id>
-void OrthotropicStVKModel<id>::setPoissonRatio(double poisson_ratio)
+void OrthotropicStVKMembrane<id>::setPoissonRatio(double poisson_ratio)
 {
   _poisson_ratio = poisson_ratio;
 
@@ -123,7 +129,7 @@ void OrthotropicStVKModel<id>::setPoissonRatio(double poisson_ratio)
 }
 
 template <int id>
-void OrthotropicStVKModel<id>::setYoungModuli(double E1, double E2)
+void OrthotropicStVKMembrane<id>::setYoungModuli(double E1, double E2)
 {
   _E1 = E1;
   _E2 = E2;
@@ -137,7 +143,7 @@ void OrthotropicStVKModel<id>::setYoungModuli(double E1, double E2)
 }
 
 template <int id>
-void OrthotropicStVKModel<id>::setThickness(double t)
+void OrthotropicStVKMembrane<id>::setThickness(double t)
 {
   if(_thickness <= 0)
     throw std::runtime_error(
@@ -150,7 +156,7 @@ void OrthotropicStVKModel<id>::setThickness(double t)
 }
 
 template <int id>
-void OrthotropicStVKModel<id>::setMass(double mass)
+void OrthotropicStVKMembrane<id>::setMass(double mass)
 {
   OrthotropicStVKElement<id>::mass = mass;
 }

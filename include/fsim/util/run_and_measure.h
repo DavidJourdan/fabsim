@@ -11,6 +11,7 @@
 namespace fsim
 {
 
+// simple utility to time a given function
 template <typename TFunc>
 void run_and_measure(TFunc &&f, const char *name)
 {

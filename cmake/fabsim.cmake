@@ -16,7 +16,7 @@ find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 set (EXTRA_LIBS ${EXTRA_LIBS} Eigen3::Eigen)
 
 ### fabsim
-file(GLOB BASE ${FABSIM_SOURCE_DIR}/DiscreteShell.cpp
+file(GLOB BASE ${FABSIM_SOURCE_DIR}/ElasticShell.cpp
                ${FABSIM_SOURCE_DIR}/ElasticRod.cpp
                ${FABSIM_SOURCE_DIR}/HingeElement.cpp
                ${FABSIM_SOURCE_DIR}/LocalFrame.cpp
