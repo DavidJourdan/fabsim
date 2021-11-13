@@ -12,8 +12,8 @@ namespace fsim
 
 template <bool MeasureCompression>
 MassSpring<MeasureCompression>::MassSpring(const Eigen::Ref<const Mat3<double>> V,
-                                                    const Eigen::Ref<const Mat3<int>> F,
-                                                    double young_modulus)
+                                           const Eigen::Ref<const Mat3<int>> F,
+                                           double young_modulus)
     : _young_modulus(young_modulus)
 {
   using namespace Eigen;
@@ -58,7 +58,7 @@ double MassSpring<MeasureCompression>::energy(const Eigen::Ref<const Eigen::Vect
 
 template <bool MeasureCompression>
 void MassSpring<MeasureCompression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
-                                                  Eigen::Ref<Eigen::VectorXd> Y) const
+                                              Eigen::Ref<Eigen::VectorXd> Y) const
 {
   using namespace Eigen;
   assert(X.size() == 3 * nV);
@@ -103,7 +103,7 @@ MassSpring<MeasureCompression>::hessianTriplets(const Eigen::Ref<const Eigen::Ve
       for(int a = 0; a < 3; ++a)
         for(int b = 0; b < 3; ++b)
           triplets[3 * (3 * (3 * k + a) + b) + 0] = Triplet<double>(3 * s.j + a, 3 * s.i + b, h(a, b));
-    
+
     for(int a = 0; a < 3; ++a)
       for(int b = 0; b < 3; ++b)
       {

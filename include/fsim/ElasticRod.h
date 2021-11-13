@@ -30,11 +30,11 @@ enum class CrossSection { Square, Circle };
 
 struct RodParams
 {
-  double thickness;  // rod's thickness (aka 'normal width')
-  double width;      // rod's width (aka 'binormal width')
-  double E;  // Young's modulus
-  double mass = 0;  // mass per unit volume
-  CrossSection crossSection = CrossSection::Circle;  // shape of the cross-section (can be elliptic or rectangular)
+  double thickness;                                 // rod's thickness (aka 'normal width')
+  double width;                                     // rod's width (aka 'binormal width')
+  double E;                                         // Young's modulus
+  double mass = 0;                                  // mass per unit volume
+  CrossSection crossSection = CrossSection::Circle; // shape of the cross-section (can be elliptic or rectangular)
 };
 
 /**
@@ -111,7 +111,7 @@ public:
   double getMass() const { return _mass; };
   void setMass(double mass) { _mass = mass; };
 
-  // returns the "stiffnesses", correspond the second moments of area used to define the stiffness as a function of cross-sections
+  // returns the "stiffnesses", corresponds to the second moments of area times the Young's modulus
   Eigen::Vector2d stiffness(const Eigen::Vector2d &stiff) { return _stiffness; }
   Eigen::Vector2d const &stiffness() const { return _stiffness; }
 

@@ -30,7 +30,9 @@ public:
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @param face  list of 3 indices, one per vertex of the triangle
    */
-  IncompressibleNeoHookeanElement(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector3i &face, double thickness);
+  IncompressibleNeoHookeanElement(const Eigen::Ref<const Mat3<double>> V,
+                                  const Eigen::Vector3i &face,
+                                  double thickness);
 
   /**
    * @param X  a flat vector stacking all degrees of freedom
@@ -103,8 +105,6 @@ protected:
   Eigen::Matrix2d abar_inv;
 };
 
-
-
 // the ids are there to disambiguate between TriangleElements pertaining to different Membrane instances
 // so that they don't have the same static fields
 template <int id>
@@ -118,8 +118,8 @@ double IncompressibleNeoHookeanElement<id>::E = 0;
 
 template <int id>
 IncompressibleNeoHookeanElement<id>::IncompressibleNeoHookeanElement(const Eigen::Ref<const Mat3<double>> V,
-                                          const Eigen::Vector3i &E,
-                                          double thickness)
+                                                                     const Eigen::Vector3i &E,
+                                                                     double thickness)
 {
   using namespace Eigen;
 
@@ -138,8 +138,8 @@ double IncompressibleNeoHookeanElement<id>::energy(const Eigen::Ref<const Eigen:
 
   Matrix2d a = first_fundamental_form(V, idx);
   double J = sqrt((a * abar_inv).determinant());
-  return coeff * E / (4 * (1 + nu)) * ((abar_inv * a).trace() / J - 2 + 1e4 * pow(J - 1, 2))
-   + 9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
+  return coeff * E / (4 * (1 + nu)) * ((abar_inv * a).trace() / J - 2 + 1e4 * pow(J - 1, 2)) +
+         9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
 }
 
 template <int id>
@@ -221,7 +221,7 @@ Eigen::Matrix2d IncompressibleNeoHookeanElement<id>::stress(const Eigen::Ref<con
   double J = sqrt((a * abar_inv).determinant());
   double trC = (abar_inv * a).trace() / J;
   return coeff * E / (2 * (1 + nu)) *
-          (Matrix2d::Identity() / J + (1e4 * J * (J - 1) - trC / 2) * (abar_inv * a).inverse());
+         (Matrix2d::Identity() / J + (1e4 * J * (J - 1) - trC / 2) * (abar_inv * a).inverse());
 }
 
 template <int id>
@@ -258,9 +258,9 @@ void IncompressibleNeoHookeanElement<id>::principalDirectionsAndEigenvalues(
 
 template <int id>
 void IncompressibleNeoHookeanElement<id>::principalStrains(const Eigen::Ref<const Mat3<double>> V,
-                                                Eigen::Vector3d &max_dir,
-                                                Eigen::Vector3d &min_dir,
-                                                Eigen::Vector2d &eigs) const
+                                                           Eigen::Vector3d &max_dir,
+                                                           Eigen::Vector3d &min_dir,
+                                                           Eigen::Vector2d &eigs) const
 {
   using namespace Eigen;
   Matrix2d abar = abar_inv.inverse();
@@ -270,9 +270,9 @@ void IncompressibleNeoHookeanElement<id>::principalStrains(const Eigen::Ref<cons
 
 template <int id>
 void IncompressibleNeoHookeanElement<id>::principalStresses(const Eigen::Ref<const Mat3<double>> V,
-                                                 Eigen::Vector3d &max_dir,
-                                                 Eigen::Vector3d &min_dir,
-                                                 Eigen::Vector2d &eigs) const
+                                                            Eigen::Vector3d &max_dir,
+                                                            Eigen::Vector3d &min_dir,
+                                                            Eigen::Vector2d &eigs) const
 {
   using namespace Eigen;
 
@@ -280,7 +280,7 @@ void IncompressibleNeoHookeanElement<id>::principalStresses(const Eigen::Ref<con
   Matrix2d a = first_fundamental_form(V, idx);
 
   return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), V, max_dir,
-                                             min_dir, eigs);
+                                           min_dir, eigs);
 }
 
 } // namespace fsim

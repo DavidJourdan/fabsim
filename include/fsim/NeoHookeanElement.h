@@ -103,8 +103,6 @@ protected:
   Eigen::Matrix2d abar_inv;
 };
 
-
-
 // the ids are there to disambiguate between TriangleElements pertaining to different Membrane instances
 // so that they don't have the same static fields
 template <int id>
@@ -118,8 +116,8 @@ double NeoHookeanElement<id>::E = 0;
 
 template <int id>
 NeoHookeanElement<id>::NeoHookeanElement(const Eigen::Ref<const Mat3<double>> V,
-                                          const Eigen::Vector3i &E,
-                                          double thickness)
+                                         const Eigen::Vector3i &E,
+                                         double thickness)
 {
   using namespace Eigen;
 
@@ -138,8 +136,8 @@ double NeoHookeanElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd> X) 
   Matrix2d a = first_fundamental_form(V, idx);
   // = \ln J with J^2 = \det C (C = abar_inv * a is the right Cauchy-Green deformation tensor)
   double lnJ = log((a * abar_inv).determinant()) / 2;
-  return coeff * E / (2 * (1 + nu)) * (nu / (1 - nu) * pow(lnJ, 2) + (abar_inv * a).trace() / 2 - 1 - lnJ)
-   + 9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
+  return coeff * E / (2 * (1 + nu)) * (nu / (1 - nu) * pow(lnJ, 2) + (abar_inv * a).trace() / 2 - 1 - lnJ) +
+         9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
 }
 
 template <int id>
@@ -157,7 +155,7 @@ NeoHookeanElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
   temp *= coeff * E / (4 * (1 + nu));
 
   Vec<double, 9> res = aderiv.transpose() * Map<Vector4d>(temp.data());
-  
+
   res(2) += 9.8 * coeff / 3 * mass;
   res(5) += 9.8 * coeff / 3 * mass;
   res(8) += 9.8 * coeff / 3 * mass;
@@ -209,8 +207,7 @@ Eigen::Matrix2d NeoHookeanElement<id>::stress(const Eigen::Ref<const Mat3<double
   Matrix2d a = first_fundamental_form(V, idx);
 
   double lnJ = log((a * abar_inv).determinant()) / 2;
-  return coeff * E / (2 * (1 + nu)) *
-          (Matrix2d::Identity() + (abar_inv * a).inverse() * (2 * nu / (1 - nu) * lnJ - 1));
+  return coeff * E / (2 * (1 + nu)) * (Matrix2d::Identity() + (abar_inv * a).inverse() * (2 * nu / (1 - nu) * lnJ - 1));
 }
 
 template <int id>
@@ -247,9 +244,9 @@ void NeoHookeanElement<id>::principalDirectionsAndEigenvalues(
 
 template <int id>
 void NeoHookeanElement<id>::principalStrains(const Eigen::Ref<const Mat3<double>> V,
-                                                Eigen::Vector3d &max_dir,
-                                                Eigen::Vector3d &min_dir,
-                                                Eigen::Vector2d &eigs) const
+                                             Eigen::Vector3d &max_dir,
+                                             Eigen::Vector3d &min_dir,
+                                             Eigen::Vector2d &eigs) const
 {
   using namespace Eigen;
   Matrix2d abar = abar_inv.inverse();
@@ -259,9 +256,9 @@ void NeoHookeanElement<id>::principalStrains(const Eigen::Ref<const Mat3<double>
 
 template <int id>
 void NeoHookeanElement<id>::principalStresses(const Eigen::Ref<const Mat3<double>> V,
-                                                 Eigen::Vector3d &max_dir,
-                                                 Eigen::Vector3d &min_dir,
-                                                 Eigen::Vector2d &eigs) const
+                                              Eigen::Vector3d &max_dir,
+                                              Eigen::Vector3d &min_dir,
+                                              Eigen::Vector2d &eigs) const
 {
   using namespace Eigen;
 
@@ -269,7 +266,7 @@ void NeoHookeanElement<id>::principalStresses(const Eigen::Ref<const Mat3<double
   Matrix2d a = first_fundamental_form(V, idx);
 
   return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), V, max_dir,
-                                             min_dir, eigs);
+                                           min_dir, eigs);
 }
 
 } // namespace fsim

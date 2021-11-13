@@ -5,8 +5,9 @@
 
 #pragma once
 
-#include <Eigen/Dense>
 #include "fsim/util/typedefs.h"
+
+#include <Eigen/Dense>
 
 namespace fsim
 {

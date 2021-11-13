@@ -12,10 +12,10 @@ namespace fsim
 
 template <class Formulation, bool fullHess>
 ElasticShell<Formulation, fullHess>::ElasticShell(const Eigen::Ref<const Mat3<double>> V,
-                                                    const Eigen::Ref<const Mat3<int>> F,
-                                                    double thickness,
-                                                    double young_modulus,
-                                                    double poisson_ratio)
+                                                  const Eigen::Ref<const Mat3<int>> F,
+                                                  double thickness,
+                                                  double young_modulus,
+                                                  double poisson_ratio)
     : _young_modulus(young_modulus), _thickness(thickness), _poisson_ratio(poisson_ratio)
 {
   using namespace Eigen;
@@ -49,7 +49,7 @@ ElasticShell<Formulation, fullHess>::ElasticShell(const Eigen::Ref<const Mat3<do
 
 template <class Formulation, bool fullHess>
 Mat4<int> ElasticShell<Formulation, fullHess>::hingeIndices(const Eigen::Ref<const Mat3<double>> V,
-                                                             const Eigen::Ref<const Mat3<int>> F)
+                                                            const Eigen::Ref<const Mat3<int>> F)
 {
   using namespace Eigen;
 

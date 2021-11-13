@@ -13,11 +13,11 @@
 namespace fsim
 {
 
-template<bool fullHess>
+template <bool fullHess>
 ElasticRod<fullHess>::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
-                       const Eigen::Ref<const Eigen::VectorXi> indices,
-                       const Eigen::Vector3d &n,
-                       const RodParams &p)
+                                 const Eigen::Ref<const Eigen::VectorXi> indices,
+                                 const Eigen::Vector3d &n,
+                                 const RodParams &p)
     : _mass{p.mass}
 {
   using namespace Eigen;
@@ -52,12 +52,14 @@ ElasticRod<fullHess>::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
   assert(_springs.size() == _frames.size());
 }
 
-template<bool fullHess>
-ElasticRod<fullHess>::ElasticRod(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector3d &n, const RodParams &params)
+template <bool fullHess>
+ElasticRod<fullHess>::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
+                                 const Eigen::Vector3d &n,
+                                 const RodParams &params)
     : ElasticRod(V, Eigen::VectorXi::LinSpaced(V.rows(), 0, V.rows() - 1), n, params)
 {}
 
-template<bool fullHess>
+template <bool fullHess>
 double ElasticRod<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
@@ -84,7 +86,7 @@ double ElasticRod<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X) c
   return result;
 }
 
-template<bool fullHess>
+template <bool fullHess>
 void ElasticRod<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const
 {
   using namespace Eigen;
@@ -110,7 +112,7 @@ void ElasticRod<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, E
   }
 }
 
-template<bool fullHess>
+template <bool fullHess>
 Eigen::VectorXd ElasticRod<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
@@ -120,7 +122,7 @@ Eigen::VectorXd ElasticRod<fullHess>::gradient(const Eigen::Ref<const Eigen::Vec
   return Y;
 }
 
-template<bool fullHess>
+template <bool fullHess>
 Eigen::SparseMatrix<double> ElasticRod<fullHess>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
@@ -132,8 +134,9 @@ Eigen::SparseMatrix<double> ElasticRod<fullHess>::hessian(const Eigen::Ref<const
   return hess;
 }
 
-template<bool fullHess>
-std::vector<Eigen::Triplet<double>> ElasticRod<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <bool fullHess>
+std::vector<Eigen::Triplet<double>>
+ElasticRod<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -155,14 +158,14 @@ std::vector<Eigen::Triplet<double>> ElasticRod<fullHess>::hessianTriplets(const 
 
     for(int j = 0; j < 2; ++j)
       for(int k = 0; k < 3; ++k)
-        {
-          if(3 * e.idx(k) < e.idx(3 + j))
-            for(int l = 0; l < 3; ++l)
-              triplets.emplace_back(3 * e.idx(k) + l, e.idx(3 + j), hess(3 * k + l, 9 + j));
-          else
-            for(int l = 0; l < 3; ++l)
-              triplets.emplace_back(e.idx(3 + j), 3 * e.idx(k) + l, hess(9 + j, 3 * k + l));
-        }
+      {
+        if(3 * e.idx(k) < e.idx(3 + j))
+          for(int l = 0; l < 3; ++l)
+            triplets.emplace_back(3 * e.idx(k) + l, e.idx(3 + j), hess(3 * k + l, 9 + j));
+        else
+          for(int l = 0; l < 3; ++l)
+            triplets.emplace_back(e.idx(3 + j), 3 * e.idx(k) + l, hess(9 + j, 3 * k + l));
+      }
 
     for(int j = 0; j < 2; ++j)
       for(int k = 0; k < 2; ++k)
@@ -194,7 +197,7 @@ std::vector<Eigen::Triplet<double>> ElasticRod<fullHess>::hessianTriplets(const 
   return triplets;
 }
 
-template<bool fullHess>
+template <bool fullHess>
 void ElasticRod<fullHess>::updateProperties(const Eigen::Ref<const Eigen::VectorXd> X)
 {
   int k = 0;
@@ -211,12 +214,12 @@ void ElasticRod<fullHess>::updateProperties(const Eigen::Ref<const Eigen::Vector
   }
 }
 
-template<bool fullHess>
+template <bool fullHess>
 void ElasticRod<fullHess>::setParams(const RodParams &p)
 {
   _stretch_modulus = 1e3 * p.E * p.thickness * p.width;
   _stiffness << pow(p.thickness, 3) * p.width, pow(p.width, 3) * p.thickness;
-  
+
   if(p.crossSection == CrossSection::Circle)
     _stiffness *= 3.1415 * p.E / 64;
   else if(p.crossSection == CrossSection::Square)
@@ -225,7 +228,7 @@ void ElasticRod<fullHess>::setParams(const RodParams &p)
   _mass = p.mass;
 }
 
-template<bool fullHess>
+template <bool fullHess>
 void ElasticRod<fullHess>::getReferenceDirectors(Mat3<double> &D1, Mat3<double> &D2) const
 {
   using namespace Eigen;
@@ -238,10 +241,10 @@ void ElasticRod<fullHess>::getReferenceDirectors(Mat3<double> &D1, Mat3<double> 
   }
 }
 
-template<bool fullHess>
+template <bool fullHess>
 void ElasticRod<fullHess>::getRotatedDirectors(const Eigen::Ref<const Eigen::VectorXd> theta,
-                                     Mat3<double> &P1,
-                                     Mat3<double> &P2) const
+                                               Mat3<double> &P1,
+                                               Mat3<double> &P2) const
 {
   using namespace Eigen;
   P1.resize(_frames.size(), 3);
@@ -253,7 +256,7 @@ void ElasticRod<fullHess>::getRotatedDirectors(const Eigen::Ref<const Eigen::Vec
   }
 }
 
-template<bool fullHess>
+template <bool fullHess>
 LocalFrame ElasticRod<fullHess>::getFrame(const Eigen::Ref<const Eigen::VectorXd> X, int x0, int x1, int k) const
 {
   LocalFrame f = _frames[k - 3 * nV];
@@ -265,12 +268,12 @@ LocalFrame ElasticRod<fullHess>::getFrame(const Eigen::Ref<const Eigen::VectorXd
   return f;
 }
 
-template<bool fullHess>
+template <bool fullHess>
 void ElasticRod<fullHess>::bishopFrame(const Eigen::Ref<const Mat3<double>> V,
-                             const Eigen::Ref<const Eigen::VectorXi> E,
-                             const Eigen::Vector3d &n,
-                             Mat3<double> &P1,
-                             Mat3<double> &P2)
+                                       const Eigen::Ref<const Eigen::VectorXi> E,
+                                       const Eigen::Vector3d &n,
+                                       Mat3<double> &P1,
+                                       Mat3<double> &P2)
 {
   using namespace Eigen;
   int nE = E.rows() - 1; // number of edges
@@ -301,9 +304,9 @@ void ElasticRod<fullHess>::bishopFrame(const Eigen::Ref<const Mat3<double>> V,
   }
 }
 
-template<bool fullHess>
+template <bool fullHess>
 Mat3<double> ElasticRod<fullHess>::curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
-                                            const Eigen::Ref<const Eigen::VectorXi> E)
+                                                      const Eigen::Ref<const Eigen::VectorXi> E)
 {
   using namespace Eigen;
   Mat3<double> KB(E.size() - 2, 3);

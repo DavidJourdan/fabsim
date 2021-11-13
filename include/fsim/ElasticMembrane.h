@@ -5,10 +5,10 @@
 
 #pragma once
 
-#include "ModelBase.h"
-#include "StVKElement.h"
-#include "NeoHookeanElement.h"
 #include "IncompressibleNeoHookeanElement.h"
+#include "ModelBase.h"
+#include "NeoHookeanElement.h"
+#include "StVKElement.h"
 #include "util/typedefs.h"
 
 #include <exception>
@@ -59,7 +59,8 @@ public:
   void setYoungModulus(double E);
   double getYoungModulus() const { return Element<id>::E; }
 
-  // set thickness of the membrane (controls the amount of stretching and the total weight) negative values are not allowed
+  // set thickness of the membrane (controls the amount of stretching and the total weight)
+  // negative values are not allowed
   void setThickness(double t);
   double getThickness() const { return _thickness; }
 
@@ -86,11 +87,11 @@ using IncompressibleNeoHookeanMembrane = ElasticMembrane<IncompressibleNeoHookea
 
 template <template <int id> class Element, int id>
 ElasticMembrane<Element, id>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V,
-                                          const Eigen::Ref<const Mat3<int>> F,
-                                          double thickness,
-                                          double young_modulus,
-                                          double poisson_ratio,
-                                          double mass)
+                                              const Eigen::Ref<const Mat3<int>> F,
+                                              double thickness,
+                                              double young_modulus,
+                                              double poisson_ratio,
+                                              double mass)
     : ElasticMembrane(V, F, std::vector<double>(F.rows(), thickness), young_modulus, poisson_ratio, mass)
 {
   _thickness = thickness;
@@ -98,17 +99,17 @@ ElasticMembrane<Element, id>::ElasticMembrane(const Eigen::Ref<const Mat3<double
 
 template <template <int id> class Element, int id>
 ElasticMembrane<Element, id>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V,
-                                          const Eigen::Ref<const Mat3<int>> F,
-                                          const std::vector<double> &thicknesses,
-                                          double young_modulus,
-                                          double poisson_ratio,
-                                          double mass)
+                                              const Eigen::Ref<const Mat3<int>> F,
+                                              const std::vector<double> &thicknesses,
+                                              double young_modulus,
+                                              double poisson_ratio,
+                                              double mass)
 {
   nV = V.rows();
   nF = F.rows();
 
-  if(Element<id>::E != 0 && Element<id>::E != young_modulus || Element<id>::nu != 0 && Element<id>::nu != poisson_ratio ||
-     Element<id>::mass != 0 && Element<id>::mass != mass)
+  if(Element<id>::E != 0 && Element<id>::E != young_modulus ||
+     Element<id>::nu != 0 && Element<id>::nu != poisson_ratio || Element<id>::mass != 0 && Element<id>::mass != mass)
     std::cerr << "Warning: overwriting properties. Please declare your different instances as e.g. "
                  "StVKMembrane<0>, StVKMembrane<1>, etc.\n";
   Element<id>::E = young_modulus;

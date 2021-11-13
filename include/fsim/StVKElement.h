@@ -103,7 +103,6 @@ protected:
   Eigen::Matrix2d abar_inv;
 };
 
-
 // the ids are there to disambiguate between TriangleElements pertaining to different Membrane instances
 // so that they don't have the same static fields
 template <int id>
@@ -116,9 +115,7 @@ template <int id>
 double StVKElement<id>::E = 0;
 
 template <int id>
-StVKElement<id>::StVKElement(const Eigen::Ref<const Mat3<double>> V,
-                                          const Eigen::Vector3i &E,
-                                          double thickness)
+StVKElement<id>::StVKElement(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector3i &E, double thickness)
 {
   using namespace Eigen;
 
@@ -138,13 +135,12 @@ double StVKElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
   Matrix2d a = first_fundamental_form(V, idx);
   // Green strain tensor (abar_inv * a  can be identified as the right Cauchy-Green deformation tensor)
   Matrix2d M = (abar_inv * a - Matrix2d::Identity()) / 2;
-  return coeff * E / (2 * (1 + nu)) * (nu / (1 - nu) * pow(M.trace(), 2) + (M * M).trace())
-   + 9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
+  return coeff * E / (2 * (1 + nu)) * (nu / (1 - nu) * pow(M.trace(), 2) + (M * M).trace()) +
+         9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
 }
 
 template <int id>
-typename StVKElement<id>::LocalVector
-StVKElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+typename StVKElement<id>::LocalVector StVKElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
@@ -166,8 +162,7 @@ StVKElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 }
 
 template <int id>
-typename StVKElement<id>::LocalMatrix
-StVKElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+typename StVKElement<id>::LocalMatrix StVKElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
@@ -247,9 +242,9 @@ void StVKElement<id>::principalDirectionsAndEigenvalues(
 
 template <int id>
 void StVKElement<id>::principalStrains(const Eigen::Ref<const Mat3<double>> V,
-                                                Eigen::Vector3d &max_dir,
-                                                Eigen::Vector3d &min_dir,
-                                                Eigen::Vector2d &eigs) const
+                                       Eigen::Vector3d &max_dir,
+                                       Eigen::Vector3d &min_dir,
+                                       Eigen::Vector2d &eigs) const
 {
   using namespace Eigen;
   Matrix2d abar = abar_inv.inverse();
@@ -259,17 +254,17 @@ void StVKElement<id>::principalStrains(const Eigen::Ref<const Mat3<double>> V,
 
 template <int id>
 void StVKElement<id>::principalStresses(const Eigen::Ref<const Mat3<double>> V,
-                                                 Eigen::Vector3d &max_dir,
-                                                 Eigen::Vector3d &min_dir,
-                                                 Eigen::Vector2d &eigs) const
+                                        Eigen::Vector3d &max_dir,
+                                        Eigen::Vector3d &min_dir,
+                                        Eigen::Vector2d &eigs) const
 {
   using namespace Eigen;
 
   Matrix2d abar = abar_inv.inverse();
   Matrix2d a = first_fundamental_form(V, idx);
 
-  return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * stress(V), abar), V, max_dir,
-                                             min_dir, eigs);
+  return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * stress(V), abar), V,
+                                           max_dir, min_dir, eigs);
 }
 
 } // namespace fsim

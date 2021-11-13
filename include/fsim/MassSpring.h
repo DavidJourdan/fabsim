@@ -19,7 +19,8 @@ namespace fsim
 
 /**
  * A model for an elastic membrane. Uses a simple mass-spring system.
- * @tparam MeasureCompression  whether or not to add compressive contributions to the energy. If false, springs whose lengths is smaller  than their rest length will have no contribution to the energy and its derivatives
+ * @tparam MeasureCompression  whether or not to add compressive contributions to the energy. If false,
+ * springs whose length is smaller than their rest length will have no contribution to the energy and its derivatives
  */
 template <bool MeasureCompression = true>
 class MassSpring
@@ -75,6 +76,5 @@ private:
   std::vector<Spring<MeasureCompression>> _springs;
   int nV;
 };
-
 
 } // namespace fsim

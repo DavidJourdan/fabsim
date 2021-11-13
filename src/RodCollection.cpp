@@ -15,14 +15,14 @@ namespace fsim
 
 template <bool fullHess>
 RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
-                             const std::vector<std::vector<int>> &indices,
-                             const Eigen::Ref<const Mat2<int>> C,
-                             const Eigen::Ref<const Mat3<double>> N,
-                             const std::vector<double> &thicknesses,
-                             const std::vector<double> &widths,
-                             double young_modulus,
-                             double mass,
-                             CrossSection c)
+                                       const std::vector<std::vector<int>> &indices,
+                                       const Eigen::Ref<const Mat2<int>> C,
+                                       const Eigen::Ref<const Mat3<double>> N,
+                                       const std::vector<double> &thicknesses,
+                                       const std::vector<double> &widths,
+                                       double young_modulus,
+                                       double mass,
+                                       CrossSection c)
 {
   using namespace Eigen;
 
@@ -47,10 +47,10 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
     extremal_edges(i, 0) = nE;
 
     if(c == CrossSection::Circle)
-      rodData.emplace_back(pow(thicknesses[i], 3) * widths[i] * 3.1415 * young_modulus / 64, 
+      rodData.emplace_back(pow(thicknesses[i], 3) * widths[i] * 3.1415 * young_modulus / 64,
                            pow(widths[i], 3) * thicknesses[i] * 3.1415 * young_modulus / 64, E.size() - 2);
     else if(c == CrossSection::Square)
-      rodData.emplace_back(pow(thicknesses[i], 3) * widths[i] * young_modulus / 12, 
+      rodData.emplace_back(pow(thicknesses[i], 3) * widths[i] * young_modulus / 12,
                            pow(widths[i], 3) * thicknesses[i] * young_modulus / 12, E.size() - 2);
 
     for(int j = 1; j < E.size() - 1; ++j)
@@ -127,10 +127,10 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
 
 template <bool fullHess>
 RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
-                             const std::vector<std::vector<int>> &indices,
-                             const Eigen::Ref<const Mat2<int>> C,
-                             const Eigen::Ref<const Mat3<double>> N,
-                             const RodParams &p)
+                                       const std::vector<std::vector<int>> &indices,
+                                       const Eigen::Ref<const Mat2<int>> C,
+                                       const Eigen::Ref<const Mat3<double>> N,
+                                       const RodParams &p)
 {
   using namespace Eigen;
 
@@ -164,10 +164,10 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
     nE += 1;
 
     if(p.crossSection == CrossSection::Circle)
-      rodData.emplace_back(pow(p.thickness, 3) * p.width * 3.1415 * p.E / 64, 
+      rodData.emplace_back(pow(p.thickness, 3) * p.width * 3.1415 * p.E / 64,
                            pow(p.width, 3) * p.thickness * 3.1415 * p.E / 64, E.size() - 2);
     else if(p.crossSection == CrossSection::Square)
-      rodData.emplace_back(pow(p.thickness, 3) * p.width * p.E / 12, pow(p.width, 3) * p.thickness * p.E / 12, 
+      rodData.emplace_back(pow(p.thickness, 3) * p.width * p.E / 12, pow(p.width, 3) * p.thickness * p.E / 12,
                            E.size() - 2);
   }
 
@@ -271,7 +271,7 @@ void RodCollection<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X
   {
     for(int i = k; i < k + std::get<2>(data); ++i)
     {
-      auto& e = this->_stencils[i];
+      auto &e = this->_stencils[i];
       LocalFrame f1 = this->getFrame(X, e.idx(0), e.idx(1), e.idx(3));
       LocalFrame f2 = this->getFrame(X, e.idx(1), e.idx(2), e.idx(4));
       auto grad = e.gradient(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), this->_mass);
@@ -304,7 +304,8 @@ Eigen::VectorXd RodCollection<fullHess>::gradient(const Eigen::Ref<const Eigen::
 }
 
 template <bool fullHess>
-std::vector<Eigen::Triplet<double>> RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+std::vector<Eigen::Triplet<double>>
+RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -316,7 +317,7 @@ std::vector<Eigen::Triplet<double>> RodCollection<fullHess>::hessianTriplets(con
   {
     for(int i = k; i < k + std::get<2>(data); ++i)
     {
-      auto& e = this->_stencils[i];
+      auto &e = this->_stencils[i];
       LocalFrame f1 = this->getFrame(X, e.idx(0), e.idx(1), e.idx(3));
       LocalFrame f2 = this->getFrame(X, e.idx(1), e.idx(2), e.idx(4));
       auto hess = e.hessian(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), this->_mass);
@@ -330,14 +331,14 @@ std::vector<Eigen::Triplet<double>> RodCollection<fullHess>::hessianTriplets(con
 
       for(int j = 0; j < 2; ++j)
         for(int k = 0; k < 3; ++k)
-          {
-            if(3 * e.idx(k) < e.idx(3 + j))
-              for(int l = 0; l < 3; ++l)
-                triplets.emplace_back(3 * e.idx(k) + l, e.idx(3 + j), hess(3 * k + l, 9 + j));
-            else
-              for(int l = 0; l < 3; ++l)
-                triplets.emplace_back(e.idx(3 + j), 3 * e.idx(k) + l, hess(9 + j, 3 * k + l));
-          }
+        {
+          if(3 * e.idx(k) < e.idx(3 + j))
+            for(int l = 0; l < 3; ++l)
+              triplets.emplace_back(3 * e.idx(k) + l, e.idx(3 + j), hess(3 * k + l, 9 + j));
+          else
+            for(int l = 0; l < 3; ++l)
+              triplets.emplace_back(e.idx(3 + j), 3 * e.idx(k) + l, hess(9 + j, 3 * k + l));
+        }
 
       for(int j = 0; j < 2; ++j)
         for(int k = 0; k < 2; ++k)

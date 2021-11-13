@@ -30,20 +30,20 @@ public:
    * @param mass  membrane's mass (defaults to 0 to disable gravity)
    */
   OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
-                       const Eigen::Ref<const Mat3<int>> F,
-                       double thickness,
-                       double E1,
-                       double E2,
-                       double poisson_ratio,
-                       double mass = 0);
+                          const Eigen::Ref<const Mat3<int>> F,
+                          double thickness,
+                          double E1,
+                          double E2,
+                          double poisson_ratio,
+                          double mass = 0);
 
   OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
-                       const Eigen::Ref<const Mat3<int>> F,
-                       const std::vector<double> &thicknesses,
-                       double E1,
-                       double E2,
-                       double poisson_ratio,
-                       double mass = 0);
+                          const Eigen::Ref<const Mat3<int>> F,
+                          const std::vector<double> &thicknesses,
+                          double E1,
+                          double E2,
+                          double poisson_ratio,
+                          double mass = 0);
 
   // number of degrees of freedom
   int nbDOFs() const { return 3 * nV; }
@@ -51,12 +51,13 @@ public:
   // set Poisson ratio (between 0 and 0.5)
   void setPoissonRatio(double poisson_ratio);
   double getPoissonRatio() const { return _poisson_ratio; }
-  
+
   // set Young's moduli (E1 and E2 respectively control the horizontal and vertical stiffness)
   void setYoungModuli(double E1, double E2);
   std::array<double, 2> getYoungModuli() const { return {_E1, _E2}; }
-  
-  // set thickness of the membrane (controls the amount of stretching and the total weight) negative values are not allowed
+
+  // set thickness of the membrane (controls the amount of stretching and the total weight)
+  // negative values are not allowed
   void setThickness(double t);
   double getThickness() const { return _thickness; }
 
@@ -73,12 +74,12 @@ private:
 
 template <int id>
 OrthotropicStVKMembrane<id>::OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
-                                               const Eigen::Ref<const Mat3<int>> F,
-                                               double thickness,
-                                               double E1,
-                                               double E2,
-                                               double poisson_ratio,
-                                               double mass)
+                                                     const Eigen::Ref<const Mat3<int>> F,
+                                                     double thickness,
+                                                     double E1,
+                                                     double E2,
+                                                     double poisson_ratio,
+                                                     double mass)
     : OrthotropicStVKMembrane(V, F, std::vector<double>(F.rows(), thickness), E1, E2, poisson_ratio, mass)
 {
   _thickness = thickness;
@@ -86,12 +87,12 @@ OrthotropicStVKMembrane<id>::OrthotropicStVKMembrane(const Eigen::Ref<const Mat2
 
 template <int id>
 OrthotropicStVKMembrane<id>::OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
-                                               const Eigen::Ref<const Mat3<int>> F,
-                                               const std::vector<double> &thicknesses,
-                                               double E1,
-                                               double E2,
-                                               double poisson_ratio,
-                                               double mass)
+                                                     const Eigen::Ref<const Mat3<int>> F,
+                                                     const std::vector<double> &thicknesses,
+                                                     double E1,
+                                                     double E2,
+                                                     double poisson_ratio,
+                                                     double mass)
     : _poisson_ratio{poisson_ratio}, _E1{E1}, _E2{E2}
 {
   using namespace Eigen;

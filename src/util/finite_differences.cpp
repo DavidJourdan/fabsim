@@ -35,10 +35,9 @@ Eigen::VectorXd finite_differences(const std::function<double(const Eigen::Ref<c
   return derivative;
 }
 
-Eigen::MatrixXd
-finite_differences(const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
-                   const Eigen::Ref<const Eigen::VectorXd> var,
-                   bool parallelism_enabled)
+Eigen::MatrixXd finite_differences(const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
+                                   const Eigen::Ref<const Eigen::VectorXd> var,
+                                   bool parallelism_enabled)
 {
   using namespace Eigen;
   const double epsilon = 1.1e-8;
@@ -58,7 +57,6 @@ finite_differences(const std::function<Eigen::VectorXd(const Eigen::Ref<const Ei
   }
   return derivative;
 }
-
 
 Eigen::SparseMatrix<double>
 finite_differences_sparse(const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
@@ -96,11 +94,10 @@ void derivative_check(const std::function<double(const Eigen::Ref<const Eigen::V
   derivative_check(func, derivative, var, empty_container, dump_matrices);
 }
 
-void derivative_check(
-    const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
-    const std::function<Eigen::MatrixXd(const Eigen::Ref<const Eigen::VectorXd>)> &derivative,
-    const Eigen::Ref<const Eigen::VectorXd> var,
-    bool dump_matrices)
+void derivative_check(const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
+                      const std::function<Eigen::MatrixXd(const Eigen::Ref<const Eigen::VectorXd>)> &derivative,
+                      const Eigen::Ref<const Eigen::VectorXd> var,
+                      bool dump_matrices)
 {
   std::vector<int> empty_container{};
   derivative_check(func, derivative, var, empty_container, dump_matrices);
@@ -134,12 +131,11 @@ void derivative_check(const std::function<double(const Eigen::Ref<const Eigen::V
   std::cout << "Max error at " << i << ": " << max_error << "\n";
 }
 
-void derivative_check(
-    const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
-    const std::function<Eigen::MatrixXd(const Eigen::Ref<const Eigen::VectorXd>)> &derivative,
-    const Eigen::Ref<const Eigen::VectorXd> var,
-    std::vector<int> &indices_to_be_filtered,
-    bool dump_matrices)
+void derivative_check(const std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>)> &func,
+                      const std::function<Eigen::MatrixXd(const Eigen::Ref<const Eigen::VectorXd>)> &derivative,
+                      const Eigen::Ref<const Eigen::VectorXd> var,
+                      std::vector<int> &indices_to_be_filtered,
+                      bool dump_matrices)
 {
   using namespace Eigen;
   MatrixXd diff = finite_differences(func, var);

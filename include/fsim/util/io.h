@@ -54,8 +54,6 @@ void saveROD(const std::string &file, const std::vector<std::vector<int>> &rod_i
  * @param F  nF by 3 matrix of face indices
  * @param rod_indices  nested vector: each vector represents a rod and contains its indices
  */
-void saveOBJ(const std::string &file,
-             const Eigen::Ref<const Mat3<double>> V,
-             const Eigen::Ref<const Mat<int>> F);
+void saveOBJ(const std::string &file, const Eigen::Ref<const Mat3<double>> V, const Eigen::Ref<const Mat<int>> F);
 
 } // namespace fsim
