@@ -16,10 +16,10 @@ TEMPLATE_TEST_CASE("TriangleElement", "", NeoHookeanElement<>, IncompressibleNeo
 {
   using namespace Eigen;
 
-  Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
-  double thickness = GENERATE(take(2, random(0., 1.)));
-  double young_modulus = GENERATE(take(2, random(0., 1.)));
-  double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
+  Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
+  double thickness = GENERATE(take(5, random(0., 1.)));
+  double young_modulus = GENERATE(take(5, random(0., 1.)));
+  double poisson_ratio = GENERATE(take(5, random(0., 0.5)));
   TestType::nu = poisson_ratio;
   TestType::E = young_modulus;
   TestType::mass = 0;
@@ -33,12 +33,12 @@ TEST_CASE("StVKElement")
 {
   using namespace Eigen;
 
-  double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
-  double thickness = GENERATE(take(2, random(0., 1.)));
-  Mat2<double> V = GENERATE(take(2, matrix_random(3, 2)));
+  double poisson_ratio = GENERATE(take(5, random(0., 0.5)));
+  double thickness = GENERATE(take(5, random(0., 1.)));
+  Mat2<double> V = GENERATE(take(5, matrix_random(3, 2)));
 
-  double E1 = GENERATE(take(2, random(0., 1.)));
-  double E2 = GENERATE(take(2, random(0., 1.)));
+  double E1 = GENERATE(take(5, random(0., 1.)));
+  double E2 = GENERATE(take(5, random(0., 1.)));
   StVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
                        poisson_ratio * sqrt(E1 * E2), E2, 0,
                        0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
@@ -60,7 +60,7 @@ TEST_CASE("StVKMembrane class")
 {
   using namespace Eigen;
 
-  Mat2<double> V = GENERATE(take(2, matrix_random(3, 3)));
+  Mat2<double> V = GENERATE(take(5, matrix_random(3, 3)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
   StVKMembrane<0> instance0(V, F, 0.1, 10, 0.3);
@@ -80,7 +80,7 @@ TEST_CASE("NeoHookeanMembrane class")
 {
   using namespace Eigen;
 
-  Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
+  Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
   NeoHookeanMembrane<0> instance0(V, F, 0.1, 10, 0.3);
@@ -100,7 +100,7 @@ TEST_CASE("IncompressibleNeoHookeanMembrane class")
 {
   using namespace Eigen;
 
-  Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
+  Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
   IncompressibleNeoHookeanMembrane<0> instance0(V, F, 0.1, 10, 0.3);
@@ -120,7 +120,7 @@ TEST_CASE("OrthotropicStVKMembrane class")
 {
   using namespace Eigen;
 
-  Mat2<double> V = GENERATE(take(2, matrix_random(3, 2)));
+  Mat2<double> V = GENERATE(take(5, matrix_random(3, 2)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
   OrthotropicStVKMembrane<0> instance0(V, F, 0.1, 10, 5, 0.3);
@@ -139,12 +139,12 @@ TEST_CASE("Small strain equivalence")
 {
   using namespace Eigen;
 
-  Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
+  Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
   V.col(2).setZero();
 
-  double young_modulus = GENERATE(take(2, random(1e10, 1e11)));
-  double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
-  double thickness = GENERATE(take(2, random(0., 1.)));
+  double young_modulus = GENERATE(take(5, random(1e10, 1e11)));
+  double poisson_ratio = GENERATE(take(5, random(0., 0.5)));
+  double thickness = GENERATE(take(5, random(0., 1.)));
 
   StVKElement<> e1(V.leftCols(2), Vector3i(0, 1, 2), thickness);
   NeoHookeanElement<> e2(V, Vector3i(0, 1, 2), thickness);
@@ -156,7 +156,7 @@ TEST_CASE("Small strain equivalence")
   NeoHookeanElement<>::nu = poisson_ratio;
   NeoHookeanElement<>::E = young_modulus;
 
-  VectorXd var = 1e-5 * GENERATE(take(2, vector_random(9)));
+  VectorXd var = 1e-5 * GENERATE(take(5, vector_random(9)));
   var.segment<3>(0) += V.row(0);
   var.segment<3>(3) += V.row(1);
   var.segment<3>(6) += V.row(2);

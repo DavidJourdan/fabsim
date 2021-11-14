@@ -12,16 +12,16 @@ TEST_CASE("ElasticRod")
 {
   using namespace Eigen;
 
-  MatrixXd V = GENERATE(take(2, matrix_random(3, 3)));
+  MatrixXd V = GENERATE(take(5, matrix_random(3, 3)));
   V.col(2).setZero();
-  VectorXd params = GENERATE(take(2, vector_random(3)));
+  VectorXd params = GENERATE(take(5, vector_random(3)));
   Vector3d n = Vector3d::UnitZ();
   ElasticRod rod(V, n, {params(0), params(1), params(2)});
 
   SECTION("Orthonormal frames")
   {
-    VectorXd X = GENERATE(take(10, vector_random(9)));
-    Vector2d theta = GENERATE(take(1, vector_random(2)));
+    VectorXd X = GENERATE(take(5, vector_random(9)));
+    Vector2d theta = GENERATE(take(5, vector_random(2)));
 
     Vector3d t0 = (X.segment<3>(3) - X.segment<3>(0)).normalized();
     Vector3d t1 = (X.segment<3>(6) - X.segment<3>(3)).normalized();
@@ -48,9 +48,9 @@ TEST_CASE("ElasticRod")
 
   SECTION("Translate invariance")
   {
-    VectorXd var = GENERATE(take(2, vector_random(11)));
+    VectorXd var = GENERATE(take(5, vector_random(11)));
 
-    Vector3d randomDir = GENERATE(take(2, vector_random(3)));
+    Vector3d randomDir = GENERATE(take(5, vector_random(3)));
     VectorXd var2 = var;
     for(int i = 0; i < 3; ++i)
       var2.segment<3>(3 * i) += randomDir;
@@ -64,10 +64,10 @@ TEST_CASE("ElasticRod")
   // reference twist update
   // SECTION("Rotation invariance")
   // {
-  //   VectorXd var = GENERATE(take(2, vector_random(11)));
+  //   VectorXd var = GENERATE(take(5, vector_random(11)));
 
-  //   Vector3d axis = GENERATE(take(2, vector_random(3))).normalized();
-  //   double angle = GENERATE(take(2, random(0., M_PI)));
+  //   Vector3d axis = GENERATE(take(5, vector_random(3))).normalized();
+  //   double angle = GENERATE(take(5, random(0., M_PI)));
   //   AngleAxisd rotation(angle, axis);
 
   //   VectorXd var2 = var;
@@ -107,9 +107,9 @@ TEST_CASE("RodCollection")
 {
   using namespace Eigen;
 
-  MatrixXd V = GENERATE(take(2, matrix_random(3, 3)));
+  MatrixXd V = GENERATE(take(5, matrix_random(3, 3)));
   V.col(2).setZero();
-  VectorXd params = GENERATE(take(2, vector_random(3)));
+  VectorXd params = GENERATE(take(5, vector_random(3)));
   Mat3<double> N(2, 3);
   N << 0, 0, 1, 0, 0, 1;
   std::vector<std::vector<int>> indices = {{0, 1}, {1, 2}};
@@ -147,9 +147,9 @@ TEST_CASE("RodCollection")
 
   SECTION("Translate invariance")
   {
-    VectorXd var = GENERATE(take(2, vector_random(11)));
+    VectorXd var = GENERATE(take(5, vector_random(11)));
 
-    Vector3d randomDir = GENERATE(take(2, vector_random(3)));
+    Vector3d randomDir = GENERATE(take(5, vector_random(3)));
     VectorXd var2 = var;
     for(int i = 0; i < 3; ++i)
       var2.segment<3>(3 * i) += randomDir;
@@ -163,10 +163,10 @@ TEST_CASE("RodCollection")
 //   using namespace Eigen;
 
 //   double young_modulus = 1;
-//   MatrixXd V = GENERATE(take(2, matrix_random(3, 3)));
-//   Vector2d W_n = GENERATE(take(2, vector_random(2, 0, 1)));
-//   Vector2d W_b = GENERATE(take(2, vector_random(2, 0, 1)));
-//   MatrixXd n = GENERATE(take(2, vector_random(3))).normalized();
+//   MatrixXd V = GENERATE(take(5, matrix_random(3, 3)));
+//   Vector2d W_n = GENERATE(take(5, vector_random(2, 0, 1)));
+//   Vector2d W_b = GENERATE(take(5, vector_random(2, 0, 1)));
+//   MatrixXd n = GENERATE(take(5, vector_random(3))).normalized();
 
 //   Mat3<double> D1, D2;
 //   ElasticRod<>::bishopFrame(V, Vector3i(0, 1, 2), n, D1, D2);
@@ -177,7 +177,7 @@ TEST_CASE("RodCollection")
 //   dofs << 0, 1, 2, 9, 10;
 //   RodStencil stencil(V, f1, f2, dofs, Vector2d(W_n.sum() / 2, W_b.sum() / 2), young_modulus);
 
-//   VectorXd X = GENERATE(take(2, vector_random(11)));
+//   VectorXd X = GENERATE(take(5, vector_random(11)));
 //   LocalFrame new_f1 = updateFrame(f1, X.segment<3>(0), X.segment<3>(3));
 //   LocalFrame new_f2 = updateFrame(f2, X.segment<3>(3), X.segment<3>(6));
 
@@ -201,9 +201,9 @@ TEST_CASE("Parallel transport")
 {
   using namespace Eigen;
 
-  Vector3d t1 = GENERATE(take(20, vector_random(3)));
-  Vector3d t2 = GENERATE(take(20, vector_random(3)));
-  Vector3d u = GENERATE(take(20, vector_random(3)));
+  Vector3d t1 = GENERATE(take(50, vector_random(3)));
+  Vector3d t2 = GENERATE(take(50, vector_random(3)));
+  Vector3d u = GENERATE(take(50, vector_random(3)));
 
   t1.normalize();
   t2.normalize();
@@ -231,13 +231,13 @@ TEST_CASE("Parallel transport")
 TEST_CASE("Local Frames")
 {
   using namespace Eigen;
-  Vector3d t = GENERATE(take(2, vector_random(3))).normalized();
-  Vector3d n = GENERATE(take(2, vector_random(3))).normalized();
+  Vector3d t = GENERATE(take(5, vector_random(3))).normalized();
+  Vector3d n = GENERATE(take(5, vector_random(3))).normalized();
   n = (n - n.dot(t) * t).normalized(); // make sure the frame is orthogonal
   LocalFrame f{t, n, t.cross(n)};
 
-  Vector3d x0 = GENERATE(take(2, vector_random(3)));
-  Vector3d x1 = GENERATE(take(2, vector_random(3)));
+  Vector3d x0 = GENERATE(take(5, vector_random(3)));
+  Vector3d x1 = GENERATE(take(5, vector_random(3)));
   f.update(x0, x1);
 
   // vectors stay normal
