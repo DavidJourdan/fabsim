@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.1)
 
 ################################################################################
 
@@ -34,7 +34,7 @@ add_library(fabsim ${BASE} ${UTIL})
 
 # c++ flags
 set_target_properties(fabsim PROPERTIES
-        CXX_STANDARD 17
+        CXX_STANDARD 14
         CXX_STANDARD_REQUIRED OFF
         CXX_EXTENSIONS ON
         )
