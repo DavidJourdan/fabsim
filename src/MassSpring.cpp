@@ -76,7 +76,7 @@ Eigen::VectorXd MassSpring<MeasureCompression>::gradient(const Eigen::Ref<const 
 {
   using namespace Eigen;
 
-  VectorXd Y(X.size());
+  VectorXd Y = VectorXd::Zero(X.size());
   gradient(X, Y);
   return Y;
 }
@@ -95,20 +95,21 @@ MassSpring<MeasureCompression>::hessianTriplets(const Eigen::Ref<const Eigen::Ve
     auto s = _springs[k];
     Matrix3d h = _young_modulus * s.hessian(X);
 
+    int id = 0;
     if(s.i < s.j)
       for(int a = 0; a < 3; ++a)
         for(int b = 0; b < 3; ++b)
-          triplets[3 * (3 * (3 * k + a) + b) + 0] = Triplet<double>(3 * s.i + a, 3 * s.j + b, h(a, b));
+          triplets[27 * k + id++] = Triplet<double>(3 * s.i + a, 3 * s.j + b, h(a, b));
     else
       for(int a = 0; a < 3; ++a)
         for(int b = 0; b < 3; ++b)
-          triplets[3 * (3 * (3 * k + a) + b) + 0] = Triplet<double>(3 * s.j + a, 3 * s.i + b, h(a, b));
+          triplets[27 * k + id++] = Triplet<double>(3 * s.j + a, 3 * s.i + b, h(a, b));
 
     for(int a = 0; a < 3; ++a)
       for(int b = 0; b < 3; ++b)
       {
-        triplets[3 * (3 * (3 * k + a) + b) + 1] = Triplet<double>(3 * s.i + a, 3 * s.i + b, -h(a, b));
-        triplets[3 * (3 * (3 * k + a) + b) + 2] = Triplet<double>(3 * s.j + a, 3 * s.j + b, -h(a, b));
+        triplets[27 * k + id++] = Triplet<double>(3 * s.i + a, 3 * s.i + b, -h(a, b));
+        triplets[27 * k + id++] = Triplet<double>(3 * s.j + a, 3 * s.j + b, -h(a, b));
       }
   }
   return triplets;

@@ -6,6 +6,7 @@
 #include "helpers.h"
 
 #include <fsim/ElasticShell.h>
+#include <fsim/ElasticRod.h>
 #include <fsim/IncompressibleNeoHookeanMembrane.h>
 #include <fsim/MassSpring.h>
 #include <fsim/NeoHookeanMembrane.h>
@@ -102,5 +103,23 @@ TEST_CASE("MassSpring")
   {
     VectorXd X = GENERATE(take(1, vector_random(nX)));
     meter.measure([&membrane, &X] { return membrane.hessianTriplets(X); });
+  };
+}
+
+TEST_CASE("ElasticRod")
+{
+  using namespace Eigen;
+
+  Mat3<double> V;
+  Mat3<int> F;
+  readOFF("../tests/mesh.off", V, F);
+
+  fsim::ElasticRod rod(V, Vector3d::UnitZ(), {10, 0.5, 0.5});
+
+  static int nX = 3 * V.rows() + V.rows() - 1;
+  BENCHMARK_ADVANCED("rod triplets")(Catch::Benchmark::Chronometer meter)
+  {
+    VectorXd X = GENERATE(take(1, vector_random(nX)));
+    meter.measure([&rod, &X] { return rod.hessianTriplets(X); });
   };
 }

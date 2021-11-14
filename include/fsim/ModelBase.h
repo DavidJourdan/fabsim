@@ -118,34 +118,37 @@ std::vector<Eigen::Triplet<double>> ModelBase<Element>::hessianTriplets(const Ei
 {
   using namespace Eigen;
 
-  std::vector<Triplet<double>> triplets;
+  constexpr int n = Element::NB_DOFS * (Element::NB_DOFS + 3) / 2;
+  std::vector<Triplet<double>> triplets(n * _elements.size());
 
-  triplets.reserve(Element::NB_DOFS * (Element::NB_DOFS + 1) / 2 * _elements.size());
-  for(auto &e: _elements)
+#pragma omp parallel for if(_elements.size() > 1000)
+  for(int i = 0; i < _elements.size(); ++i)
   {
+    auto &e = _elements[i];
     auto hess = e.hessian(X);
 
-    int nV = e.nbVertices();
+    int id = 0;
+    constexpr int nV = Element::NB_VERTICES;
     for(int j = 0; j < nV; ++j)
       for(int k = 0; k < nV; ++k)
         if(e.idx(j) <= e.idx(k))
           for(int l = 0; l < 3; ++l)
             for(int m = 0; m < 3; ++m)
-              triplets.emplace_back(3 * e.idx(j) + l, 3 * e.idx(k) + m, hess(3 * j + l, 3 * k + m));
+              triplets[n * i + id++] = Triplet<double>(3 * e.idx(j) + l, 3 * e.idx(k) + m, hess(3 * j + l, 3 * k + m));
 
     for(int j = 0; j < e.idx.size() - nV; ++j)
       for(int k = 0; k < nV; ++k)
         if(3 * e.idx(k) < e.idx(3 + j))
           for(int l = 0; l < 3; ++l)
           {
-            triplets.emplace_back(e.idx(nV + j), 3 * e.idx(k) + l, hess(3 * nV + j, 3 * k + l));
-            triplets.emplace_back(3 * e.idx(k) + l, e.idx(nV + j), hess(3 * k + l, 3 * nV + j));
+            triplets[n * i + id++] = Triplet<double>(e.idx(nV + j), 3 * e.idx(k) + l, hess(3 * nV + j, 3 * k + l));
+            triplets[n * i + id++] = Triplet<double>(3 * e.idx(k) + l, e.idx(nV + j), hess(3 * k + l, 3 * nV + j));
           }
 
     for(int j = 0; j < e.idx.size() - nV; ++j)
       for(int k = 0; k < e.idx.size() - nV; ++k)
         if(e.idx(3 + j) <= e.idx(3 + k))
-          triplets.emplace_back(e.idx(nV + j), e.idx(nV + k), hess(3 * nV + j, 3 * nV + k));
+          triplets[n * i + id++] = Triplet<double>(e.idx(nV + j), e.idx(nV + k), hess(3 * nV + j, 3 * nV + k));
   }
 
   return triplets;

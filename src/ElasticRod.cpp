@@ -140,57 +140,61 @@ ElasticRod<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X)
 {
   using namespace Eigen;
 
-  std::vector<Triplet<double>> triplets;
+  std::vector<Triplet<double>> triplets(11 * 7 * _stencils.size() + 9 * 3 * _springs.size());
 
-  triplets.reserve(11 * 6 * _stencils.size() + 9 * 3 * _springs.size());
-  for(auto &e: _stencils)
+#pragma omp parallel for if(_stencils.size() > 1000)
+  for(int i = 0; i < _stencils.size(); ++i)
   {
+    auto &e = _stencils[i];
     LocalFrame f1 = getFrame(X, e.idx(0), e.idx(1), e.idx(3));
     LocalFrame f2 = getFrame(X, e.idx(1), e.idx(2), e.idx(4));
     auto hess = e.hessian(X, f1, f2, _stiffness, _mass);
 
+    int id = 0;
     for(int j = 0; j < 3; ++j)
       for(int k = 0; k < 3; ++k)
         if(e.idx(j) <= e.idx(k))
           for(int l = 0; l < 3; ++l)
             for(int m = 0; m < 3; ++m)
-              triplets.emplace_back(3 * e.idx(j) + l, 3 * e.idx(k) + m, hess(3 * j + l, 3 * k + m));
+              triplets[77 * i + id++] = Triplet<double>(3 * e.idx(j) + l, 3 * e.idx(k) + m, hess(3 * j + l, 3 * k + m));
 
     for(int j = 0; j < 2; ++j)
       for(int k = 0; k < 3; ++k)
       {
         if(3 * e.idx(k) < e.idx(3 + j))
           for(int l = 0; l < 3; ++l)
-            triplets.emplace_back(3 * e.idx(k) + l, e.idx(3 + j), hess(3 * k + l, 9 + j));
+            triplets[77 * i + id++] = Triplet<double>(3 * e.idx(k) + l, e.idx(3 + j), hess(3 * k + l, 9 + j));
         else
           for(int l = 0; l < 3; ++l)
-            triplets.emplace_back(e.idx(3 + j), 3 * e.idx(k) + l, hess(9 + j, 3 * k + l));
+            triplets[77 * i + id++] = Triplet<double>(e.idx(3 + j), 3 * e.idx(k) + l, hess(9 + j, 3 * k + l));
       }
 
     for(int j = 0; j < 2; ++j)
       for(int k = 0; k < 2; ++k)
         if(e.idx(3 + j) <= e.idx(3 + k))
-          triplets.emplace_back(e.idx(3 + j), e.idx(3 + k), hess(9 + j, 9 + k));
+          triplets[77 * i + id++] = Triplet<double>(e.idx(3 + j), e.idx(3 + k), hess(9 + j, 9 + k));
   }
 
-  for(const auto &s: _springs)
+  for(int i = 0; i < _springs.size(); ++i)
   {
+    auto& s = _springs[i];
     Matrix3d h = _stretch_modulus * s.hessian(X);
 
+    int id = 0;
     if(s.i < s.j)
       for(int k = 0; k < 3; ++k)
         for(int l = 0; l < 3; ++l)
-          triplets.emplace_back(3 * s.i + k, 3 * s.j + l, h(k, l));
+          triplets[77 * _stencils.size() + 27 * i + id++] = Triplet<double>(3 * s.i + k, 3 * s.j + l, h(k, l));
     else
       for(int k = 0; k < 3; ++k)
         for(int l = 0; l < 3; ++l)
-          triplets.emplace_back(3 * s.j + k, 3 * s.i + l, h(k, l));
+          triplets[77 * _stencils.size() + 27 * i + id++] = Triplet<double>(3 * s.j + k, 3 * s.i + l, h(k, l));
 
     for(int k = 0; k < 3; ++k)
       for(int l = 0; l < 3; ++l)
       {
-        triplets.emplace_back(3 * s.i + k, 3 * s.i + l, -h(k, l));
-        triplets.emplace_back(3 * s.j + k, 3 * s.j + l, -h(k, l));
+        triplets[77 * _stencils.size() + 27 * i + id++] = Triplet<double>(3 * s.i + k, 3 * s.i + l, -h(k, l));
+        triplets[77 * _stencils.size() + 27 * i + id++] = Triplet<double>(3 * s.j + k, 3 * s.j + l, -h(k, l));
       }
   }
 
