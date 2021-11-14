@@ -1,0 +1,43 @@
+# Test the library
+
+name: Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  CTEST_OUTPUT_ON_FAILURE: ON
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+jobs:
+  ####################
+  # Linux / macOS
+  ####################
+
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Dependencies
+        run: sudo apt install libeigen3-dev coreutils
+
+      - name: Configure
+        run:  cmake -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TEST_COVERAGE=ON
+
+      - name: Build
+        run: cmake --build build -j $(nproc)
+
+      - name: Tests
+        run:  |
+          cd build
+          ctest -j $(nproc) -C Release -E "benchmarks|check_finite_differences"
+
+      - name: collect code coverage
+        run: bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
