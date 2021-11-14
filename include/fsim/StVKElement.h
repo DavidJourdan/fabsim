@@ -121,7 +121,7 @@ double StVKElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 
   Vector3d E = strain(V);
 
-  return coeff * (0.5 * E.dot(_C * E) + 9.8 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2)));
+  return coeff * (0.5 * E.dot(_C * E) + 9.8 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2)) / 3);
 }
 
 template <int id>
@@ -137,7 +137,7 @@ Vec<double, 9> StVKElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd>
   Matrix<double, 3, 2> F = P.transpose() * _R;
 
   Matrix3d grad = coeff * F * (SMat * _R.transpose());
-  grad.col(2) += Vector3d::Constant(9.8 * coeff * mass);
+  grad.row(2) += Vector3d::Constant(9.8 * coeff / 3 * mass);
   return Map<Vec<double, 9>>(grad.data(), 9);
 }
 
