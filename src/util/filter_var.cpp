@@ -25,10 +25,8 @@ void filter_var(Eigen::SparseMatrix<double> &M, const std::vector<int> &indices)
   if(!std::is_sorted(indices.begin(), indices.end()))
     throw(std::invalid_argument("indices are not sorted"));
 
-  // clang-format off
   M.prune([&indices](const int row, const int col, const double val)
   {
-    // clang-format on
     return !std::binary_search(indices.begin(), indices.end(), row) &&
            !std::binary_search(indices.begin(), indices.end(), col);
   });
@@ -38,6 +36,16 @@ void filter_var(Eigen::SparseMatrix<double> &M, const std::vector<int> &indices)
     M.coeffRef(i, i) = 1;
   }
   M.makeCompressed();
+}
+
+void filter_var(Eigen::Ref<Eigen::MatrixXd> &M, const std::vector<int> &indices)
+{
+  for(int i: indices)
+  {
+    M.row(i).setZero();
+    M.col(i).setZero();
+    M(i, i) = 1;
+  }
 }
 
 } // namespace fsim
