@@ -1,0 +1,47 @@
+# Try building on both Linux and macOS platforms
+
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  ####################
+  # Linux / macOS
+  ####################
+
+  build:
+    name: ${{ matrix.name }} Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: macos-latest
+            name: macOS
+          - os: ubuntu-latest
+            name: Linux
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt install libeigen3-dev coreutils
+      - name: Dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install eigen coreutils
+
+      - name: Configure
+        run:  cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release -j $(nproc)
+
+      - name: Run
+        run:  build/example/example
