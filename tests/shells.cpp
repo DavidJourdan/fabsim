@@ -88,12 +88,19 @@ TEST_CASE("ElasticShell class")
 
     shell.setYoungModulus(2 * E);
 
-    REQUIRE(shell.energy(var) == Approx(2 * prev_energy).margin(1e-10));
+    REQUIRE(shell.energy(var) == Approx(2 * prev_energy).epsilon(1e-6));
   }
   SECTION("Poisson's ratio")
   {
     double poisson_ratio = GENERATE(take(5, random(0., 0.5)));
     shell.setPoissonRatio(poisson_ratio);
     REQUIRE(shell.getPoissonRatio() == poisson_ratio);
+  }
+  SECTION("Nb vertices/edges/faces/dofs")
+  {
+    REQUIRE(shell.nbDOFs() == 12);
+    REQUIRE(shell.nbVertices() == 4);
+    REQUIRE(shell.nbFaces() == 2);
+    REQUIRE(shell.nbEdges() == 1);
   }
 }

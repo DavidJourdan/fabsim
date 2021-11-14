@@ -46,7 +46,7 @@ public:
 
   // number of vertices
   int nbVertices() const { return nV; }
-  // number of edges
+  // number of edges (excluding edges on the boundary)
   int nbEdges() const { return nE; }
   // number of faces
   int nbFaces() const { return nF; }

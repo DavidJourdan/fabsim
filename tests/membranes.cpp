@@ -54,6 +54,12 @@ TEST_CASE("StVKElement")
 
     REQUIRE(e.energy(var) == Approx(0.).margin(1e-10));
   }
+  SECTION("Strain/stress")
+  {
+    Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
+
+    REQUIRE_THAT(e.stress(V), ApproxEquals(StVKElement<>::_C * e.strain(V)));
+  }
 }
 
 TEST_CASE("StVKMembrane class")
@@ -74,6 +80,30 @@ TEST_CASE("StVKMembrane class")
     instance0.setThickness(0.3);
     REQUIRE(instance0.getThickness() == 0.3);
   }
+  SECTION("setPoissonRatio")
+  {
+    instance0.setPoissonRatio(0.5);
+    REQUIRE(instance0.getPoissonRatio() == 0.5);
+  }
+  SECTION("Young's modulus")
+  {
+    double E = GENERATE(take(5, random(0., 1.)));
+    instance0.setYoungModulus(E);
+    REQUIRE(instance0.getYoungModulus() == E);
+
+    VectorXd var = GENERATE(take(5, vector_random(9)));
+    double prev_energy = instance0.energy(var);
+
+    instance0.setYoungModulus(2 * E);
+
+    REQUIRE(instance0.energy(var) == Approx(2 * prev_energy).epsilon(1e-6));
+  }
+  SECTION("setMass")
+  {
+    instance0.setMass(2);
+    REQUIRE(instance0.getMass() == 2);
+  }
+  SECTION("nbDOFS") { REQUIRE(instance0.nbDOFs() == 9); }
 }
 
 TEST_CASE("NeoHookeanMembrane class")
@@ -94,6 +124,30 @@ TEST_CASE("NeoHookeanMembrane class")
     instance0.setThickness(0.3);
     REQUIRE(instance0.getThickness() == 0.3);
   }
+  SECTION("setPoissonRatio")
+  {
+    instance0.setPoissonRatio(0.5);
+    REQUIRE(instance0.getPoissonRatio() == 0.5);
+  }
+  SECTION("Young's modulus")
+  {
+    double E = GENERATE(take(5, random(0., 1.)));
+    instance0.setYoungModulus(E);
+    REQUIRE(instance0.getYoungModulus() == E);
+
+    VectorXd var = GENERATE(take(5, vector_random(9)));
+    double prev_energy = instance0.energy(var);
+
+    instance0.setYoungModulus(2 * E);
+
+    REQUIRE(instance0.energy(var) == Approx(2 * prev_energy).epsilon(1e-6));
+  }
+  SECTION("setMass")
+  {
+    instance0.setMass(2);
+    REQUIRE(instance0.getMass() == 2);
+  }
+  SECTION("nbDOFS") { REQUIRE(instance0.nbDOFs() == 9); }
 }
 
 TEST_CASE("IncompressibleNeoHookeanMembrane class")
@@ -114,6 +168,30 @@ TEST_CASE("IncompressibleNeoHookeanMembrane class")
     instance0.setThickness(0.3);
     REQUIRE(instance0.getThickness() == 0.3);
   }
+  SECTION("setPoissonRatio")
+  {
+    instance0.setPoissonRatio(0.5);
+    REQUIRE(instance0.getPoissonRatio() == 0.5);
+  }
+  SECTION("Young's modulus")
+  {
+    double E = GENERATE(take(5, random(0., 1.)));
+    instance0.setYoungModulus(E);
+    REQUIRE(instance0.getYoungModulus() == E);
+
+    VectorXd var = GENERATE(take(5, vector_random(9)));
+    double prev_energy = instance0.energy(var);
+
+    instance0.setYoungModulus(2 * E);
+
+    REQUIRE(instance0.energy(var) == Approx(2 * prev_energy).epsilon(1e-6));
+  }
+  SECTION("setMass")
+  {
+    instance0.setMass(2);
+    REQUIRE(instance0.getMass() == 2);
+  }
+  SECTION("nbDOFS") { REQUIRE(instance0.nbDOFs() == 9); }
 }
 
 TEST_CASE("OrthotropicStVKMembrane class")
@@ -133,6 +211,24 @@ TEST_CASE("OrthotropicStVKMembrane class")
     instance0.setThickness(0.3);
     REQUIRE(instance0.getThickness() == 0.3);
   }
+  SECTION("setPoissonRatio")
+  {
+    instance0.setPoissonRatio(0.5);
+    REQUIRE(instance0.getPoissonRatio() == 0.5);
+  }
+  SECTION("setYoungModuli")
+  {
+    instance0.setYoungModuli(5, 6);
+    std::array<double, 2> youngModuli = instance0.getYoungModuli();
+    REQUIRE(youngModuli[0] == 5);
+    REQUIRE(youngModuli[1] == 6);
+  }
+  SECTION("setMass")
+  {
+    instance0.setMass(2);
+    REQUIRE(instance0.getMass() == 2);
+  }
+  SECTION("nbDOFS") { REQUIRE(instance0.nbDOFs() == 9); }
 }
 
 TEST_CASE("Small strain equivalence")

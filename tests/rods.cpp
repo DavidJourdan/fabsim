@@ -18,6 +18,36 @@ TEST_CASE("ElasticRod")
   Vector3d n = Vector3d::UnitZ();
   ElasticRod rod(V, n, {params(0), params(1), params(2)});
 
+  SECTION("getReferenceDirectors")
+  {
+    Mat3<double> D1, D2;
+    rod.getReferenceDirectors(D1, D2);
+    REQUIRE_THAT(D1.colwise().sum(), ApproxEquals(D1.rows() * RowVector3d::UnitZ()));
+
+    Vector2d theta = GENERATE(take(5, vector_random(2)));
+    rod.getRotatedDirectors(theta, D1, D2);
+    REQUIRE_THAT(D1.row(0).transpose(), 
+      ApproxEquals(AngleAxis<double>(theta(0), (V.row(1) - V.row(0)).normalized()) * Vector3d::UnitZ()).epsilon(1e-6));
+    REQUIRE_THAT(D1.row(1).transpose(), 
+      ApproxEquals(AngleAxis<double>(theta(1), (V.row(2) - V.row(1)).normalized()) * Vector3d::UnitZ()).epsilon(1e-6));
+  }
+
+  SECTION("setMass")
+  {
+    rod.setMass(2);
+    REQUIRE(rod.getMass() == 2);
+  }
+
+  SECTION("stiffness")
+  {
+    VectorXd params = GENERATE(take(5, vector_random(3)));
+    rod.setParams({params(0), params(1), params(2)});
+
+    Vector2d s = rod.stiffness();
+    REQUIRE(s(0) == Approx(pow(params(0), 3) * params(1) * 3.1415 * params(2) / 64));
+    REQUIRE(s(1) == Approx(pow(params(1), 3) * params(0) * 3.1415 * params(2) / 64));
+  }
+
   SECTION("Orthonormal frames")
   {
     VectorXd X = GENERATE(take(5, vector_random(9)));
