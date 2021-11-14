@@ -5,6 +5,7 @@ set(TEST_SOURCES
         benchmarks.cpp
         check_finite_differences.cpp
         membranes.cpp
+        misc.cpp
         rods.cpp
         shells.cpp
         springs.cpp

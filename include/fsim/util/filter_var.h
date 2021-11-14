@@ -27,6 +27,6 @@ void filter_var(Eigen::Ref<Eigen::VectorXd> X, const std::vector<int> &indices);
  * @param indices  list of indices such that if i is in indices, then X(i) = 0
  */
 void filter_var(Eigen::SparseMatrix<double> &M, const std::vector<int> &indices);
-void filter_var(Eigen::Ref<Eigen::MatrixXd> &M, const std::vector<int> &indices);
+void filter_var(Eigen::MatrixXd &M, const std::vector<int> &indices);
 
 } // namespace fsim

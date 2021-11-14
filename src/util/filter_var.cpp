@@ -38,7 +38,7 @@ void filter_var(Eigen::SparseMatrix<double> &M, const std::vector<int> &indices)
   M.makeCompressed();
 }
 
-void filter_var(Eigen::Ref<Eigen::MatrixXd> &M, const std::vector<int> &indices)
+void filter_var(Eigen::MatrixXd &M, const std::vector<int> &indices)
 {
   for(int i: indices)
   {
