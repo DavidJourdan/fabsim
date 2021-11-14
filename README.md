@@ -1,5 +1,9 @@
 # fabsim - Tools for fabrication & simulation
 
+[![](https://github.com/DavidJourdan/fabsim/workflows/Build/badge.svg)](https://github.com/DavidJourdan/fabsim/actions)
+[![](https://github.com/DavidJourdan/fabsim/workflows/Test/badge.svg)](https://github.com/DavidJourdan/fabsim/actions)
+[![codecov](https://codecov.io/gh/DavidJourdan/fabsim/branch/master/graph/badge.svg)](https://codecov.io/gh/DavidJourdan/fabsim)
+
 Fabsim is a small library comprising different material models for simulating rods, membranes and shells
 Implemented models include:
 - Discrete Elastic Rods (both for individual rods and rod networks)

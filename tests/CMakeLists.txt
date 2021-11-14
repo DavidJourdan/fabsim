@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.9)
 ################################################################################
 
+option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
+
 set(TEST_SOURCES
         benchmarks.cpp
         check_finite_differences.cpp
@@ -28,5 +30,11 @@ foreach(SOURCE IN ITEMS ${TEST_SOURCES})
 
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR})  # the working directory is the out-of-source build directory
+
+    # Code coverage
+    if (ENABLE_TEST_COVERAGE)
+        target_compile_options(${TEST_NAME} PUBLIC -O0 -g --coverage)
+        target_link_libraries(${TEST_NAME} PUBLIC --coverage)
+    endif()
 
 endforeach()
