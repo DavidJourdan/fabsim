@@ -100,9 +100,10 @@ StVKMembrane<id>::StVKMembrane(const Eigen::Ref<const Mat2<double>> V,
 
   nV = V.rows();
 
-  if(StVKElement<id>::_C.norm() != 0)
+  if(StVKElement<id>::_C.norm() != 0 && StVKElement<id>::_C(0, 0) != _E / (1 - std::pow(_nu, 2)) ||
+     StVKElement<id>::mass != 0 && StVKElement<id>::mass != mass)    
     std::cerr << "Warning: overwriting elasticity tensor. Please declare your different instances as "
-                 "OrthotropicStVKMembrane<0>, OrthotropicStVKMembrane<1>, etc.\n";
+                 "StVKMembrane<0>, StVKMembrane<1>, etc.\n";
 
   StVKElement<id>::_C << 
     _E, _nu * _E, 0, 
