@@ -1,4 +1,4 @@
-// TriangleElement.h
+// IncompressibleNeoHookeanElement.h
 //
 // Authors: Etienne Vouga and David Jourdan (david.jourdan@inria.fr)
 // Created: 01/13/20

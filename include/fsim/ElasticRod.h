@@ -5,9 +5,6 @@
 // see also  "A discrete, geometrically exact method for simulating nonlinear, elastic or
 // non-elastic beams"  (https://hal.archives-ouvertes.fr/hal-02352879v1)
 //
-// Please note that, at the moment this implementation assumes a rectangular cross-section whose
-// dimensions are given by the normal and binormal widths variables
-//
 // Author: David Jourdan (david.jourdan@inria.fr)
 // Created: 01/09/20
 

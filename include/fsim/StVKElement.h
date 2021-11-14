@@ -8,8 +8,6 @@
 #include "ElementBase.h"
 #include "util/typedefs.h"
 
-#include <array>
-
 namespace fsim
 {
 
