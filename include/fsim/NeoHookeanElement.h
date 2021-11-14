@@ -10,6 +10,7 @@
 #include "ElementBase.h"
 #include "util/first_fundamental_form.h"
 #include "util/geometry.h"
+#include "util/principal_directions_and_eigenvalues.h"
 #include "util/typedefs.h"
 
 namespace fsim
@@ -92,14 +93,6 @@ public:
   static double mass; // mass per unit volume
   static double E;    // Young's modulus
   double coeff;
-
-protected:
-  void principalDirectionsAndEigenvalues(const Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix2d> &solver,
-                                         const Eigen::Ref<const Mat3<double>> V,
-                                         Eigen::Vector3d &max_dir,
-                                         Eigen::Vector3d &min_dir,
-                                         Eigen::Vector2d &eigs) const;
-
   Eigen::Matrix2d abar_inv;
 };
 
@@ -211,38 +204,6 @@ Eigen::Matrix2d NeoHookeanElement<id>::stress(const Eigen::Ref<const Mat3<double
 }
 
 template <int id>
-void NeoHookeanElement<id>::principalDirectionsAndEigenvalues(
-    const Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix2d> &eigensolver,
-    const Eigen::Ref<const Mat3<double>> V,
-    Eigen::Vector3d &max_dir,
-    Eigen::Vector3d &min_dir,
-    Eigen::Vector2d &eigs) const
-{
-  // triangle frame, edge-aligned
-  Eigen::Matrix<double, 3, 2> X;
-  X.col(0) = V.row(idx(1)) - V.row(idx(0));
-  X.col(1) = V.row(idx(2)) - V.row(idx(0));
-
-  Eigen::Matrix<double, 3, 2> dirs = X * eigensolver.eigenvectors();
-  Eigen::Vector2d lambda = eigensolver.eigenvalues();
-
-  // order eigenvalues and eigenvectors
-  if(lambda(0) < lambda(1))
-  {
-    min_dir = dirs.col(0);
-    max_dir = dirs.col(1);
-    eigs = lambda;
-  }
-  else
-  {
-    min_dir = dirs.col(1);
-    max_dir = dirs.col(0);
-    eigs(0) = lambda(1);
-    eigs(1) = lambda(0);
-  }
-}
-
-template <int id>
 void NeoHookeanElement<id>::principalStrains(const Eigen::Ref<const Mat3<double>> V,
                                              Eigen::Vector3d &max_dir,
                                              Eigen::Vector3d &min_dir,
@@ -250,8 +211,14 @@ void NeoHookeanElement<id>::principalStrains(const Eigen::Ref<const Mat3<double>
 {
   using namespace Eigen;
   Matrix2d abar = abar_inv.inverse();
-  return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * strain(V), abar), V,
-                                           max_dir, min_dir, eigs);
+
+  // triangle frame, edge-aligned
+  Matrix<double, 3, 2> X;
+  X.col(0) = V.row(idx(1)) - V.row(idx(0));
+  X.col(1) = V.row(idx(2)) - V.row(idx(0));
+
+  principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * strain(V), abar), X, max_dir,
+                                       min_dir, eigs);
 }
 
 template <int id>
@@ -265,8 +232,13 @@ void NeoHookeanElement<id>::principalStresses(const Eigen::Ref<const Mat3<double
   Matrix2d abar = abar_inv.inverse();
   Matrix2d a = first_fundamental_form(V, idx);
 
-  return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), V, max_dir,
-                                           min_dir, eigs);
+  // triangle frame, edge-aligned
+  Matrix<double, 3, 2> X;
+  X.col(0) = V.row(idx(1)) - V.row(idx(0));
+  X.col(1) = V.row(idx(2)) - V.row(idx(0));
+
+  principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), X, max_dir,
+                                       min_dir, eigs);
 }
 
 } // namespace fsim

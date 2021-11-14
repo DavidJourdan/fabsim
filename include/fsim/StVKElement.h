@@ -1,36 +1,28 @@
 // StVKElement.h
 //
-// Authors: Etienne Vouga and David Jourdan (david.jourdan@inria.fr)
-// Created: 01/13/20
-// Code adapted with permission from Etienne Vouga's implementation of the Discrete shell energy
-// For original implementation see https://github.com/evouga/libshell
+// Author: David Jourdan (david.jourdan@inria.fr)
+// Created: 30/10/21
 
 #pragma once
 
 #include "ElementBase.h"
-#include "util/first_fundamental_form.h"
-#include "util/geometry.h"
 #include "util/typedefs.h"
+
+#include <array>
 
 namespace fsim
 {
 
-/**
- * Stencil for the StVK energy
- * @tparam mat  enum representing which material model to use when computing the energy and its derivatives
- * @tparam id  unique identifier meant to disambiguate between different TriangleElement instances so
- * that they don't have the same Lamé parameters and thicknesses (which are stored as static variables)
- */
 template <int id = 0>
 class StVKElement : public ElementBase<3>
 {
 public:
   /**
-   * Constructor for the TriangleElement class
-   * @param V  n by 3 list of vertex positions (each row is a vertex)
+   * Constructor for the StVKElement class
+   * @param V  n by 2 list of vertex positions (each row is a vertex)
    * @param face  list of 3 indices, one per vertex of the triangle
    */
-  StVKElement(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector3i &face, double thickness);
+  StVKElement(const Eigen::Ref<const Mat2<double>> V, const Eigen::Vector3i &face, double thickness);
 
   /**
    * @param X  a flat vector stacking all degrees of freedom
@@ -51,78 +43,74 @@ public:
   LocalMatrix hessian(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   /**
-   * Computes the Green strain tensor E = \frac 1 2 (\bar a^{-1} a - I)  where a is the first fundamental form
+   * Computes the Green strain tensor E = \frac 1 2 (F^T F - I)  where F is the deformation gradient
+   * Uses Voigt's notation to express it as a vector
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return Green strain
    */
-  Eigen::Matrix2d strain(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Vector3d strain(const Eigen::Ref<const Mat3<double>> V) const;
 
   /**
    * Computes the Second Piola-Kirchhoff stress tensor S = \frac{\partial f}{\partial E} where E is the Green strain
+   * Uses Voigt's notation to express it as a vector
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return second Piola-Kirchhoff stress
    */
-  Eigen::Matrix2d stress(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Vector3d stress(const Eigen::Ref<const Mat3<double>> V) const;
 
-  /**
-   * Computes the principal strain directions and their corresponding eigenvalues
-   * @param V  n by 3 list of vertex positions (each row is a vertex)
-   * @param max_dir  maximum strain direction
-   * @param min_dir  minimum strain direction
-   * @param eigs  eigenvalues (in ascending order)
-   */
-  void principalStrains(const Eigen::Ref<const Mat3<double>> V,
-                        Eigen::Vector3d &max_dir,
-                        Eigen::Vector3d &min_dir,
-                        Eigen::Vector2d &eigs) const;
-
-  /**
-   * Computes the principal stress directions and their corresponding eigenvalues
-   * @param V  n by 3 list of vertex positions (each row is a vertex)
-   * @param max_dir  maximum stress direction
-   * @param min_dir  minimum stress direction
-   * @param eigs  eigenvalues (in ascending order)
-   */
-  void principalStresses(const Eigen::Ref<const Mat3<double>> V,
-                         Eigen::Vector3d &max_dir,
-                         Eigen::Vector3d &min_dir,
-                         Eigen::Vector2d &eigs) const;
-
-  static double nu;   // Poisson's ratio
-  static double mass; // mass per unit volume
-  static double E;    // Young's modulus
   double coeff;
-
-protected:
-  void principalDirectionsAndEigenvalues(const Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix2d> &solver,
-                                         const Eigen::Ref<const Mat3<double>> V,
-                                         Eigen::Vector3d &max_dir,
-                                         Eigen::Vector3d &min_dir,
-                                         Eigen::Vector2d &eigs) const;
-
-  Eigen::Matrix2d abar_inv;
+  Eigen::Matrix<double, 3, 2> _R;
+  static Eigen::Matrix3d _C;
+  static double mass;
 };
 
-// the ids are there to disambiguate between TriangleElements pertaining to different Membrane instances
-// so that they don't have the same static fields
+// https://stackoverflow.com/questions/3229883/static-member-initialization-in-a-class-template
 template <int id>
-double StVKElement<id>::nu = 0;
+Eigen::Matrix3d StVKElement<id>::_C = Eigen::Matrix3d::Zero();
 
 template <int id>
 double StVKElement<id>::mass = 0;
 
 template <int id>
-double StVKElement<id>::E = 0;
-
-template <int id>
-StVKElement<id>::StVKElement(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector3i &E, double thickness)
+StVKElement<id>::StVKElement(const Eigen::Ref<const Mat2<double>> V,
+                                                   const Eigen::Vector3i &E,
+                                                   double thickness)
 {
   using namespace Eigen;
 
   idx = E;
-  Matrix2d abar = first_fundamental_form(V, idx);
-  abar_inv = abar.inverse();
-  coeff = thickness / 2 * sqrt(abar.determinant());
+
+  _R << V(E(1), 1) - V(E(2), 1), V(E(1), 0) - V(E(2), 0), 
+        V(E(2), 1) - V(E(0), 1), V(E(2), 0) - V(E(0), 0),
+        V(E(0), 1) - V(E(1), 1), V(E(0), 0) - V(E(1), 0);
+
+  double d = Vector3d(V(E(0), 0), V(E(1), 0), V(E(2), 0)).dot(_R.col(0));
+
+  _R /= d;
+  coeff = thickness / 2 * std::abs(d);
+}
+
+template <int id>
+Eigen::Vector3d StVKElement<id>::strain(const Eigen::Ref<const Mat3<double>> V) const
+{
+  using namespace Eigen;
+  Matrix3d P = (Matrix3d(3, 3) << V.row(idx(0)), V.row(idx(1)), V.row(idx(2))).finished();
+  Matrix<double, 3, 2> F = P.transpose() * _R;
+
+  Vector3d res;
+  res(0) = 0.5 * (F.col(0).dot(F.col(0)) - 1);
+  res(1) = 0.5 * (F.col(1).dot(F.col(1)) - 1);
+  res(2) = F.col(1).dot(F.col(0));
+
+  return res;
+}
+
+template <int id>
+Eigen::Vector3d StVKElement<id>::stress(const Eigen::Ref<const Mat3<double>> V) const
+{
+  using namespace Eigen;
+  Vector3d E = strain(V);
+  return _C * E;
 }
 
 template <int id>
@@ -130,141 +118,55 @@ double StVKElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
-  double res = 9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
 
-  Matrix2d a = first_fundamental_form(V, idx);
-  // Green strain tensor (abar_inv * a  can be identified as the right Cauchy-Green deformation tensor)
-  Matrix2d M = (abar_inv * a - Matrix2d::Identity()) / 2;
-  return coeff * E / (2 * (1 + nu)) * (nu / (1 - nu) * pow(M.trace(), 2) + (M * M).trace()) +
-         9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
+  Vector3d E = strain(V);
+
+  return coeff * (0.5 * E.dot(_C * E) + 9.8 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2)));
 }
 
 template <int id>
-typename StVKElement<id>::LocalVector StVKElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+Vec<double, 9> StVKElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
-  Matrix<double, 4, 9> aderiv;
-  Matrix2d a = first_fundamental_form(V, idx, &aderiv);
-  Matrix2d M = (abar_inv * a - Matrix2d::Identity()) / 2; // Green strain tensor
+  Vector3d S = stress(V);
+  Matrix2d SMat = (Matrix2d(2, 2) << S(0), S(2), S(2), S(1)).finished();
 
-  Matrix2d temp = M * abar_inv + nu / (1 - nu) * M.trace() * abar_inv;
-  Map<Vector4d> flat(temp.data());
+  Matrix3d P = (Matrix3d(3, 3) << V.row(idx(0)), V.row(idx(1)), V.row(idx(2))).finished();
+  Matrix<double, 3, 2> F = P.transpose() * _R;
 
-  Vec<double, 9> res = coeff * E / (2 * (1 + nu)) * aderiv.transpose() * flat;
-
-  res(2) += 9.8 * coeff / 3 * mass;
-  res(5) += 9.8 * coeff / 3 * mass;
-  res(8) += 9.8 * coeff / 3 * mass;
-
-  return res;
+  Matrix3d grad = coeff * F * (SMat * _R.transpose());
+  grad.col(2) += Vector3d::Constant(9.8 * coeff * mass);
+  return Map<Vec<double, 9>>(grad.data(), 9);
 }
 
 template <int id>
-typename StVKElement<id>::LocalMatrix StVKElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+Mat<double, 9, 9> StVKElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
-  Matrix<double, 4, 9> aderiv;
-  Matrix<double, 36, 9> ahess;
-  Matrix2d a = first_fundamental_form(V, idx, &aderiv, &ahess);
-  Matrix2d M = (abar_inv * a - Matrix2d::Identity()) / 2; // Green strain tensor
+  Vector3d S = stress(V);
+  Matrix3d P;
+  P << V.row(idx(0)), V.row(idx(1)), V.row(idx(2));
+  Matrix<double, 3, 2> F = P.transpose() * _R;
+  Matrix2d E = 0.5 * (F.transpose() * F - Matrix2d::Identity());
 
-  Matrix<double, 9, 1> inner = aderiv.transpose() * Map<Vector4d>{const_cast<double *>(abar_inv.data())};
-  Matrix<double, 9, 9> hess = nu / (2 * (1 - nu)) * outer_prod(inner, inner);
+  Matrix3d A = _C(0, 0) * F.col(0) * F.col(0).transpose() + S(0) * Matrix3d::Identity() +
+               _C(2, 2) * F.col(1) * F.col(1).transpose();
+  Matrix3d B = _C(1, 1) * F.col(1) * F.col(1).transpose() + S(1) * Matrix3d::Identity() +
+               _C(2, 2) * F.col(0) * F.col(0).transpose();
+  Matrix3d C = _C(0, 1) * F.col(0) * F.col(1).transpose() + S(2) * Matrix3d::Identity() +
+               _C(2, 2) * F.col(1) * F.col(0).transpose();
 
-  Matrix2d Mabarinv = M * abar_inv;
-  for(int i = 0; i < 4; ++i) // iterate over Mabarinv and abar_inv as if they were vectors
-    hess += (Mabarinv(i) + nu / (1 - nu) * M.trace() * abar_inv(i)) * ahess.block<9, 9>(9 * i, 0);
+  Matrix<double, 9, 9> hess;
 
-  Matrix<double, 9, 1> inner00 = abar_inv(0, 0) * aderiv.row(0) + abar_inv(0, 1) * aderiv.row(2);
-  Matrix<double, 9, 1> inner01 = abar_inv(0, 0) * aderiv.row(1) + abar_inv(0, 1) * aderiv.row(3);
-  Matrix<double, 9, 1> inner10 = abar_inv(1, 0) * aderiv.row(0) + abar_inv(1, 1) * aderiv.row(2);
-  Matrix<double, 9, 1> inner11 = abar_inv(1, 0) * aderiv.row(1) + abar_inv(1, 1) * aderiv.row(3);
-  hess += 0.5 * outer_prod(inner00, inner00);
-  hess += sym(outer_prod(inner01, inner10));
-  hess += 0.5 * outer_prod(inner11, inner11);
+  for(int i = 0; i < 3; ++i)
+    for(int j = i; j < 3; ++j)
+      hess.block<3, 3>(3 * i, 3 * j) =
+          _R(i, 0) * _R(j, 0) * A + _R(i, 1) * _R(j, 1) * B + _R(i, 0) * _R(j, 1) * C + _R(i, 1) * _R(j, 0) * C.transpose();
 
-  hess *= coeff * E / (2 * (1 + nu));
-  return hess;
+  return coeff * hess.selfadjointView<Upper>();
 }
-
-template <int id>
-Eigen::Matrix2d StVKElement<id>::strain(const Eigen::Ref<const Mat3<double>> V) const
-{
-  Eigen::Matrix2d a = first_fundamental_form(V, idx);
-  return 0.5 * (abar_inv * a - Eigen::Matrix2d::Identity());
-}
-
-template <int id>
-Eigen::Matrix2d StVKElement<id>::stress(const Eigen::Ref<const Mat3<double>> V) const
-{
-  using namespace Eigen;
-
-  Matrix2d a = first_fundamental_form(V, idx);
-  Matrix2d M = (abar_inv * a - Matrix2d::Identity()) / 2;
-  return coeff * E / (2 * (1 + nu)) * (nu / (1 - nu) * M.trace() * Matrix2d::Identity() + M);
-}
-
-template <int id>
-void StVKElement<id>::principalDirectionsAndEigenvalues(
-    const Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::Matrix2d> &eigensolver,
-    const Eigen::Ref<const Mat3<double>> V,
-    Eigen::Vector3d &max_dir,
-    Eigen::Vector3d &min_dir,
-    Eigen::Vector2d &eigs) const
-{
-  // triangle frame, edge-aligned
-  Eigen::Matrix<double, 3, 2> X;
-  X.col(0) = V.row(idx(1)) - V.row(idx(0));
-  X.col(1) = V.row(idx(2)) - V.row(idx(0));
-
-  Eigen::Matrix<double, 3, 2> dirs = X * eigensolver.eigenvectors();
-  Eigen::Vector2d lambda = eigensolver.eigenvalues();
-
-  // order eigenvalues and eigenvectors
-  if(lambda(0) < lambda(1))
-  {
-    min_dir = dirs.col(0);
-    max_dir = dirs.col(1);
-    eigs = lambda;
-  }
-  else
-  {
-    min_dir = dirs.col(1);
-    max_dir = dirs.col(0);
-    eigs(0) = lambda(1);
-    eigs(1) = lambda(0);
-  }
-}
-
-template <int id>
-void StVKElement<id>::principalStrains(const Eigen::Ref<const Mat3<double>> V,
-                                       Eigen::Vector3d &max_dir,
-                                       Eigen::Vector3d &min_dir,
-                                       Eigen::Vector2d &eigs) const
-{
-  using namespace Eigen;
-  Matrix2d abar = abar_inv.inverse();
-  return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * strain(V), abar), V,
-                                           max_dir, min_dir, eigs);
-}
-
-template <int id>
-void StVKElement<id>::principalStresses(const Eigen::Ref<const Mat3<double>> V,
-                                        Eigen::Vector3d &max_dir,
-                                        Eigen::Vector3d &min_dir,
-                                        Eigen::Vector2d &eigs) const
-{
-  using namespace Eigen;
-
-  Matrix2d abar = abar_inv.inverse();
-  Matrix2d a = first_fundamental_form(V, idx);
-
-  return principalDirectionsAndEigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * stress(V), abar), V,
-                                           max_dir, min_dir, eigs);
-}
-
 } // namespace fsim

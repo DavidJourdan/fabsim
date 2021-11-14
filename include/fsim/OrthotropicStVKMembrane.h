@@ -1,4 +1,4 @@
-// OrthotropicStVKElement.h
+// OrthotropicStVKMembrane.h
 //
 // StVK version of "Stable Orthotropic Materials" by Li and Barbič (https://doi.org/10.1109/tvcg.2015.2448105)
 // Parameterizes the elasticity tensor with 2 Young's moduli and 1 Poisson's ratio
@@ -7,7 +7,7 @@
 // Created: 30/10/21
 
 #include "ModelBase.h"
-#include "OrthotropicStVKElement.h"
+#include "StVKElement.h"
 
 #include <array>
 #include <iostream>
@@ -16,7 +16,7 @@ namespace fsim
 {
 
 template <int id = 0>
-class OrthotropicStVKMembrane : public ModelBase<OrthotropicStVKElement<id>>
+class OrthotropicStVKMembrane : public ModelBase<StVKElement<id>>
 {
 public:
   /**
@@ -62,7 +62,7 @@ public:
   double getThickness() const { return _thickness; }
 
   void setMass(double mass);
-  double getMass() const { return OrthotropicStVKElement<id>::mass; }
+  double getMass() const { return StVKElement<id>::mass; }
 
 private:
   int nV;
@@ -99,17 +99,17 @@ OrthotropicStVKMembrane<id>::OrthotropicStVKMembrane(const Eigen::Ref<const Mat2
 
   nV = V.rows();
 
-  if(OrthotropicStVKElement<id>::_C.norm() != 0)
+  if(StVKElement<id>::_C.norm() != 0)
     std::cerr << "Warning: overwriting elasticity tensor. Please declare your different instances as "
                  "OrthotropicStVKMembrane<0>, OrthotropicStVKMembrane<1>, etc.\n";
 
-  OrthotropicStVKElement<id>::_C << 
+  StVKElement<id>::_C << 
     E1, poisson_ratio * sqrt(E1 * E2), 0, 
-    poisson_ratio * sqrt(E1 * E2), E2, 0, 0, 
-    0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
-  OrthotropicStVKElement<id>::_C /= (1 - std::pow(poisson_ratio, 2));
+    poisson_ratio * sqrt(E1 * E2), E2, 0, 
+    0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
+  StVKElement<id>::_C /= (1 - std::pow(poisson_ratio, 2));
 
-  OrthotropicStVKElement<id>::mass = mass;
+  StVKElement<id>::mass = mass;
   int nF = F.rows();
   this->_elements.reserve(nF);
   for(int i = 0; i < nF; ++i)
@@ -121,12 +121,12 @@ void OrthotropicStVKMembrane<id>::setPoissonRatio(double poisson_ratio)
 {
   _poisson_ratio = poisson_ratio;
 
-  OrthotropicStVKElement<id>::_C << 
+  StVKElement<id>::_C << 
     _E1, _poisson_ratio * sqrt(_E1 * _E2), 0, 
     _poisson_ratio * sqrt(_E1 * _E2), _E2, 0, 0, 
     0, 0.5 * sqrt(_E1 * _E2) * (1 - _poisson_ratio);
 
-  OrthotropicStVKElement<id>::_C /= (1 - std::pow(_poisson_ratio, 2));
+  StVKElement<id>::_C /= (1 - std::pow(_poisson_ratio, 2));
 }
 
 template <int id>
@@ -135,12 +135,12 @@ void OrthotropicStVKMembrane<id>::setYoungModuli(double E1, double E2)
   _E1 = E1;
   _E2 = E2;
 
-  OrthotropicStVKElement<id>::_C << 
+  StVKElement<id>::_C << 
     _E1, _poisson_ratio * sqrt(_E1 * _E2), 0, 
     _poisson_ratio * sqrt(_E1 * _E2), _E2, 0, 0, 
     0, 0.5 * sqrt(_E1 * _E2) * (1 - _poisson_ratio);
 
-  OrthotropicStVKElement<id>::_C /= (1 - std::pow(_poisson_ratio, 2));
+  StVKElement<id>::_C /= (1 - std::pow(_poisson_ratio, 2));
 }
 
 template <int id>
@@ -159,7 +159,7 @@ void OrthotropicStVKMembrane<id>::setThickness(double t)
 template <int id>
 void OrthotropicStVKMembrane<id>::setMass(double mass)
 {
-  OrthotropicStVKElement<id>::mass = mass;
+  StVKElement<id>::mass = mass;
 }
 
 } // namespace fsim

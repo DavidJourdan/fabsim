@@ -2,21 +2,23 @@
 #include "helpers.h"
 
 #include <fsim/ElasticShell.h>
-#include <fsim/ElasticMembrane.h>
 #include <fsim/ElasticRod.h>
-#include <fsim/RodStencil.h>
-#include <fsim/StVKElement.h>
-#include <fsim/NeoHookeanElement.h>
 #include <fsim/IncompressibleNeoHookeanElement.h>
-#include <fsim/OrthotropicStVKElement.h>
+#include <fsim/IncompressibleNeoHookeanMembrane.h>
+#include <fsim/NeoHookeanElement.h>
+#include <fsim/NeoHookeanMembrane.h>
+#include <fsim/OrthotropicStVKMembrane.h>
+#include <fsim/RodStencil.h>
 #include <fsim/Spring.h>
+#include <fsim/StVKMembrane.h>
+#include <fsim/StVKElement.h>
 #include <fsim/util/typedefs.h>
 
 using namespace fsim;
 
 // MEMBRANES
 
-TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, IncompressibleNeoHookeanElement<>)
+TEMPLATE_TEST_CASE("TriangleElement", "", NeoHookeanElement<>, IncompressibleNeoHookeanElement<>)
 {
   using namespace Eigen;
 
@@ -34,7 +36,7 @@ TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, In
   SECTION("Hessian") { test_hessian(e, 1e-5); }
 }
 
-TEST_CASE("OrthotropicStVKElement", "[StVK]")
+TEST_CASE("StVKElement", "[StVK]")
 {
   using namespace Eigen;
 
@@ -44,11 +46,11 @@ TEST_CASE("OrthotropicStVKElement", "[StVK]")
 
   double E1 = GENERATE(take(2, random(0., 1.)));
   double E2 = GENERATE(take(2, random(0., 1.)));
-  OrthotropicStVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
+  StVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
                                   poisson_ratio * sqrt(E1 * E2), E2, 0,
                                   0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
-  OrthotropicStVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
-  OrthotropicStVKElement<> e(V, Vector3i(0, 1, 2), thickness);
+  StVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
+  StVKElement e(V, Vector3i(0, 1, 2), thickness);
 
   SECTION("Gradient") { test_gradient(e); }
   SECTION("Hessian") { test_hessian(e); }

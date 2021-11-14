@@ -27,6 +27,7 @@ file(GLOB BASE ${FABSIM_SOURCE_DIR}/ElasticShell.cpp
 file(GLOB UTIL ${FABSIM_SOURCE_DIR}/util/filter_var.cpp 
                ${FABSIM_SOURCE_DIR}/util/finite_differences.cpp
                ${FABSIM_SOURCE_DIR}/util/first_fundamental_form.cpp
+               ${FABSIM_SOURCE_DIR}/util/principal_directions_and_eigenvalues.cpp
                ${FABSIM_SOURCE_DIR}/util/geometry.cpp
                ${FABSIM_SOURCE_DIR}/util/io.cpp)
 add_library(fabsim ${BASE} ${UTIL})

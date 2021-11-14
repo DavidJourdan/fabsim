@@ -1,16 +1,18 @@
 #include "catch.hpp"
 #include "helpers.h"
 
-#include <fsim/ElasticMembrane.h>
-#include <fsim/StVKElement.h>
-#include <fsim/NeoHookeanElement.h>
 #include <fsim/IncompressibleNeoHookeanElement.h>
+#include <fsim/IncompressibleNeoHookeanMembrane.h>
+#include <fsim/NeoHookeanElement.h>
+#include <fsim/NeoHookeanMembrane.h>
 #include <fsim/OrthotropicStVKMembrane.h>
+#include <fsim/StVKMembrane.h>
+#include <fsim/StVKElement.h>
 #include <fsim/util/typedefs.h>
 
 using namespace fsim;
 
-TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, IncompressibleNeoHookeanElement<>)
+TEMPLATE_TEST_CASE("TriangleElement", "", NeoHookeanElement<>, IncompressibleNeoHookeanElement<>)
 {
   using namespace Eigen;
 
@@ -27,11 +29,38 @@ TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, In
   SECTION("Rotation invariance") { rotational_invariance(e); }
 }
 
+TEST_CASE("StVKElement")
+{
+  using namespace Eigen;
+
+  double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
+  double thickness = GENERATE(take(2, random(0., 1.)));
+  Mat2<double> V = GENERATE(take(2, matrix_random(3, 2)));
+
+  double E1 = GENERATE(take(2, random(0., 1.)));
+  double E2 = GENERATE(take(2, random(0., 1.)));
+  StVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
+                       poisson_ratio * sqrt(E1 * E2), E2, 0,
+                       0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
+  StVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
+  StVKElement e(V, Vector3i(0, 1, 2), thickness);
+
+  SECTION("Energy")
+  {
+    VectorXd var = VectorXd::Zero(9);
+    var.segment<2>(0) = V.row(0);
+    var.segment<2>(3) = V.row(1);
+    var.segment<2>(6) = V.row(2);
+
+    REQUIRE(e.energy(var) == Approx(0.).margin(1e-10));
+  }
+}
+
 TEST_CASE("StVKMembrane class")
 {
   using namespace Eigen;
 
-  Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
+  Mat2<double> V = GENERATE(take(2, matrix_random(3, 3)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
   StVKMembrane<0> instance0(V, F, 0.1, 10, 0.3);
@@ -111,16 +140,19 @@ TEST_CASE("Small strain equivalence")
   using namespace Eigen;
 
   Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
+  V.col(2).setZero();
 
   double young_modulus = GENERATE(take(2, random(1e10, 1e11)));
   double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
   double thickness = GENERATE(take(2, random(0., 1.)));
 
-  StVKElement<> e1(V, Vector3i(0, 1, 2), thickness);
+  StVKElement<> e1(V.leftCols(2), Vector3i(0, 1, 2), thickness);
   NeoHookeanElement<> e2(V, Vector3i(0, 1, 2), thickness);
 
-  StVKElement<>::nu = poisson_ratio;
-  StVKElement<>::E = young_modulus;
+  StVKElement<>::_C << young_modulus, poisson_ratio * young_modulus, 0,
+                       poisson_ratio * young_modulus, young_modulus, 0,
+                       0, 0, 0.5 * young_modulus * (1 - poisson_ratio);
+  StVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
   NeoHookeanElement<>::nu = poisson_ratio;
   NeoHookeanElement<>::E = young_modulus;
 
@@ -131,50 +163,4 @@ TEST_CASE("Small strain equivalence")
 
   // doesn't need to be super precise, just check that they are approximately the same
   REQUIRE(e1.energy(var) == Approx(e2.energy(var)).epsilon(1e-2));
-}
-
-TEST_CASE("OrthotropicStVKElement")
-{
-  using namespace Eigen;
-
-  double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
-  double thickness = GENERATE(take(2, random(0., 1.)));
-  MatrixX2d V = GENERATE(take(2, matrix_random(3, 2)));
-
-  double E1 = GENERATE(take(2, random(0., 1.)));
-  double E2 = GENERATE(take(2, random(0., 1.)));
-  OrthotropicStVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
-                                  poisson_ratio * sqrt(E1 * E2), E2, 0,
-                                  0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
-  OrthotropicStVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
-  OrthotropicStVKElement<> e(V, Vector3i(0, 1, 2), thickness);
-
-  SECTION("Energy")
-  {
-    VectorXd var = VectorXd::Zero(9);
-    var.segment<2>(0) = V.row(0);
-    var.segment<2>(3) = V.row(1);
-    var.segment<2>(6) = V.row(2);
-
-    REQUIRE(e.energy(var) == Approx(0.).margin(1e-10));
-  }
-
-  SECTION("Isotropic Equivalence")
-  {
-    Matrix3d V1(3, 3);
-    V1 << V, VectorXd::Zero(9);
-    StVKElement<> e1(V1, Vector3i(0, 1, 2), thickness);
-    StVKElement<>::nu = poisson_ratio;
-    StVKElement<>::E = 1;
-
-    double E1 = 1;
-    double E2 = 1;
-    OrthotropicStVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
-                                   poisson_ratio * sqrt(E1 * E2), E2, 0,
-                                   0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
-    OrthotropicStVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
-
-    VectorXd var = GENERATE(take(2, vector_random(9)));
-    REQUIRE(e1.energy(var) == Approx(e.energy(var)).epsilon(1e-6));
-  }
 }
