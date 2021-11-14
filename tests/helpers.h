@@ -195,7 +195,7 @@ void test_gradient(const Element &e,
       if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
         e.prepare_data(var);
 
-      REQUIRE_FALSE(isnan(e.energy(var)));
+      REQUIRE_FALSE(std::isnan(e.energy(var)));
 
       gradient_computed += e.gradient(var);
       gradient_numerical += fsim::finite_differences([&e](const Eigen::VectorXd &X) { return e.energy(X); }, var);

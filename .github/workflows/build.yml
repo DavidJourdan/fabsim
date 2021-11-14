@@ -42,6 +42,3 @@ jobs:
 
       - name: Build
         run: cmake --build build --config Release -j $(nproc)
-
-      - name: Run
-        run:  build/example/example
