@@ -174,31 +174,54 @@ inline EigenApproxMatcher ApproxEquals(const Eigen::MatrixXd &M)
   return EigenApproxMatcher(M);
 }
 
-std::function<bool(const Eigen::VectorXd &)> no_op = [](auto X) { return true; };
-
 template <class Element>
 void test_gradient(const Element &e,
                    double eps = 1e-6,
-                   const std::function<bool(const Eigen::VectorXd &)> &filter = no_op)
+                   const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; })
+{
+  if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
+    test_gradient(
+      [&e](const auto &X) { return e.energy(X); },
+      [&e](const auto &X) { return e.gradient(X); },
+      e.nbDOFs(),
+      eps,
+      filter,
+      [&e](const auto &X) { return e.prepare_data(X); }
+    );
+  else
+    test_gradient(
+      [&e](const auto &X) { return e.energy(X); },
+      [&e](const auto &X) { return e.gradient(X); },
+      e.nbDOFs(),
+      eps,
+      filter
+    );
+}
+
+template <class EnergyFunc, class GradientFunc>
+void test_gradient(const EnergyFunc &energy,
+                   const GradientFunc &gradient,
+                   int nbDOFs,
+                   double eps = 1e-6,
+                   const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
+                   const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
 {
   using namespace Eigen;
 
-  VectorXd var(e.nbDOFs());
-  VectorXd gradient_computed = VectorXd::Zero(e.nbDOFs());
-  VectorXd gradient_numerical = VectorXd::Zero(e.nbDOFs());
+  VectorXd var(nbDOFs);
+  VectorXd gradient_computed = VectorXd::Zero(nbDOFs);
+  VectorXd gradient_numerical = VectorXd::Zero(nbDOFs);
 
   for(int i = 0; i < 10; ++i)
   {
-    var = VectorXd::NullaryExpr(e.nbDOFs(), RandomRange(-1.0, 1.0));
+    var = VectorXd::NullaryExpr(nbDOFs, RandomRange(-1.0, 1.0));
     if(filter(var))
     {
-      if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
-        e.prepare_data(var);
+      prepare_data(var);
+      REQUIRE_FALSE(std::isnan(energy(var)));
 
-      REQUIRE_FALSE(std::isnan(e.energy(var)));
-
-      gradient_computed += e.gradient(var);
-      gradient_numerical += fsim::finite_differences([&e](const Eigen::VectorXd &X) { return e.energy(X); }, var);
+      gradient_computed += gradient(var);
+      gradient_numerical += fsim::finite_differences([&](const Eigen::VectorXd &X) { return energy(X); }, var);
     }
   }
   gradient_computed /= 10;
@@ -220,23 +243,48 @@ void test_gradient(const Element &e,
 template <class Element>
 void test_hessian(const Element &e,
                   double eps = 1e-5,
-                  const std::function<bool(const Eigen::VectorXd &)> &filter = no_op)
+                  const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; })
+{
+  if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
+    test_hessian(
+      [&e](const auto &X) { return e.gradient(X); },
+      [&e](const auto &X) { return e.hessian(X); },
+      e.nbDOFs(),
+      eps,
+      filter,
+      [&e](const auto &X) { return e.prepare_data(X); }
+    );
+  else
+    test_hessian(
+      [&e](const auto &X) { return e.gradient(X); },
+      [&e](const auto &X) { return e.hessian(X); },
+      e.nbDOFs(),
+      eps,
+      filter
+    );
+}
+
+template <class HessianFunc, class GradientFunc>
+void test_hessian(const GradientFunc &gradient,
+                  const HessianFunc &hessian,
+                  int nbDOFs,
+                  double eps = 1e-6,
+                  const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
+                  const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
 {
   using namespace Eigen;
-  VectorXd var(e.nbDOFs());
-  MatrixXd hessian_computed = MatrixXd::Zero(e.nbDOFs(), e.nbDOFs());
-  MatrixXd hessian_numerical = MatrixXd::Zero(e.nbDOFs(), e.nbDOFs());
+  VectorXd var(nbDOFs);
+  MatrixXd hessian_computed = MatrixXd::Zero(nbDOFs, nbDOFs);
+  MatrixXd hessian_numerical = MatrixXd::Zero(nbDOFs, nbDOFs);
 
   for(int i = 0; i < 10; ++i)
   {
-    var = VectorXd::NullaryExpr(e.nbDOFs(), RandomRange(-1.0, 1.0));
+    var = VectorXd::NullaryExpr(nbDOFs, RandomRange(-1.0, 1.0));
     if(filter(var))
     {
-      if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
-        e.prepare_data(var);
-
-      hessian_computed += MatrixXd(e.hessian(var));
-      hessian_numerical += MatrixXd(fsim::finite_differences([&e](const Eigen::VectorXd &X) { return e.gradient(X); }, var));
+      prepare_data(var);
+      hessian_computed += hessian(var);
+      hessian_numerical += fsim::finite_differences([&](const Eigen::VectorXd &X) { return gradient(X); }, var);
     }
   }
 

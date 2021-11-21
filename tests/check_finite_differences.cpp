@@ -1,4 +1,6 @@
 #include "catch.hpp"
+#include "fsim/HingeElement.h"
+#include "fsim/util/first_fundamental_form.h"
 #include "helpers.h"
 
 #include <fsim/ElasticShell.h>
@@ -195,44 +197,107 @@ TEMPLATE_TEST_CASE("HingeElement", "", SquaredAngleFormulation, TanAngleFormulat
 }
 
 // SPRINGS
-
-struct BundledSpring
-{
-  BundledSpring(int i, int j, double length)
-      : _spr(i, j, length) {}
-
-  constexpr int nbDOFs() const { return 6; }
-  double energy(const Eigen::Ref<const Eigen::VectorXd> X) const { return _spr.energy(X); }
-
-  Vec<double, 6> gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
-  {
-    Vec<double, 6> res;
-    res.segment<3>(0) = -_spr.force(X);
-    res.segment<3>(3) = _spr.force(X);
-    return res;
-  }
-  Eigen::MatrixXd hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
-  {
-    using namespace Eigen;
-    MatrixXd res(6,6);
-    Matrix3d h = _spr.hessian(X);
-    res.block<3, 3>(0, 0) = -h;
-    res.block<3, 3>(3, 3) = -h;
-    res.block<3, 3>(0, 3) = h;
-    res.block<3, 3>(3, 0) = h;
-    return res;  
-  }
-
-  Spring<> _spr;
-};
-
 TEST_CASE("Spring")
 {
   using namespace Eigen;
 
   double rest_length = GENERATE(take(2, random(0., 1.)));
-  BundledSpring e(0, 1, rest_length);
+  Spring s(0, 1, rest_length);
 
-  SECTION("Gradient") { test_gradient(e); }
-  SECTION("Hessian") { test_hessian(e); }
+  SECTION("Gradient") 
+  { 
+    test_gradient(
+      [&s](const auto &X) { return s.energy(X); },
+      [&s](const auto &X) { 
+        Vec<double, 6> res;
+        res.segment<3>(0) = -s.force(X);
+        res.segment<3>(3) = s.force(X);
+        return res;
+       }, 6); 
+  }
+  SECTION("Hessian") 
+  { 
+    test_hessian(
+      [&s](const auto &X) { 
+        Vec<double, 6> res;
+        res.segment<3>(0) = -s.force(X);
+        res.segment<3>(3) = s.force(X);
+        return res;
+       },
+       [&s](const auto &X) { 
+          MatrixXd res(6,6);
+          Matrix3d h = s.hessian(X);
+          res.block<3, 3>(0, 0) = -h;
+          res.block<3, 3>(3, 3) = -h;
+          res.block<3, 3>(0, 3) = h;
+          res.block<3, 3>(3, 0) = h;
+          return res;
+       }, 6); 
+  }
+}
+
+TEST_CASE("First Fundamental form")
+{
+  using namespace Eigen;
+
+  Vector3i face(0, 1, 2);
+  auto i = GENERATE(0, 1, 2, 3);
+
+  SECTION("Gradient") 
+  { 
+    test_gradient(
+      [&](const auto &X) { 
+        return first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face)(i); 
+      }, [&](const auto &X) { 
+        Matrix<double, 4, 9> deriv;
+        first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, &deriv);
+        return deriv.row(i);
+      }, 9, 1e-6
+    ); 
+  }
+  SECTION("Hessian") { 
+    test_hessian(
+      [&](const auto &X) { 
+        Matrix<double, 4, 9> deriv;
+        first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, &deriv);
+        return deriv.row(i);
+      }, [&](const auto &X) { 
+        Matrix<double, 36, 9> dderiv;
+        first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, nullptr, &dderiv);
+        return dderiv.block<9,9>(9 * i, 0);
+      }, 9, 1e-6
+    ); 
+  }
+}
+
+TEST_CASE("bendAngleGradient")
+{
+  using namespace Eigen;
+
+  Vec<int, 4> indices;
+  indices << 0, 1, 2, 3;
+
+  SECTION("Gradient")
+  { 
+    test_gradient(
+      [&](const Eigen::VectorXd &X) { 
+        Vector3d n0 = (X.segment<3>(6) - X.segment<3>(0)).cross(X.segment<3>(6) - X.segment<3>(3));
+        Vector3d n1 = (X.segment<3>(9) - X.segment<3>(3)).cross(X.segment<3>(9) - X.segment<3>(0));
+        return signed_angle(n0, n1, X.segment<3>(3) - X.segment<3>(0));
+      }, [&](const auto &X) { 
+        return HingeElement<>::bendAngleGradient(Map<Mat3<double>>(const_cast<double*>(X.data()), 4, 3), indices);
+      }, 12, 1e-6
+    ); 
+  }
+  SECTION("Hessian") { 
+    test_hessian(
+      [&](const auto &X) { 
+        return HingeElement<>::bendAngleGradient(Map<Mat3<double>>(const_cast<double*>(X.data()), 4, 3), indices);
+      }, [&](const auto &X) { 
+        Mat<double, 12, 12> dderiv;
+        HingeElement<>::bendAngleGradient(Map<Mat3<double>>(const_cast<double*>(X.data()), 4, 3), indices, &dderiv);
+        return dderiv;
+      }, 12, 1e-6
+    ); 
+  }
 }
