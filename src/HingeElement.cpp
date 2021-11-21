@@ -4,7 +4,6 @@
 // Created: 01/13/20
 
 #include "fsim/HingeElement.h"
-
 #include "fsim/util/geometry.h"
 
 namespace fsim
@@ -42,7 +41,7 @@ HingeElement<Formulation, fullHess>::gradient(const Eigen::Ref<const Eigen::Vect
   Vector3d n0 = (V.row(idx(0)) - V.row(idx(2))).cross(V.row(idx(1)) - V.row(idx(2))).normalized();
   Vector3d n1 = (V.row(idx(1)) - V.row(idx(3))).cross(V.row(idx(0)) - V.row(idx(3))).normalized();
   Vector3d axis = V.row(idx(1)) - V.row(idx(0));
-  return _coeff * _hinge.deriv(n0, n1, axis) * bendAngleGradient(V);
+  return _coeff * _hinge.deriv(n0, n1, axis) * HingeElement<Formulation, fullHess>::bendAngleGradient(V, idx);
 }
 
 template <class Formulation, bool fullHess>
@@ -55,9 +54,9 @@ HingeElement<Formulation, fullHess>::hessian(const Eigen::Ref<const Eigen::Vecto
   LocalMatrix bend_hess;
   LocalVector bend_grad;
   if(fullHess)
-    bend_grad = bendAngleGradient(V, &bend_hess);
+    bend_grad = HingeElement<Formulation, fullHess>::bendAngleGradient(V, idx, &bend_hess);
   else
-    bend_grad = bendAngleGradient(V);
+    bend_grad = HingeElement<Formulation, fullHess>::bendAngleGradient(V, idx);
 
   Vector3d n0 = (V.row(idx(0)) - V.row(idx(2))).cross(V.row(idx(1)) - V.row(idx(2))).normalized();
   Vector3d n1 = (V.row(idx(1)) - V.row(idx(3))).cross(V.row(idx(0)) - V.row(idx(3))).normalized();
@@ -75,9 +74,10 @@ HingeElement<Formulation, fullHess>::hessian(const Eigen::Ref<const Eigen::Vecto
 }
 
 template <class Formulation, bool fullHess>
-typename HingeElement<Formulation, fullHess>::LocalVector
+Vec<double, 12>
 HingeElement<Formulation, fullHess>::bendAngleGradient(const Eigen::Ref<const Mat3<double>> V,
-                                                       LocalMatrix *hessian) const
+                                                       const Vec<int, 4> &idx,
+                                                       LocalMatrix *hessian)
 {
   using namespace Eigen;
 
