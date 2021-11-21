@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v1
 
       - name: Dependencies
-        run: sudo apt install libeigen3-dev coreutils
+        run: sudo apt install libeigen3-dev coreutils lcov
 
       - name: Configure
         run:  cmake -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TEST_COVERAGE=ON
@@ -40,4 +40,8 @@ jobs:
           ctest -j $(nproc) -C Release -E "benchmarks|check_finite_differences"
 
       - name: collect code coverage
-        run: bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+        run: |
+          lcov --directory . --capture --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' --output-file coverage.info
+          lcov --list coverage.info
+          bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
