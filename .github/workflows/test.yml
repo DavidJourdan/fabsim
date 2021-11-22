@@ -2,17 +2,11 @@
 
 name: Test
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: [push, pull_request]
 
-env:
-  CTEST_OUTPUT_ON_FAILURE: ON
-  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+# env:
+#   CTEST_OUTPUT_ON_FAILURE: ON
+#   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
 jobs:
   ####################
@@ -23,25 +17,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
 
       - name: Dependencies
         run: sudo apt install libeigen3-dev coreutils lcov
 
       - name: Configure
-        run:  cmake -B build -DCMAKE_BUILD_TYPE=Release -DENABLE_TEST_COVERAGE=ON
+        run:  cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage"
 
       - name: Build
         run: cmake --build build -j $(nproc)
 
       - name: Tests
-        run:  |
-          cd build
-          ctest -j $(nproc) -C Release -E "benchmarks|check_finite_differences"
+        working-directory: build/
+          ctest -C Debug -T test -E "benchmarks|check_finite_differences" -T Coverage -j $(nproc) 
 
-      - name: collect code coverage
+      - name: Code coverage
+        working-directory: build/
         run: |
           lcov --directory . --capture --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' --output-file coverage.info
+          lcov --remove coverage.info '/usr/*' '*tests/*' --output-file coverage.info
           lcov --list coverage.info
           bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
