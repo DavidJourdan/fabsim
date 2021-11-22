@@ -237,39 +237,39 @@ TEST_CASE("Spring")
   }
 }
 
-TEST_CASE("First Fundamental form")
-{
-  using namespace Eigen;
+// TEST_CASE("First Fundamental form")
+// {
+//   using namespace Eigen;
 
-  Vector3i face(0, 1, 2);
-  auto i = GENERATE(0, 1, 2, 3);
+//   Vector3i face(0, 1, 2);
+//   auto i = GENERATE(0, 1, 2, 3);
 
-  SECTION("Gradient") 
-  { 
-    test_gradient(
-      [&](const auto &X) { 
-        return first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face)(i); 
-      }, [&](const auto &X) { 
-        Matrix<double, 4, 9> deriv;
-        first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, &deriv);
-        return deriv.row(i);
-      }, 9, 1e-6
-    ); 
-  }
-  SECTION("Hessian") { 
-    test_hessian(
-      [&](const auto &X) { 
-        Matrix<double, 4, 9> deriv;
-        first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, &deriv);
-        return deriv.row(i);
-      }, [&](const auto &X) { 
-        Matrix<double, 36, 9> dderiv;
-        first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, nullptr, &dderiv);
-        return dderiv.block<9,9>(9 * i, 0);
-      }, 9, 1e-6
-    ); 
-  }
-}
+//   SECTION("Gradient") 
+//   { 
+//     test_gradient(
+//       [&](const auto &X) { 
+//         return first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face)(i); 
+//       }, [&](const auto &X) { 
+//         Matrix<double, 4, 9> deriv;
+//         first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, &deriv);
+//         return deriv.row(i);
+//       }, 9, 1e-6
+//     ); 
+//   }
+//   SECTION("Hessian") { 
+//     test_hessian(
+//       [&](const auto &X) { 
+//         Matrix<double, 4, 9> deriv;
+//         first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, &deriv);
+//         return deriv.row(i);
+//       }, [&](const auto &X) { 
+//         Matrix<double, 36, 9> dderiv;
+//         first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, nullptr, &dderiv);
+//         return dderiv.block<9,9>(9 * i, 0);
+//       }, 9, 1e-6
+//     ); 
+//   }
+// }
 
 TEST_CASE("bendAngleGradient")
 {
