@@ -28,7 +28,7 @@ jobs:
         run: sudo apt install ${{ matrix.compiler.c }} libeigen3-dev coreutils
 
       - name: Configure
-        run:  cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/${{ matrix.compile.c }} -DCMAKE_CXX_COMPILER=/usr/bin/${{ matrix.compiler.cpp }}
+        run:  cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/${{ matrix.compiler.c }} -DCMAKE_CXX_COMPILER=/usr/bin/${{ matrix.compiler.cpp }}
 
       - name: Build
         run: cmake --build build --config Release -j $(nproc)
@@ -36,8 +36,6 @@ jobs:
   macOS:
     name: macOS Release
     runs-on: macos-latest
-    strategy:
-      fail-fast: false
     steps:
       - uses: actions/checkout@v2
 
