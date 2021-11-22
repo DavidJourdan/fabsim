@@ -3,7 +3,7 @@ name: Code Coverage
 on: [push, pull_request]
 
 jobs:
-  build-and-test:
+  gather-coverage:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,6 +23,7 @@ jobs:
         run: ctest -C Debug -T test -E "benchmarks" -T Coverage -j $(nproc) 
 
       - name: Code coverage
+        if: always()
         working-directory: build/
         run: |
           lcov --directory . --capture --output-file coverage.info
@@ -30,6 +31,7 @@ jobs:
           lcov --list coverage.info
 
       - name: Publish to codecov
+        if: always()
         uses: codecov/codecov-action@v2
         with:
           flags: ${{ runner.os }}
