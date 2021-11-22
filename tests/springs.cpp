@@ -5,12 +5,12 @@
 
 using namespace fsim;
 
-TEST_CASE("Spring")
+TEMPLATE_TEST_CASE("Spring", "", Spring<true>, Spring<false>)
 {
   using namespace Eigen;
 
   double rest_length = GENERATE(take(5, random(0., 1.)));
-  Spring<> e(0, 1, rest_length);
+  TestType e(0, 1, rest_length);
 
   SECTION("Translate invariance")
   {

@@ -197,12 +197,12 @@ TEMPLATE_TEST_CASE("HingeElement", "", SquaredAngleFormulation, TanAngleFormulat
 }
 
 // SPRINGS
-TEST_CASE("Spring")
+TEMPLATE_TEST_CASE("Spring", "", Spring<true>, Spring<false>)
 {
   using namespace Eigen;
 
   double rest_length = GENERATE(take(2, random(0., 1.)));
-  Spring s(0, 1, rest_length);
+  TestType s(0, 1, rest_length);
 
   SECTION("Gradient") 
   { 
