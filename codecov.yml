@@ -1,5 +1,0 @@
-ignore:
-  - "tests"
-
-comment:
-  require_changes: true

@@ -2,39 +2,45 @@
 
 name: Build
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+on: [push, pull_request]
 
 jobs:
-  ####################
-  # Linux / macOS
-  ####################
-
-  build:
-    name: ${{ matrix.name }} Release
-    runs-on: ${{ matrix.os }}
+  linux:
+    name: Linux Release
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        include:
-          - os: macos-latest
-            name: macOS
-          - os: ubuntu-latest
-            name: Linux
+        compiler:
+          - { c: clang-7, cpp: clang++-7, package: clang-7 }
+          - { c: clang-8, cpp: clang++-8, package: clang-8 }
+          - { c: clang-9, cpp: clang++-9, package: clang-9 }
+          - { c: clang-10, cpp: clang++-10, package: clang-10 }
+          - { c: clang-11, cpp: clang++-11, package: clang-11 }
+          - { c: clang-12, cpp: clang++-12, package: clang-12 }
+          - { c: gcc-8, cpp: g++-8, package: g++-8 }
+          - { c: gcc-9, cpp: g++-9, package: g++-9}
+          - { c: gcc-10, cpp: g++-10, package: g++-10 }
+          - { c: gcc-11, cpp: g++-11, package: g++-11 }
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
 
-      - name: Dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt install libeigen3-dev coreutils
-      - name: Dependencies (macOS)
-        if: runner.os == 'macOS'
+      - name: Dependencies
+        run: sudo apt install ${{ matrix.compiler.package }} libeigen3-dev coreutils
+
+      - name: Configure
+        run:  cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/${{ matrix.compiler.c }} -DCMAKE_CXX_COMPILER=/usr/bin/${{ matrix.compiler.cpp }}
+
+      - name: Build
+        run: cmake --build build --config Release -j $(nproc)
+  
+  macOS:
+    name: macOS Release
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Dependencies
         run: brew install eigen coreutils
 
       - name: Configure
