@@ -30,7 +30,7 @@ jobs:
 
       - name: Tests
         working-directory: build/
-          ctest -C Debug -T test -E "benchmarks|check_finite_differences" -T Coverage -j $(nproc) 
+        run: ctest -C Debug -T test -E "benchmarks|check_finite_differences" -T Coverage -j $(nproc) 
 
       - name: Code coverage
         working-directory: build/
