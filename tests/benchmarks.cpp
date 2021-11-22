@@ -27,10 +27,10 @@ TEMPLATE_TEST_CASE("ElasticMembrane", "", NeoHookeanMembrane<>, IncompressibleNe
   TestType membrane(V, F, 10, 0.3, 0.1);
 
   static int nX = 3 * V.rows();
-  BENCHMARK_ADVANCED("hessian triplets")(Catch::Benchmark::Chronometer meter)
+  BENCHMARK_ADVANCED("hessian")(Catch::Benchmark::Chronometer meter)
   {
     VectorXd X = GENERATE(take(1, vector_random(nX)));
-    meter.measure([&membrane, &X] { return membrane.hessianTriplets(X); });
+    meter.measure([&membrane, &X] { return membrane.hessian(X); });
   };
 }
 
@@ -45,10 +45,10 @@ TEST_CASE("StVKMembrane")
   StVKMembrane membrane(V.leftCols(2), F, 10, 0.3, 0.1);
 
   static int nX = 3 * V.rows();
-  BENCHMARK_ADVANCED("hessian triplets")(Catch::Benchmark::Chronometer meter)
+  BENCHMARK_ADVANCED("hessian")(Catch::Benchmark::Chronometer meter)
   {
     VectorXd X = GENERATE(take(1, vector_random(nX)));
-    meter.measure([&membrane, &X] { return membrane.hessianTriplets(X); });
+    meter.measure([&membrane, &X] { return membrane.hessian(X); });
   };
 }
 
@@ -63,10 +63,10 @@ TEST_CASE("OrthotropicStVKMembrane")
   OrthotropicStVKMembrane membrane(V.leftCols(2), F, 10, 5, 0.3, 0.1);
 
   static int nX = 3 * V.rows();
-  BENCHMARK_ADVANCED("membrane triplets")(Catch::Benchmark::Chronometer meter)
+  BENCHMARK_ADVANCED("membrane")(Catch::Benchmark::Chronometer meter)
   {
     VectorXd X = GENERATE(take(1, vector_random(nX)));
-    meter.measure([&membrane, &X] { return membrane.hessianTriplets(X); });
+    meter.measure([&membrane, &X] { return membrane.hessian(X); });
   };
 }
 
@@ -99,10 +99,10 @@ TEST_CASE("MassSpring")
   MassSpring membrane(V, F, 10);
 
   static int nX = 3 * V.rows();
-  BENCHMARK_ADVANCED("membrane triplets")(Catch::Benchmark::Chronometer meter)
+  BENCHMARK_ADVANCED("hessian")(Catch::Benchmark::Chronometer meter)
   {
     VectorXd X = GENERATE(take(1, vector_random(nX)));
-    meter.measure([&membrane, &X] { return membrane.hessianTriplets(X); });
+    meter.measure([&membrane, &X] { return membrane.hessian(X); });
   };
 }
 
@@ -117,9 +117,9 @@ TEST_CASE("ElasticRod")
   fsim::ElasticRod rod(V, Vector3d::UnitZ(), {10, 0.5, 0.5});
 
   static int nX = 3 * V.rows() + V.rows() - 1;
-  BENCHMARK_ADVANCED("rod triplets")(Catch::Benchmark::Chronometer meter)
+  BENCHMARK_ADVANCED("hessian")(Catch::Benchmark::Chronometer meter)
   {
     VectorXd X = GENERATE(take(1, vector_random(nX)));
-    meter.measure([&rod, &X] { return rod.hessianTriplets(X); });
+    meter.measure([&rod, &X] { return rod.hessian(X); });
   };
 }

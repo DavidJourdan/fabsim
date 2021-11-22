@@ -66,7 +66,7 @@ TEST_CASE("StVKMembrane class")
 {
   using namespace Eigen;
 
-  Mat2<double> V = GENERATE(take(5, matrix_random(3, 3)));
+  Mat2<double> V = GENERATE(take(5, matrix_random(3, 2)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
   StVKMembrane<0> instance0(V, F, 0.1, 10, 0.3);

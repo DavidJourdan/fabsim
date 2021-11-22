@@ -1,26 +1,6 @@
 cmake_minimum_required(VERSION 3.9)
 ################################################################################
 
-option(ENABLE_TEST_COVERAGE    "Enable test coverage"          OFF)
-
-# Code Coverage Configuration
-add_library(coverage_config INTERFACE)
-
-# Code coverage
-if (ENABLE_TEST_COVERAGE)
-    # set_target_properties(coverage_config
-    #     PROPERTIES
-    #     COMPILE_FLAGS "-ftest-coverage -fprofile-arcs"
-    #     LINK_FLAGS    "-lgcov --coverage"
-    # )
-    target_compile_options(coverage_config INTERFACE -O0 -g --coverage)
-    if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.13)
-        target_link_options(coverage_config INTERFACE --coverage)
-    else()
-        target_link_libraries(coverage_config INTERFACE --coverage)
-    endif()
-endif()
-
 set(TEST_SOURCES
         benchmarks.cpp
         check_finite_differences.cpp
@@ -44,7 +24,7 @@ foreach(SOURCE IN ITEMS ${TEST_SOURCES})
     add_executable(${TEST_NAME} main.cpp ${SOURCE})
 
     # Configure (include headers and link libraries) the test
-    target_link_libraries(${TEST_NAME} PRIVATE fabsim coverage_config)
+    target_link_libraries(${TEST_NAME} PRIVATE fabsim)
 
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME}
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR})  # the working directory is the out-of-source build directory
