@@ -174,30 +174,6 @@ inline EigenApproxMatcher ApproxEquals(const Eigen::MatrixXd &M)
   return EigenApproxMatcher(M);
 }
 
-template <class Element>
-void test_gradient(const Element &e,
-                   double eps = 1e-6,
-                   const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; })
-{
-  if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
-    test_gradient(
-      [&e](const auto &X) { return e.energy(X); },
-      [&e](const auto &X) { return e.gradient(X); },
-      e.nbDOFs(),
-      eps,
-      filter,
-      [&e](const auto &X) { return e.prepare_data(X); }
-    );
-  else
-    test_gradient(
-      [&e](const auto &X) { return e.energy(X); },
-      [&e](const auto &X) { return e.gradient(X); },
-      e.nbDOFs(),
-      eps,
-      filter
-    );
-}
-
 template <class EnergyFunc, class GradientFunc>
 void test_gradient(const EnergyFunc &energy,
                    const GradientFunc &gradient,
@@ -241,28 +217,29 @@ void test_gradient(const EnergyFunc &energy,
 }
 
 template <class Element>
-void test_hessian(const Element &e,
-                  double eps = 1e-5,
-                  const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; })
+void test_gradient(const Element &e,
+                   double eps = 1e-6,
+                   const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; })
 {
   if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
-    test_hessian(
+    test_gradient(
+      [&e](const auto &X) { return e.energy(X); },
       [&e](const auto &X) { return e.gradient(X); },
-      [&e](const auto &X) { return e.hessian(X); },
       e.nbDOFs(),
       eps,
       filter,
       [&e](const auto &X) { return e.prepare_data(X); }
     );
   else
-    test_hessian(
+    test_gradient(
+      [&e](const auto &X) { return e.energy(X); },
       [&e](const auto &X) { return e.gradient(X); },
-      [&e](const auto &X) { return e.hessian(X); },
       e.nbDOFs(),
       eps,
       filter
     );
 }
+
 
 template <class HessianFunc, class GradientFunc>
 void test_hessian(const GradientFunc &gradient,
@@ -301,6 +278,30 @@ void test_hessian(const GradientFunc &gradient,
   INFO("Max error at at (" << row << ", " << col << "): " << max_error);
 
   REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(eps));
+}
+
+template <class Element>
+void test_hessian(const Element &e,
+                  double eps = 1e-5,
+                  const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; })
+{
+  if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
+    test_hessian(
+      [&e](const auto &X) { return e.gradient(X); },
+      [&e](const auto &X) { return e.hessian(X); },
+      e.nbDOFs(),
+      eps,
+      filter,
+      [&e](const auto &X) { return e.prepare_data(X); }
+    );
+  else
+    test_hessian(
+      [&e](const auto &X) { return e.gradient(X); },
+      [&e](const auto &X) { return e.hessian(X); },
+      e.nbDOFs(),
+      eps,
+      filter
+    );
 }
 
 template <class Element>

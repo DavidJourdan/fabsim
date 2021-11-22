@@ -12,20 +12,20 @@ jobs:
       fail-fast: false
       matrix:
         compiler:
-          - { c: clang-7, cpp: clang++-7 }
-          - { c: clang-8, cpp: clang++-8 }
-          - { c: clang-9, cpp: clang++-9 }
-          - { c: clang-10, cpp: clang++-10 }
-          - { c: clang-11, cpp: clang++-11 }
-          - { c: gcc-7, cpp: g++-7 }
-          - { c: gcc-8, cpp: g++-8 }
-          - { c: gcc-9, cpp: g++-9 }
-          - { c: gcc-10, cpp: g++-10 }
+          - { c: clang-7, cpp: clang++-7, package: clang-7 }
+          - { c: clang-8, cpp: clang++-8, package: clang-8 }
+          - { c: clang-9, cpp: clang++-9, package: clang-9 }
+          - { c: clang-10, cpp: clang++-10, package: clang-10 }
+          - { c: clang-11, cpp: clang++-11, package: clang-11 }
+          - { c: gcc-7, cpp: g++-7, package: g++-7 }
+          - { c: gcc-8, cpp: g++-8, package: g++-8 }
+          - { c: gcc-9, cpp: g++-9, package: g++-9}
+          - { c: gcc-10, cpp: g++-10, package: g++-10 }
     steps:
       - uses: actions/checkout@v2
 
       - name: Dependencies
-        run: sudo apt install ${{ matrix.compiler.c }} libeigen3-dev coreutils
+        run: sudo apt install ${{ matrix.compiler.package }} libeigen3-dev coreutils
 
       - name: Configure
         run:  cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/${{ matrix.compiler.c }} -DCMAKE_CXX_COMPILER=/usr/bin/${{ matrix.compiler.cpp }}
