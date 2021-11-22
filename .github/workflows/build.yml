@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Dependencies
-        run: sudo apt install ${{ matrix.cpp-version }} libeigen3-dev coreutils
+        run: sudo apt install ${{ matrix.compiler }} libeigen3-dev coreutils
 
       - name: Configure
         run:  cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=/usr/bin/${{ matrix.compiler }}
