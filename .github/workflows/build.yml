@@ -17,10 +17,11 @@ jobs:
           - { c: clang-9, cpp: clang++-9, package: clang-9 }
           - { c: clang-10, cpp: clang++-10, package: clang-10 }
           - { c: clang-11, cpp: clang++-11, package: clang-11 }
-          - { c: gcc-7, cpp: g++-7, package: g++-7 }
+          - { c: clang-12, cpp: clang++-12, package: clang-12 }
           - { c: gcc-8, cpp: g++-8, package: g++-8 }
           - { c: gcc-9, cpp: g++-9, package: g++-9}
           - { c: gcc-10, cpp: g++-10, package: g++-10 }
+          - { c: gcc-11, cpp: g++-11, package: g++-11 }
     steps:
       - uses: actions/checkout@v2
 
