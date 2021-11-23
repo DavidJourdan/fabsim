@@ -11,24 +11,6 @@
 #include <Eigen/Dense>
 
 #include <random>
-#include <type_traits>
-
-namespace detail
-{
-template <class>
-struct sfinae_true : std::true_type
-{};
-
-template <class T, class A0>
-static auto test_prepare_data(int) -> sfinae_true<decltype(std::declval<T>().prepare_data(std::declval<A0>()))>;
-template <class, class A0>
-static auto test_prepare_data(long) -> std::false_type;
-} // namespace detail
-
-// test if a class has a method called 'prepare_data'
-template <class T, class Arg>
-struct has_prepare_data : decltype(detail::test_prepare_data<T, Arg>(0))
-{};
 
 template <typename Scalar>
 struct RandomRange
@@ -173,7 +155,6 @@ inline EigenApproxMatcher ApproxEquals(const Eigen::MatrixXd &M)
 {
   return EigenApproxMatcher(M);
 }
-
 template <class EnergyFunc, class GradientFunc>
 void test_gradient(const EnergyFunc &energy,
                    const GradientFunc &gradient,
@@ -219,24 +200,16 @@ void test_gradient(const EnergyFunc &energy,
 template <class Element>
 void test_gradient(const Element &e,
                    double eps = 1e-6,
-                   const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; })
+                   const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
+                   const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
 {
-  if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
     test_gradient(
       [&e](const auto &X) { return e.energy(X); },
       [&e](const auto &X) { return e.gradient(X); },
       e.nbDOFs(),
       eps,
       filter,
-      [&e](const auto &X) { return e.prepare_data(X); }
-    );
-  else
-    test_gradient(
-      [&e](const auto &X) { return e.energy(X); },
-      [&e](const auto &X) { return e.gradient(X); },
-      e.nbDOFs(),
-      eps,
-      filter
+      prepare_data
     );
 }
 
@@ -283,24 +256,16 @@ void test_hessian(const GradientFunc &gradient,
 template <class Element>
 void test_hessian(const Element &e,
                   double eps = 1e-5,
-                  const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; })
+                  const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
+                  const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
 {
-  if constexpr(has_prepare_data<Element, Eigen::VectorXd>{})
     test_hessian(
       [&e](const auto &X) { return e.gradient(X); },
       [&e](const auto &X) { return e.hessian(X); },
       e.nbDOFs(),
       eps,
       filter,
-      [&e](const auto &X) { return e.prepare_data(X); }
-    );
-  else
-    test_hessian(
-      [&e](const auto &X) { return e.gradient(X); },
-      [&e](const auto &X) { return e.hessian(X); },
-      e.nbDOFs(),
-      eps,
-      filter
+      prepare_data
     );
 }
 

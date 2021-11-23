@@ -12,24 +12,46 @@ TEST_CASE("ElasticRod")
 {
   using namespace Eigen;
 
-  MatrixXd V = GENERATE(take(5, matrix_random(3, 3)));
-  V.col(2).setZero();
-  VectorXd params = GENERATE(take(5, vector_random(3)));
+  Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
+  VectorXd params = GENERATE(take(5, vector_random(4)));
+  // bool closed = GENERATE(true, false);
+  CrossSection crossSection = GENERATE(CrossSection::Circle, CrossSection::Square);
   Vector3d n = Vector3d::UnitZ();
-  ElasticRod rod(V, n, {params(0), params(1), params(2)});
+  ElasticRod rod(V, n, {params(0), params(1), params(2), params(3), crossSection});
 
   SECTION("getReferenceDirectors")
   {
-    Mat3<double> D1, D2;
-    rod.getReferenceDirectors(D1, D2);
-    REQUIRE_THAT(D1.colwise().sum(), ApproxEquals(D1.rows() * RowVector3d::UnitZ()));
+    Mat3<double> D1, D2, D3, D4;
+    // if(closed)
+    //   ElasticRod<>::bishopFrame(V, (VectorXi(4) << 0, 1, 2, 0).finished(), n, D1, D2);
+    // else
+      ElasticRod<>::bishopFrame(V, Vector3i(0, 1, 2), n, D1, D2);
+
+    rod.getReferenceDirectors(D3, D4);
+    REQUIRE_THAT(D1, ApproxEquals(D3));
+    REQUIRE_THAT(D2, ApproxEquals(D4));
+
+    REQUIRE_THAT(D1.row(1).transpose(), ApproxEquals(
+      parallel_transport(D1.row(0), (V.row(1) - V.row(0)).normalized(), (V.row(2) - V.row(1)).normalized())));
+
+    REQUIRE_THAT(D2.row(1).transpose(), ApproxEquals(
+      parallel_transport(D2.row(0), (V.row(1) - V.row(0)).normalized(), (V.row(2) - V.row(1)).normalized())));
 
     Vector2d theta = GENERATE(take(5, vector_random(2)));
-    rod.getRotatedDirectors(theta, D1, D2);
-    REQUIRE_THAT(D1.row(0).transpose(), 
-      ApproxEquals(AngleAxis<double>(theta(0), (V.row(1) - V.row(0)).normalized()) * Vector3d::UnitZ()).epsilon(1e-6));
-    REQUIRE_THAT(D1.row(1).transpose(), 
-      ApproxEquals(AngleAxis<double>(theta(1), (V.row(2) - V.row(1)).normalized()) * Vector3d::UnitZ()).epsilon(1e-6));
+    rod.getRotatedDirectors(theta, D3, D4);
+
+    for(int i = 0; i < 2; ++i)
+    {
+      REQUIRE(D1.row(i).dot(D2.row(i)) == Approx(0).margin(1e-10));
+      REQUIRE(D1.row(i).norm() == Approx(1).margin(1e-10));
+      REQUIRE(D2.row(i).norm() == Approx(1).margin(1e-10));
+      REQUIRE_THAT(D3.row(i).transpose(), 
+        ApproxEquals(AngleAxis<double>(theta(i), 
+          (V.row(i + 1) - V.row(i)).normalized()) * D1.row(i).transpose()).epsilon(1e-6));
+      REQUIRE_THAT(D4.row(i).transpose(), 
+        ApproxEquals(AngleAxis<double>(theta(i), 
+          (V.row(i + 1) - V.row(i)).normalized()) * D2.row(i).transpose()).epsilon(1e-6));
+    }
   }
 
   SECTION("setMass")
@@ -72,19 +94,20 @@ TEST_CASE("ElasticRod")
     REQUIRE(t1.dot(D1.row(1)) == Approx(0).margin(1e-10));
     REQUIRE(t1.dot(D2.row(1)) == Approx(0).margin(1e-10));
 
-    REQUIRE_THAT(D1.rowwise().norm(), ApproxEquals(Vector2d(1, 1)));
-    REQUIRE_THAT(D2.rowwise().norm(), ApproxEquals(Vector2d(1, 1)));
+    REQUIRE_THAT(D1.block(0, 0, 2, 3).rowwise().norm(), ApproxEquals(Vector2d(1, 1)));
+    REQUIRE_THAT(D2.block(0, 0, 2, 3).rowwise().norm(), ApproxEquals(Vector2d(1, 1)));
   }
 
   SECTION("Translate invariance")
   {
-    VectorXd var = GENERATE(take(5, vector_random(11)));
+    VectorXd var = GENERATE(take(5, vector_random(4 * 3 - 1)));
 
     Vector3d randomDir = GENERATE(take(5, vector_random(3)));
     VectorXd var2 = var;
     for(int i = 0; i < 3; ++i)
       var2.segment<3>(3 * i) += randomDir;
 
+    rod.setMass(0);
     REQUIRE(rod.energy(var) == Approx(rod.energy(var2)).epsilon(1e-10));
   }
 
