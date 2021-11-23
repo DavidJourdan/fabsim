@@ -25,16 +25,19 @@ public:
                 const LocalFrame &f1,
                 const LocalFrame &f2,
                 const Eigen::Vector2d &stiffnesses,
+                double stretchCoeff,
                 double mass = 0) const;
   LocalVector gradient(const Eigen::Ref<const Eigen::VectorXd> X,
                        const LocalFrame &f1,
                        const LocalFrame &f2,
                        const Eigen::Vector2d &stiffnesses,
+                       double stretchCoeff,
                        double mass = 0) const;
   LocalMatrix hessian(const Eigen::Ref<const Eigen::VectorXd> X,
                       const LocalFrame &f1,
                       const LocalFrame &f2,
                       const Eigen::Vector2d &stiffnesses,
+                      double stretchCoeff,
                       double mass = 0) const;
 
   double getReferenceTwist() const { return _ref_twist; }
@@ -58,9 +61,11 @@ protected:
                                                     const LocalFrame &f1,
                                                     const LocalFrame &f2,
                                                     Eigen::Matrix<double, 11, 11> *dderiv = nullptr) const;
-
+  
+  Vec<double, 9> stretchGradient(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  Mat<double, 9, 9> stretchHessian(const Eigen::Ref<const Eigen::VectorXd> X) const;
 private:
-  double _vertex_length;
+  Eigen::Vector2d _lengths;
   Eigen::Vector2d _restK; // rest material curvature (product of curvature binormal and mean material director)
   double _ref_twist;
 };

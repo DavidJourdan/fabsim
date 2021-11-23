@@ -30,7 +30,7 @@ struct RodParams
   double thickness;                                 // rod's thickness (aka 'normal width')
   double width;                                     // rod's width (aka 'binormal width')
   double E;                                         // Young's modulus
-  double mass = 0;                                  // mass per unit volume
+  double mass = 0;                                  // mass per unit length
   CrossSection crossSection = CrossSection::Circle; // shape of the cross-section (can be elliptic or rectangular)
 };
 
@@ -116,11 +116,12 @@ public:
 
   // number of edges
   int nbEdges() const { return _springs.size(); }
+  int nbDOFs() const { return nDOFs; }
 
   /**
    * Computes the Bishop frame, which is the geometrically most relaxed frame attached to the centerline of a curve
    * @param V  nV by 3 list of vertex positions, including but not limited to rod vertex positions
-   * @param E  nE by 2 list of rod vertex indices into V
+   * @param E  nE + 1 by 1 list of rod vertex indices into V
    * @param n  normal of the first edge (the subsequent ones are defined by parallel transport)
    * if n isn't orthogonal to the first edge, the direction chosen to be the normal will be as close as possible to n
    * @return P1 and P2  nE by 3 lists of frame directors
@@ -153,7 +154,8 @@ public:
 
 protected:
   int nV; // total number of vertices in the simulation (includes non-rod vertices)
-  double _stretch_modulus;
+  int nDOFs;
+  double _stretch;
   double _mass;
   Eigen::Vector2d _stiffness;
   mutable std::vector<RodStencil<fullHess>> _stencils;
