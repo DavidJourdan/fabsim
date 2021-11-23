@@ -27,7 +27,7 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
   using namespace Eigen;
 
   this->_mass = mass;
-  this->_stretch_modulus = 1e3 * young_modulus * thicknesses[0] * widths[0];
+  this->_stretch = 1e3 * young_modulus * thicknesses[0] * widths[0];
 
   this->nV = V.rows();
   int nR = indices.size();
@@ -135,7 +135,7 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
   using namespace Eigen;
 
   this->_mass = p.mass;
-  this->_stretch_modulus = 1e3 * p.E * p.thickness * p.width;
+  this->_stretch = 1e3 * p.E * p.thickness * p.width;
 
   this->nV = V.rows();
   int nR = indices.size();
@@ -256,7 +256,7 @@ double RodCollection<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X
   }
 
   for(const auto &s: this->_springs)
-    result += this->_stretch_modulus * s.energy(X);
+    result += this->_stretch * s.energy(X);
 
   return result;
 }
@@ -287,7 +287,7 @@ void RodCollection<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X
 
   for(const auto &s: this->_springs)
   {
-    Vector3d force = this->_stretch_modulus * s.force(X);
+    Vector3d force = this->_stretch * s.force(X);
     Y.segment<3>(3 * s.i) -= force;
     Y.segment<3>(3 * s.j) += force;
   }
@@ -350,7 +350,7 @@ RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd>
 
   for(const auto &s: this->_springs)
   {
-    Matrix3d h = this->_stretch_modulus * s.hessian(X);
+    Matrix3d h = this->_stretch * s.hessian(X);
 
     if(s.i < s.j)
       for(int k = 0; k < 3; ++k)

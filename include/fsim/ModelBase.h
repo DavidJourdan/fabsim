@@ -53,7 +53,7 @@ public:
    */
   std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
-  std::vector<Element> get_elements() { return _elements; };
+  std::vector<Element> getElements() { return _elements; };
 
 protected:
   std::vector<Element> _elements;

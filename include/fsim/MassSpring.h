@@ -34,7 +34,6 @@ public:
    * compared to other terms
    */
   MassSpring(const Eigen::Ref<const Mat3<double>> V, const Eigen::Ref<const Mat3<int>> F, double young_modulus);
-  MassSpring() = default;
 
   /**
    * energy function of this material model f : \R^n -> \R
