@@ -22,12 +22,17 @@ ElasticRod<fullHess>::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
 {
   using namespace Eigen;
 
-  _stretch = p.E * p.thickness * p.width;
   _stiffness << pow(p.thickness, 3) * p.width, pow(p.width, 3) * p.thickness;
   if(p.crossSection == CrossSection::Circle)
+  {
+    _stretch = 3.1415 / 4 * p.E * p.thickness * p.width;
     _stiffness *= 3.1415 * p.E / 64;
+  }
   else if(p.crossSection == CrossSection::Square)
+  {
+    _stretch = p.E * p.thickness * p.width;
     _stiffness *= p.E / 12;
+  }
 
   Map<VectorXi> E(const_cast<int *>(indices.data()), indices.size());
   
@@ -276,21 +281,21 @@ void ElasticRod<fullHess>::bishopFrame(const Eigen::Ref<const Mat3<double>> V,
   }
 }
 
-template <bool fullHess>
-Mat3<double> ElasticRod<fullHess>::curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
-                                                      const Eigen::Ref<const Eigen::VectorXi> E)
-{
-  using namespace Eigen;
-  Mat3<double> KB(E.size() - 2, 3);
+// template <bool fullHess>
+// Mat3<double> ElasticRod<fullHess>::curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
+//                                                       const Eigen::Ref<const Eigen::VectorXi> E)
+// {
+//   using namespace Eigen;
+//   Mat3<double> KB(E.size() - 2, 3);
 
-  for(int i = 1; i < E.size() - 1; ++i)
-  {
-    Vector3d t0 = (P.row(E(i)) - P.row(E(i - 1))).normalized();
-    Vector3d t1 = (P.row(E(i + 1)) - P.row(E(i))).normalized();
-    KB.row(i - 1) = 2 * t0.cross(t1) / (1 + t0.dot(t1));
-  }
-  return KB;
-}
+//   for(int i = 1; i < E.size() - 1; ++i)
+//   {
+//     Vector3d t0 = (P.row(E(i)) - P.row(E(i - 1))).normalized();
+//     Vector3d t1 = (P.row(E(i + 1)) - P.row(E(i))).normalized();
+//     KB.row(i - 1) = 2 * t0.cross(t1) / (1 + t0.dot(t1));
+//   }
+//   return KB;
+// }
 
 template class ElasticRod<true>;
 template class ElasticRod<false>;

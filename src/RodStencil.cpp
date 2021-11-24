@@ -74,7 +74,7 @@ double RodStencil<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X,
     (_lengths(0) * pow(e0.squaredNorm() / pow(_lengths(0), 2) - 1, 2) 
    + _lengths(1) * pow(e1.squaredNorm() / pow(_lengths(1), 2) - 1, 2));
 
-  return res;       
+  return res;
 }
 
 template <bool fullHess>

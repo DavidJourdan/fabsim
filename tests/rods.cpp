@@ -13,7 +13,7 @@ TEST_CASE("ElasticRod")
   using namespace Eigen;
 
   Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
-  VectorXd params = GENERATE(take(5, vector_random(4)));
+  VectorXd params = GENERATE(take(5, vector_random(4, 0, 1)));
   // bool closed = GENERATE(true, false);
   CrossSection crossSection = GENERATE(CrossSection::Circle, CrossSection::Square);
   Vector3d n = Vector3d::UnitZ();
@@ -161,14 +161,14 @@ TEST_CASE("RodCollection")
   using namespace Eigen;
 
   MatrixXd V = GENERATE(take(5, matrix_random(3, 3)));
-  V.col(2).setZero();
-  VectorXd params = GENERATE(take(5, vector_random(3)));
+  VectorXd params = GENERATE(take(5, vector_random(4, 0, 1)));
   Mat3<double> N(2, 3);
   N << 0, 0, 1, 0, 0, 1;
   std::vector<std::vector<int>> indices = {{0, 1}, {1, 2}};
   Mat2<int> C(2, 2);
   C << 0, 1, 1, 0;
-  RodCollection rod(V, indices, C, N, {params(0), params(1), params(2)});
+  CrossSection crossSection = GENERATE(CrossSection::Circle, CrossSection::Square);
+  RodCollection rod(V, indices, C, N, {params(0), params(1), params(2), params(3), crossSection});
 
   SECTION("Orthonormal frames")
   {
@@ -207,6 +207,7 @@ TEST_CASE("RodCollection")
     for(int i = 0; i < 3; ++i)
       var2.segment<3>(3 * i) += randomDir;
 
+    rod.setMass(0);
     REQUIRE(rod.energy(var) == Approx(rod.energy(var2)).epsilon(1e-10));
   }
 }

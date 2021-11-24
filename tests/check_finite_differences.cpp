@@ -10,6 +10,7 @@
 #include <fsim/NeoHookeanElement.h>
 #include <fsim/NeoHookeanMembrane.h>
 #include <fsim/OrthotropicStVKMembrane.h>
+#include <fsim/RodCollection.h>
 #include <fsim/RodStencil.h>
 #include <fsim/Spring.h>
 #include <fsim/StVKMembrane.h>
@@ -67,7 +68,7 @@ TEST_CASE("RodStencil")
   Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
   Vector2d widths = GENERATE(take(2, vector_random(2, 0, 1)));
   double young_modulus = GENERATE(take(2, random(0., 1.)));
-  // double stretch = GENERATE(take(2, random(0., 1.)));
+  double stretch = GENERATE(take(2, random(0., 1.)));
   double mass = GENERATE(take(2, random(0., 1.)));
 
   Vector3d n1 = GENERATE(take(2, vector_random(3))).normalized();
@@ -93,8 +94,7 @@ TEST_CASE("RodStencil")
 
       double ref_twist = rod.getReferenceTwist();
       rod.updateReferenceTwist(new_f1, new_f2);
-      // double res = rod.energy(X, new_f1, new_f2, stiffnesses, stretch, mass);
-      double res = rod.energy(X, new_f1, new_f2, stiffnesses, mass);
+      double res = rod.energy(X, new_f1, new_f2, stiffnesses, stretch, mass);
       rod.setReferenceTwist(ref_twist);
       return res;
     }, [&](const Eigen::VectorXd &X) {
@@ -103,8 +103,7 @@ TEST_CASE("RodStencil")
 
       double ref_twist = rod.getReferenceTwist();
       rod.updateReferenceTwist(new_f1, new_f2);
-      // auto res = rod.gradient(X, new_f1, new_f2, stiffnesses, stretch, mass);
-      auto res = rod.gradient(X, new_f1, new_f2, stiffnesses, mass);
+      auto res = rod.gradient(X, new_f1, new_f2, stiffnesses, stretch, mass);
       rod.setReferenceTwist(ref_twist);
       return res;
     }, rod.nbDOFs(), 1e-5,
@@ -129,19 +128,66 @@ TEST_CASE("RodStencil")
         f2.update(var.segment<3>(3 * 1), var.segment<3>(3 * 2));
         rod.updateReferenceTwist(f1, f2);
 
-        // hessian_computed += rod.hessian(var, f1, f2, stiffnesses, stretch, mass);
-        hessian_computed += rod.hessian(var, f1, f2, stiffnesses, mass);
+        hessian_computed += rod.hessian(var, f1, f2, stiffnesses, stretch, mass);
         hessian_numerical += sym(finite_differences([&](const Eigen::VectorXd &X) {
           LocalFrame new_f1 = updateFrame(f1, X.segment<3>(3 * 0), X.segment<3>(3 * 1));
           LocalFrame new_f2 = updateFrame(f2, X.segment<3>(3 * 1), X.segment<3>(3 * 2));
 
           double ref_twist = rod.getReferenceTwist();
           rod.updateReferenceTwist(new_f1, new_f2);
-          // auto res = rod.gradient(X, new_f1, new_f2, stiffnesses, stretch, mass);
-          auto res = rod.gradient(X, new_f1, new_f2, stiffnesses, mass);
+          auto res = rod.gradient(X, new_f1, new_f2, stiffnesses, stretch, mass);
           rod.setReferenceTwist(ref_twist);
           return res;
         }, var));
+    }
+
+    hessian_computed /= 10;
+    hessian_numerical /= 10;
+    MatrixXd diff = hessian_computed - hessian_numerical;
+
+    INFO("Numerical hessian\n" << hessian_numerical);
+    INFO("Computed hessian\n" << hessian_computed);
+    INFO("Difference\n" << diff);
+    REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-5));
+  }
+}
+
+TEST_CASE("ElasticRod")
+{
+  using namespace Eigen;
+
+  Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
+  VectorXd params = GENERATE(take(5, vector_random(4, 0, 1)));
+  // bool closed = GENERATE(true, false);
+  CrossSection crossSection = GENERATE(CrossSection::Circle, CrossSection::Square);
+  Vector3d n = Vector3d::UnitZ();
+  ElasticRod rod(V, n, {params(0), params(1), params(2), params(3), crossSection});
+
+  SECTION("Gradient") 
+  {
+    test_gradient(rod, 1e-5, 
+    [](auto &X) { return true; },
+    [&](const Eigen::VectorXd &X) { 
+      rod.updateProperties(X);
+     }); 
+  }
+  SECTION("Hessian") 
+  { 
+    VectorXd var(rod.nbDOFs());
+    MatrixXd hessian_computed = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
+    MatrixXd hessian_numerical = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
+
+    for(int i = 0; i < 10; ++i)
+    {
+      var = VectorXd::NullaryExpr(rod.nbDOFs(), RandomRange(-1.0, 1.0));
+      rod.updateProperties(var);
+
+      hessian_computed += MatrixXd(rod.hessian(var)).selfadjointView<Upper>();
+      hessian_numerical += sym(finite_differences([&](const Eigen::VectorXd &X) {
+        ElasticRod r = rod;
+        r.updateProperties(X);
+        return r.gradient(X);
+      }, var));
     }
 
     hessian_computed /= 10;

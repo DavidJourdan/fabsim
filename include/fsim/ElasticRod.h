@@ -132,14 +132,14 @@ public:
                           Mat3<double> &P1,
                           Mat3<double> &P2);
 
-  /**
-   * Returns curvature binormals
-   * @param P  nP by 3 list of vertex positions, including but not limited to rod vertex positions
-   * @param E  nE + 1 by 1 list of rod vertex indices into P
-   * @return  nE - 1 by 3 list of curvature binormals
-   */
-  static Mat3<double> curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
-                                         const Eigen::Ref<const Eigen::VectorXi> E);
+  // /**
+  //  * Returns curvature binormals
+  //  * @param P  nP by 3 list of vertex positions, including but not limited to rod vertex positions
+  //  * @param E  nE + 1 by 1 list of rod vertex indices into P
+  //  * @return  nE - 1 by 3 list of curvature binormals
+  //  */
+  // static Mat3<double> curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
+  //                                        const Eigen::Ref<const Eigen::VectorXi> E);
 
   /**
    * Returns a LocalFrame, uniquely identified by the index of the rotational degree of freedom corresponding to its

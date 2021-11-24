@@ -37,6 +37,29 @@ TEST_CASE("filter_var")
         }
     }
   }
+
+  SECTION("SparseMatrix")
+  {
+    MatrixXd M = GENERATE(take(5, matrix_random(100, 100)));
+    SparseMatrix<double> S(10000, 10000);
+    for(int i = 0; i < 100; ++i)
+      for(int j = 0; j < 100; ++j)
+        S.coeffRef(i, j) = M(i, j);
+
+    std::vector<int> idx = {1, 6, 18, 23, 67};
+    filter_var(S, idx);
+
+    for(int i : idx)
+    {
+      REQUIRE(S.coeff(i, i) == 1);
+      for(int j = 0; j < 100; ++j)
+        if(j != i)
+        {
+          REQUIRE(S.coeff(j, i) == 0);
+          REQUIRE(S.coeff(i, j) == 0);
+        }
+    }
+  }
 }
 
 TEST_CASE("geometry")
