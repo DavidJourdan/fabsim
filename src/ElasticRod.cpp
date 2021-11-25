@@ -37,17 +37,17 @@ ElasticRod<fullHess>::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
   Map<VectorXi> E(const_cast<int *>(indices.data()), indices.size());
   
   nV = V.rows();
-  nDOFs = 3 * nV + E.size() - 1;
+  nE = E.size() - 1;
 
   Mat3<double> D1, D2;
   ElasticRod<fullHess>::bishopFrame(V, E, n, D1, D2);
-  for(int j = 0; j < E.size() - 1; ++j)
+  for(int j = 0; j < nE; ++j)
   {
     _frames.emplace_back((V.row(E(j + 1)) - V.row(E(j))).normalized(), D1.row(j), D2.row(j));
     _springs.emplace_back(E(j), E(j + 1), (V.row(E(j)) - V.row(E(j + 1))).norm());
   }
 
-  for(int j = 1; j < E.size() - 1; ++j)
+  for(int j = 1; j < nE; ++j)
   {
     Matrix<int, 5, 1> dofs;
     dofs << E(j - 1), E(j), E(j + 1), 3 * nV + j - 1, 3 * nV + j;

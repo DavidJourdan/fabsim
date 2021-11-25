@@ -197,8 +197,57 @@ TEST_CASE("ElasticRod")
     INFO("Numerical hessian\n" << hessian_numerical);
     INFO("Computed hessian\n" << hessian_computed);
     INFO("Difference\n" << diff);
-    REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-5));
+    REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-4));
   }
+}
+
+TEST_CASE("RodCollection")
+{
+  using namespace Eigen;
+
+  MatrixXd V = GENERATE(take(5, matrix_random(3, 3)));
+  VectorXd params = GENERATE(take(5, vector_random(4, 0, 1)));
+  Mat3<double> N(2, 3);
+  N << 0, 0, 1, 0, 0, 1;
+  std::vector<std::vector<int>> indices = {{0, 1, 2}};
+  Mat2<int> C;//(2, 2);
+  // C << 0, 1, 1, 0;
+  CrossSection crossSection = GENERATE(CrossSection::Circle, CrossSection::Square);
+  RodCollection rod(V, indices, C, N, {params(0), params(1), params(2), params(3), crossSection});
+
+  SECTION("Gradient") 
+  {
+    test_gradient(rod, 1e-5, 
+      [](auto &X) { return true; },
+      [&](const Eigen::VectorXd &X) { rod.updateProperties(X); }
+    ); 
+  }
+  // SECTION("Hessian") 
+  // { 
+  //   VectorXd var(rod.nbDOFs());
+  //   MatrixXd hessian_computed = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
+  //   MatrixXd hessian_numerical = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
+
+  //   for(int i = 0; i < 10; ++i)
+  //   {
+  //     var = VectorXd::NullaryExpr(rod.nbDOFs(), RandomRange(-1.0, 1.0));
+  //     rod.updateProperties(var);
+
+  //     hessian_computed += MatrixXd(rod.hessian(var)).selfadjointView<Upper>();
+  //     hessian_numerical += sym(finite_differences([&](const Eigen::VectorXd &X) {
+  //       return rod.gradient(X);
+  //     }, var));
+  //   }
+
+  //   hessian_computed /= 10;
+  //   hessian_numerical /= 10;
+  //   MatrixXd diff = hessian_computed - hessian_numerical;
+
+  //   INFO("Numerical hessian\n" << hessian_numerical);
+  //   INFO("Computed hessian\n" << hessian_computed);
+  //   INFO("Difference\n" << diff);
+  //   REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-5));
+  // }
 }
 
 // SHELLS

@@ -116,7 +116,7 @@ public:
 
   // number of edges
   int nbEdges() const { return _springs.size(); }
-  int nbDOFs() const { return nDOFs; }
+  int nbDOFs() const { return 3 * nV + nE; }
 
   /**
    * Computes the Bishop frame, which is the geometrically most relaxed frame attached to the centerline of a curve
@@ -154,7 +154,7 @@ public:
 
 protected:
   int nV; // total number of vertices in the simulation (includes non-rod vertices)
-  int nDOFs;
+  int nE;
   double _stretch;
   double _mass;
   Eigen::Vector2d _stiffness;
