@@ -136,112 +136,20 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                                        const Eigen::Ref<const Mat2<int>> C,
                                        const Eigen::Ref<const Mat3<double>> N,
                                        const RodParams &p)
+  : RodCollection<fullHess>(V, indices, C, N, std::vector<double>(indices.size(), p.thickness), 
+    std::vector<double>(indices.size(), p.width), p.E, p.mass, p.crossSection)
 {
-  using namespace Eigen;
-
-  this->_mass = p.mass;
-  if(p.crossSection == CrossSection::Circle)
-    this->_stretch = 3.14159 / 4 * p.E * p.thickness * p.width;
-  else if(p.crossSection == CrossSection::Square)
-    this->_stretch = p.E * p.thickness * p.width;
-
-  this->nV = V.rows();
-  int nR = indices.size();
-  MatrixX2i extremal_edges(nR, 2); // rod extremal edge indices
-  this->nE = 0;
-  for(int i = 0; i < nR; ++i)
-  {
-    Mat3<double> D1, D2;
-    Map<VectorXi> E(const_cast<int *>(indices[i].data()), indices[i].size());
-    ElasticRod<>::bishopFrame(V, E, N.row(i), D1, D2);
-    for(int j = 0; j < E.size() - 1; ++j)
-    {
-      this->_frames.emplace_back((V.row(E(j + 1)) - V.row(E(j))).normalized(), D1.row(j), D2.row(j));
-      this->_springs.emplace_back(E(j), E(j + 1), (V.row(E(j)) - V.row(E(j + 1))).norm());
-    }
-
-    extremal_edges(i, 0) = this->nE;
-    for(int j = 1; j < E.size() - 1; ++j)
-    {
-      Matrix<int, 5, 1> dofs;
-      dofs << E(j - 1), E(j), E(j + 1), 3 * V.rows() + this->nE, 3 * V.rows() + this->nE + 1;
-
-      this->_stencils.emplace_back(V, this->_frames[this->nE], this->_frames[this->nE + 1], dofs);
-      this->nE += 1;
-    }
-    extremal_edges(i, 1) = this->nE;
-    this->nE += 1;
-  }
+  rodData.clear();
   if(p.crossSection == CrossSection::Circle)
     rodData.emplace_back(pow(p.thickness, 3) * p.width * 3.1415 * p.E / 64,
                           pow(p.width, 3) * p.thickness * 3.1415 * p.E / 64, 
                           3.1415 / 4 * p.width * p.thickness * p.E,
-                          this->_stencils.size());
+                          this->_stencils.size() - connectionData.size());
   else if(p.crossSection == CrossSection::Square)
     rodData.emplace_back(pow(p.thickness, 3) * p.width * p.E / 12, 
                           pow(p.width, 3) * p.thickness * p.E / 12,
                           p.width * p.thickness * p.E,
-                          this->_stencils.size());
-
-  for(int k = 0; k < C.rows(); ++k)
-  {
-    Matrix<int, 5, 1> dofs;
-    LocalFrame f1, f2;
-    int i = C(k, 0), j = C(k, 1);
-    int nI = indices[i].size(), nJ = indices[j].size();
-    if(indices[i][0] == indices[j][0])
-    {
-      dofs << indices[i][1], indices[i][0], indices[j][1], 3 * V.rows() + extremal_edges(i, 0),
-          3 * V.rows() + extremal_edges(j, 0);
-      f1 = this->_frames[extremal_edges(i, 0)];
-      f2 = this->_frames[extremal_edges(j, 0)];
-    }
-    else if(indices[i][0] == indices[j].back())
-    {
-      dofs << indices[i][1], indices[i][0], indices[j][nJ - 2], 3 * V.rows() + extremal_edges(i, 0),
-          3 * V.rows() + extremal_edges(j, 1);
-      f1 = this->_frames[extremal_edges(i, 0)];
-      f2 = this->_frames[extremal_edges(j, 1)];
-    }
-    else if(indices[i].back() == indices[j][0])
-    {
-      dofs << indices[i][nI - 2], indices[j][0], indices[j][1], 3 * V.rows() + extremal_edges(i, 1),
-          3 * V.rows() + extremal_edges(j, 0);
-      f1 = this->_frames[extremal_edges(i, 1)];
-      f2 = this->_frames[extremal_edges(j, 0)];
-    }
-    else if(indices[i].back() == indices[j].back())
-    {
-      dofs << indices[i][nI - 2], indices[i][nI - 1], indices[j][nJ - 2], 3 * V.rows() + extremal_edges(i, 1),
-          3 * V.rows() + extremal_edges(j, 1);
-      f1 = this->_frames[extremal_edges(i, 1)];
-      f2 = this->_frames[extremal_edges(j, 1)];
-    }
-    else
-      throw std::runtime_error("Non connected rods\n");
-
-    if(f1.t.dot(V.row(dofs(1)) - V.row(dofs(0))) < 0)
-    {
-      f1.t *= -1;
-      f1.d2 *= -1;
-    }
-    if(f2.t.dot(V.row(dofs(2)) - V.row(dofs(1))) < 0)
-    {
-      f2.t *= -1;
-      f2.d2 *= -1;
-    }
-    this->_stencils.emplace_back(V, f1, f2, dofs);
-    if(p.crossSection == CrossSection::Circle)
-      connectionData.emplace_back(pow(p.thickness, 3) * p.width * 3.1415 * p.E / 128,
-                                  pow(p.width, 3) * p.thickness * 3.1415 * p.E / 128,
-                                  3.1415 / 4 * p.width * p.thickness * p.E);
-    else if(p.crossSection == CrossSection::Square)
-      connectionData.emplace_back(pow(p.thickness, 3) * p.width * p.E / 24, 
-                                  pow(p.width, 3) * p.thickness * p.E / 24,
-                                  p.width * p.thickness * p.E);
-  }
-
-  assert(this->_springs.size() == this->_frames.size());
+                          this->_stencils.size()- connectionData.size());
 }
 
 template <bool fullHess>
