@@ -111,6 +111,15 @@ TEST_CASE("ElasticRod")
     REQUIRE(rod.energy(var) == Approx(rod.energy(var2)).epsilon(1e-10));
   }
 
+  SECTION("Equivalence")
+  {
+    ElasticRod<true> rod1(V, n, {params(0), params(1), params(2)});
+    ElasticRod<false> rod2(V, n, {params(0), params(1), params(2)});
+    VectorXd X = GENERATE(take(5, vector_random(11)));
+    REQUIRE(rod1.energy(X) == Approx(rod2.energy(X)));
+    REQUIRE_THAT(rod1.gradient(X), ApproxEquals(rod2.gradient(X)));
+  }
+
   // This test fails systematically, probably due to the incorrect averaging of material directors for the bending part
   // (the above section proves, however, that the curvature binormal itself is rotationally invariant)
   // Since the twist part also fails this test, there might be a problem with the parallel transport and/or the

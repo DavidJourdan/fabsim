@@ -9,7 +9,7 @@ TEST_CASE("Spring")
 {
   using namespace Eigen;
 
-  double rest_length = GENERATE(take(2, random(0., 1.)));
+  double rest_length = GENERATE(take(5, random(0., 1.)));
   Spring s(0, 1, rest_length);
 
   SECTION("Translate invariance")

@@ -222,32 +222,34 @@ TEST_CASE("RodCollection")
       [&](const Eigen::VectorXd &X) { rod.updateProperties(X); }
     ); 
   }
-  // SECTION("Hessian") 
-  // { 
-  //   VectorXd var(rod.nbDOFs());
-  //   MatrixXd hessian_computed = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
-  //   MatrixXd hessian_numerical = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
+  SECTION("Hessian") 
+  { 
+    VectorXd var(rod.nbDOFs());
+    MatrixXd hessian_computed = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
+    MatrixXd hessian_numerical = MatrixXd::Zero(rod.nbDOFs(), rod.nbDOFs());
 
-  //   for(int i = 0; i < 10; ++i)
-  //   {
-  //     var = VectorXd::NullaryExpr(rod.nbDOFs(), RandomRange(-1.0, 1.0));
-  //     rod.updateProperties(var);
+    for(int i = 0; i < 10; ++i)
+    {
+      var = VectorXd::NullaryExpr(rod.nbDOFs(), RandomRange(-1.0, 1.0));
+      rod.updateProperties(var);
 
-  //     hessian_computed += MatrixXd(rod.hessian(var)).selfadjointView<Upper>();
-  //     hessian_numerical += sym(finite_differences([&](const Eigen::VectorXd &X) {
-  //       return rod.gradient(X);
-  //     }, var));
-  //   }
+      hessian_computed += MatrixXd(rod.hessian(var)).selfadjointView<Upper>();
+      hessian_numerical += sym(finite_differences([&](const Eigen::VectorXd &X) {
+        RodCollection r = rod;
+        r.updateProperties(X);
+        return r.gradient(X);
+      }, var));
+    }
 
-  //   hessian_computed /= 10;
-  //   hessian_numerical /= 10;
-  //   MatrixXd diff = hessian_computed - hessian_numerical;
+    hessian_computed /= 10;
+    hessian_numerical /= 10;
+    MatrixXd diff = hessian_computed - hessian_numerical;
 
-  //   INFO("Numerical hessian\n" << hessian_numerical);
-  //   INFO("Computed hessian\n" << hessian_computed);
-  //   INFO("Difference\n" << diff);
-  //   REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-5));
-  // }
+    INFO("Numerical hessian\n" << hessian_numerical);
+    INFO("Computed hessian\n" << hessian_computed);
+    INFO("Difference\n" << diff);
+    REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-5));
+  }
 }
 
 // SHELLS
@@ -317,39 +319,39 @@ TEST_CASE("Spring")
   }
 }
 
-// TEST_CASE("First Fundamental form")
-// {
-//   using namespace Eigen;
+TEST_CASE("First Fundamental form")
+{
+  using namespace Eigen;
 
-//   Vector3i face(0, 1, 2);
-//   auto i = GENERATE(0, 1, 2, 3);
+  Vector3i face(0, 1, 2);
+  auto i = GENERATE(0, 1, 2, 3);
 
-//   SECTION("Gradient") 
-//   { 
-//     test_gradient(
-//       [&](const auto &X) { 
-//         return first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face)(i); 
-//       }, [&](const auto &X) { 
-//         Matrix<double, 4, 9> deriv;
-//         first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, &deriv);
-//         return deriv.row(i);
-//       }, 9
-//     ); 
-//   }
-//   SECTION("Hessian") { 
-//     test_hessian(
-//       [&](const auto &X) { 
-//         Matrix<double, 4, 9> deriv;
-//         first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, &deriv);
-//         return deriv.row(i);
-//       }, [&](const auto &X) { 
-//         Matrix<double, 36, 9> dderiv;
-//         first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, nullptr, &dderiv);
-//         return dderiv.block<9,9>(9 * i, 0);
-//       }, 9
-//     ); 
-//   }
-// }
+  SECTION("Gradient") 
+  { 
+    test_gradient(
+      [&](const auto &X) { 
+        return first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face)(i); 
+      }, [&](const auto &X) { 
+        Matrix<double, 4, 9> deriv;
+        first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, &deriv);
+        return deriv.row(i);
+      }, 9
+    ); 
+  }
+  SECTION("Hessian") { 
+    test_hessian(
+      [&](const auto &X) { 
+        Matrix<double, 4, 9> deriv;
+        first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, &deriv);
+        return deriv.row(i);
+      }, [&](const auto &X) { 
+        Matrix<double, 36, 9> dderiv;
+        first_fundamental_form(Map<Mat3<double>>(const_cast<double*>(X.data()), 3, 3), face, nullptr, &dderiv);
+        return dderiv.block<9,9>(9 * i, 0);
+      }, 9
+    ); 
+  }
+}
 
 TEST_CASE("bendAngleGradient")
 {

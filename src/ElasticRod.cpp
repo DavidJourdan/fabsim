@@ -105,7 +105,6 @@ void ElasticRod<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, E
     Y(e.idx(3)) += grad(9);
     Y(e.idx(4)) += grad(10);
   }
-
 }
 
 template <bool fullHess>

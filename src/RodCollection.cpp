@@ -252,14 +252,14 @@ RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd>
 
   std::vector<Triplet<double>> triplets(77 * this->_stencils.size());
   int k = 0;
-  for(auto &[Ix, Iy, stretch, N]: rodData)
+  for(auto &data: rodData)
   {
-    for(int i = k; i < k + N; ++i)
+    for(int i = k; i < k + std::get<3>(data); ++i)
     {
       auto &e = this->_stencils[i];
       LocalFrame f1 = this->getFrame(X, e.idx(0), e.idx(1), e.idx(3));
       LocalFrame f2 = this->getFrame(X, e.idx(1), e.idx(2), e.idx(4));
-      auto hess = e.hessian(X, f1, f2, Vector2d(Ix, Iy), stretch,  this->_mass);
+      auto hess = e.hessian(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), std::get<2>(data), this->_mass);
 
       int id = 0;
       for(int j = 0; j < 3; ++j)
@@ -285,7 +285,7 @@ RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd>
           if(e.idx(3 + j) <= e.idx(3 + k))
             triplets[77 * i + id++] = Triplet<double>(e.idx(3 + j), e.idx(3 + k), hess(9 + j, 9 + k));
     }
-    k += N;
+    k += std::get<3>(data);
   }
   for(auto &data: connectionData)
   {
