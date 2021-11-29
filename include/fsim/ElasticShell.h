@@ -42,7 +42,6 @@ public:
                double thickness,
                double young_modulus,
                double poisson_ratio);
-  ElasticShell() = default;
 
   // number of vertices
   int nbVertices() const { return nV; }

@@ -102,8 +102,8 @@ NeoHookeanMembrane<id>::NeoHookeanMembrane(const Eigen::Ref<const Mat3<double>> 
   if(NeoHookeanElement<id>::E != 0 && NeoHookeanElement<id>::E != young_modulus ||
      NeoHookeanElement<id>::nu != 0 && NeoHookeanElement<id>::nu != poisson_ratio ||
      NeoHookeanElement<id>::mass != 0 && NeoHookeanElement<id>::mass != mass)
-    std::cerr << "Warning: overwriting properties. Please declare your different instances as e.g. "
-                 "StVKMembrane<0>, StVKMembrane<1>, etc.\n";
+    std::cerr << "Warning: overwriting properties. Please declare your different instances as "
+                 "NeoHookeanMembrane<0>, NeoHookeanMembrane<1>, etc.\n";
   NeoHookeanElement<id>::E = young_modulus;
   NeoHookeanElement<id>::nu = poisson_ratio;
   NeoHookeanElement<id>::mass = mass;

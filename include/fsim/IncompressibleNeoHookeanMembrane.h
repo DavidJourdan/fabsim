@@ -107,8 +107,8 @@ IncompressibleNeoHookeanMembrane<id>::IncompressibleNeoHookeanMembrane(const Eig
   if(IncompressibleNeoHookeanElement<id>::E != 0 && IncompressibleNeoHookeanElement<id>::E != young_modulus ||
      IncompressibleNeoHookeanElement<id>::nu != 0 && IncompressibleNeoHookeanElement<id>::nu != poisson_ratio ||
      IncompressibleNeoHookeanElement<id>::mass != 0 && IncompressibleNeoHookeanElement<id>::mass != mass)
-    std::cerr << "Warning: overwriting properties. Please declare your different instances as e.g. "
-                 "StVKMembrane<0>, StVKMembrane<1>, etc.\n";
+    std::cerr << "Warning: overwriting properties. Please declare your different instances as "
+                 "IncompressibleNeoHookeanMembrane<0>, IncompressibleNeoHookeanMembrane<1>, etc.\n";
   IncompressibleNeoHookeanElement<id>::E = young_modulus;
   IncompressibleNeoHookeanElement<id>::nu = poisson_ratio;
   IncompressibleNeoHookeanElement<id>::mass = mass;
