@@ -22,27 +22,32 @@ ElasticRod<fullHess>::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
 {
   using namespace Eigen;
 
-  _stretch_modulus = 1e3 * p.E * p.thickness * p.width;
   _stiffness << pow(p.thickness, 3) * p.width, pow(p.width, 3) * p.thickness;
   if(p.crossSection == CrossSection::Circle)
+  {
+    _stretch = 3.1415 / 4 * p.E * p.thickness * p.width;
     _stiffness *= 3.1415 * p.E / 64;
+  }
   else if(p.crossSection == CrossSection::Square)
+  {
+    _stretch = p.E * p.thickness * p.width;
     _stiffness *= p.E / 12;
+  }
 
+  Map<VectorXi> E(const_cast<int *>(indices.data()), indices.size());
+  
   nV = V.rows();
-  int nR = indices.size();
-  MatrixX2i extremal_edges(nR, 2); // rod extremal edge indices
+  nE = E.size() - 1;
 
   Mat3<double> D1, D2;
-  Map<VectorXi> E(const_cast<int *>(indices.data()), indices.size());
   ElasticRod<fullHess>::bishopFrame(V, E, n, D1, D2);
-  for(int j = 0; j < E.size() - 1; ++j)
+  for(int j = 0; j < nE; ++j)
   {
     _frames.emplace_back((V.row(E(j + 1)) - V.row(E(j))).normalized(), D1.row(j), D2.row(j));
     _springs.emplace_back(E(j), E(j + 1), (V.row(E(j)) - V.row(E(j + 1))).norm());
   }
 
-  for(int j = 1; j < E.size() - 1; ++j)
+  for(int j = 1; j < nE; ++j)
   {
     Matrix<int, 5, 1> dofs;
     dofs << E(j - 1), E(j), E(j + 1), 3 * nV + j - 1, 3 * nV + j;
@@ -77,11 +82,8 @@ double ElasticRod<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X) c
 
     e.updateReferenceTwist(f1, f2);
 
-    result += e.energy(X, f1, f2, _stiffness, _mass);
+    result += e.energy(X, f1, f2, _stiffness, _stretch, _mass);
   }
-
-  for(const auto &s: _springs)
-    result += _stretch_modulus * s.energy(X);
 
   return result;
 }
@@ -95,20 +97,13 @@ void ElasticRod<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, E
   {
     LocalFrame f1 = getFrame(X, e.idx(0), e.idx(1), e.idx(3));
     LocalFrame f2 = getFrame(X, e.idx(1), e.idx(2), e.idx(4));
-    auto grad = e.gradient(X, f1, f2, _stiffness, _mass);
+    auto grad = e.gradient(X, f1, f2, _stiffness, _stretch, _mass);
 
     for(int j = 0; j < 3; ++j)
       Y.segment<3>(3 * e.idx(j)) += grad.template segment<3>(3 * j);
 
     Y(e.idx(3)) += grad(9);
     Y(e.idx(4)) += grad(10);
-  }
-
-  for(const auto &s: _springs)
-  {
-    Vector3d force = _stretch_modulus * s.force(X);
-    Y.segment<3>(3 * s.i) -= force;
-    Y.segment<3>(3 * s.j) += force;
   }
 }
 
@@ -140,7 +135,7 @@ ElasticRod<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X)
 {
   using namespace Eigen;
 
-  std::vector<Triplet<double>> triplets(11 * 7 * _stencils.size() + 9 * 3 * _springs.size());
+  std::vector<Triplet<double>> triplets(11 * 7 * _stencils.size());
 
 #pragma omp parallel for if(_stencils.size() > 1000)
   for(int i = 0; i < _stencils.size(); ++i)
@@ -148,7 +143,7 @@ ElasticRod<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X)
     auto &e = _stencils[i];
     LocalFrame f1 = getFrame(X, e.idx(0), e.idx(1), e.idx(3));
     LocalFrame f2 = getFrame(X, e.idx(1), e.idx(2), e.idx(4));
-    auto hess = e.hessian(X, f1, f2, _stiffness, _mass);
+    auto hess = e.hessian(X, f1, f2, _stiffness, _stretch, _mass);
 
     int id = 0;
     for(int j = 0; j < 3; ++j)
@@ -175,29 +170,6 @@ ElasticRod<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X)
           triplets[77 * i + id++] = Triplet<double>(e.idx(3 + j), e.idx(3 + k), hess(9 + j, 9 + k));
   }
 
-  for(int i = 0; i < _springs.size(); ++i)
-  {
-    auto& s = _springs[i];
-    Matrix3d h = _stretch_modulus * s.hessian(X);
-
-    int id = 0;
-    if(s.i < s.j)
-      for(int k = 0; k < 3; ++k)
-        for(int l = 0; l < 3; ++l)
-          triplets[77 * _stencils.size() + 27 * i + id++] = Triplet<double>(3 * s.i + k, 3 * s.j + l, h(k, l));
-    else
-      for(int k = 0; k < 3; ++k)
-        for(int l = 0; l < 3; ++l)
-          triplets[77 * _stencils.size() + 27 * i + id++] = Triplet<double>(3 * s.j + k, 3 * s.i + l, h(k, l));
-
-    for(int k = 0; k < 3; ++k)
-      for(int l = 0; l < 3; ++l)
-      {
-        triplets[77 * _stencils.size() + 27 * i + id++] = Triplet<double>(3 * s.i + k, 3 * s.i + l, -h(k, l));
-        triplets[77 * _stencils.size() + 27 * i + id++] = Triplet<double>(3 * s.j + k, 3 * s.j + l, -h(k, l));
-      }
-  }
-
   return triplets;
 }
 
@@ -221,7 +193,7 @@ void ElasticRod<fullHess>::updateProperties(const Eigen::Ref<const Eigen::Vector
 template <bool fullHess>
 void ElasticRod<fullHess>::setParams(const RodParams &p)
 {
-  _stretch_modulus = 1e3 * p.E * p.thickness * p.width;
+  _stretch = 1e3 * p.E * p.thickness * p.width;
   _stiffness << pow(p.thickness, 3) * p.width, pow(p.width, 3) * p.thickness;
 
   if(p.crossSection == CrossSection::Circle)
@@ -308,21 +280,21 @@ void ElasticRod<fullHess>::bishopFrame(const Eigen::Ref<const Mat3<double>> V,
   }
 }
 
-template <bool fullHess>
-Mat3<double> ElasticRod<fullHess>::curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
-                                                      const Eigen::Ref<const Eigen::VectorXi> E)
-{
-  using namespace Eigen;
-  Mat3<double> KB(E.size() - 2, 3);
+// template <bool fullHess>
+// Mat3<double> ElasticRod<fullHess>::curvatureBinormals(const Eigen::Ref<const Mat3<double>> P,
+//                                                       const Eigen::Ref<const Eigen::VectorXi> E)
+// {
+//   using namespace Eigen;
+//   Mat3<double> KB(E.size() - 2, 3);
 
-  for(int i = 1; i < E.size() - 1; ++i)
-  {
-    Vector3d t0 = (P.row(E(i)) - P.row(E(i - 1))).normalized();
-    Vector3d t1 = (P.row(E(i + 1)) - P.row(E(i))).normalized();
-    KB.row(i - 1) = 2 * t0.cross(t1) / (1 + t0.dot(t1));
-  }
-  return KB;
-}
+//   for(int i = 1; i < E.size() - 1; ++i)
+//   {
+//     Vector3d t0 = (P.row(E(i)) - P.row(E(i - 1))).normalized();
+//     Vector3d t1 = (P.row(E(i + 1)) - P.row(E(i))).normalized();
+//     KB.row(i - 1) = 2 * t0.cross(t1) / (1 + t0.dot(t1));
+//   }
+//   return KB;
+// }
 
 template class ElasticRod<true>;
 template class ElasticRod<false>;

@@ -233,7 +233,7 @@ void test_hessian(const GradientFunc &gradient,
     if(filter(var))
     {
       prepare_data(var);
-      hessian_computed += hessian(var);
+      hessian_computed += MatrixXd(hessian(var));
       hessian_numerical += fsim::finite_differences([&](const Eigen::VectorXd &X) { return gradient(X); }, var);
     }
   }

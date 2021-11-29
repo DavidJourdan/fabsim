@@ -71,7 +71,8 @@ public:
 
 private:
   // contains cross-section stiffnesses and number of elements per rod
-  std::vector<std::tuple<double, double, int>> rodData;
+  std::vector<std::tuple<double, double, double, int>> rodData;
+  std::vector<std::tuple<double, double, double>> connectionData;
 };
 
 } // namespace fsim
