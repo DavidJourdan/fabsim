@@ -209,9 +209,22 @@ TEST_CASE("RodCollection")
   VectorXd params = GENERATE(take(5, vector_random(4, 0, 1)));
   Mat3<double> N(2, 3);
   N << 0, 0, 1, 0, 0, 1;
-  std::vector<std::vector<int>> indices = {{0, 1, 2}};
-  Mat2<int> C;//(2, 2);
-  // C << 0, 1, 1, 0;
+
+  int Case = GENERATE(0, 1);
+  std::vector<std::vector<int>> indices;
+  Mat2<int> C; //(2, 2);
+
+  if(Case == 0)
+  {
+    indices = {{0, 1, 2}};
+  }
+  else if(Case == 1)
+  {
+    indices = {{0, 1}, {1, 2}};
+    C.resize(2, 2);
+    C << 0, 1, 1, 0;
+  }
+
   CrossSection crossSection = GENERATE(CrossSection::Circle, CrossSection::Square);
   RodCollection rod(V, indices, C, N, {params(0), params(1), params(2), params(3), crossSection});
 

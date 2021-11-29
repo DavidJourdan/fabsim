@@ -9,6 +9,7 @@
 // Created: 01/09/20
 
 #include "fsim/RodCollection.h"
+
 #include "fsim/ElasticRod.h"
 
 namespace fsim
@@ -45,14 +46,17 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
       this->_springs.emplace_back(E(j), E(j + 1), (V.row(E(j)) - V.row(E(j + 1))).norm());
     }
 
-    if(c == CrossSection::Circle)
-      rodData.emplace_back(pow(thicknesses[i], 3) * widths[i] * 3.1415 * young_modulus / 64,
-                           pow(widths[i], 3) * thicknesses[i] * 3.1415 * young_modulus / 64, 
-                           3.14159 / 4 * young_modulus * thicknesses[i] * widths[i], E.size() - 2);
-    else if(c == CrossSection::Square)
-      rodData.emplace_back(pow(thicknesses[i], 3) * widths[i] * young_modulus / 12,
-                           pow(widths[i], 3) * thicknesses[i] * young_modulus / 12, 
-                           young_modulus * thicknesses[0] * widths[0], E.size() - 2);
+    if(E.size() > 2)
+    {
+      if(c == CrossSection::Circle)
+        rodData.emplace_back(pow(thicknesses[i], 3) * widths[i] * 3.1415 * young_modulus / 64,
+                            pow(widths[i], 3) * thicknesses[i] * 3.1415 * young_modulus / 64,
+                            3.14159 / 4 * young_modulus * thicknesses[i] * widths[i], E.size() - 2);
+      else if(c == CrossSection::Square)
+        rodData.emplace_back(pow(thicknesses[i], 3) * widths[i] * young_modulus / 12,
+                            pow(widths[i], 3) * thicknesses[i] * young_modulus / 12,
+                            young_modulus * thicknesses[0] * widths[0], E.size() - 2);
+    }
 
     extremal_edges(i, 0) = this->nE;
     for(int j = 1; j < E.size() - 1; ++j)
@@ -119,11 +123,9 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
     double wb = (widths[i] + widths[j]) / 2;
     if(c == CrossSection::Circle)
       connectionData.emplace_back(pow(wn, 3) * wb * 3.1415 * young_modulus / 128,
-                                  pow(wb, 3) * wn * 3.1415 * young_modulus / 128,
-                                  3.1415 / 4 * wb * wn * young_modulus);
+                                  pow(wb, 3) * wn * 3.1415 * young_modulus / 128, 3.1415 / 4 * wb * wn * young_modulus);
     else if(c == CrossSection::Square)
-      connectionData.emplace_back(pow(wn, 3) * wb * young_modulus / 24, 
-                                  pow(wb, 3) * wn * young_modulus / 24,
+      connectionData.emplace_back(pow(wn, 3) * wb * young_modulus / 24, pow(wb, 3) * wn * young_modulus / 24,
                                   wb * wn * young_modulus);
   }
 
@@ -136,20 +138,24 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                                        const Eigen::Ref<const Mat2<int>> C,
                                        const Eigen::Ref<const Mat3<double>> N,
                                        const RodParams &p)
-  : RodCollection<fullHess>(V, indices, C, N, std::vector<double>(indices.size(), p.thickness), 
-    std::vector<double>(indices.size(), p.width), p.E, p.mass, p.crossSection)
+    : RodCollection<fullHess>(V,
+                              indices,
+                              C,
+                              N,
+                              std::vector<double>(indices.size(), p.thickness),
+                              std::vector<double>(indices.size(), p.width),
+                              p.E,
+                              p.mass,
+                              p.crossSection)
 {
   rodData.clear();
   if(p.crossSection == CrossSection::Circle)
     rodData.emplace_back(pow(p.thickness, 3) * p.width * 3.1415 * p.E / 64,
-                          pow(p.width, 3) * p.thickness * 3.1415 * p.E / 64, 
-                          3.1415 / 4 * p.width * p.thickness * p.E,
-                          this->_stencils.size() - connectionData.size());
+                         pow(p.width, 3) * p.thickness * 3.1415 * p.E / 64, 3.1415 / 4 * p.width * p.thickness * p.E,
+                         this->_stencils.size() - connectionData.size());
   else if(p.crossSection == CrossSection::Square)
-    rodData.emplace_back(pow(p.thickness, 3) * p.width * p.E / 12, 
-                          pow(p.width, 3) * p.thickness * p.E / 12,
-                          p.width * p.thickness * p.E,
-                          this->_stencils.size()- connectionData.size());
+    rodData.emplace_back(pow(p.thickness, 3) * p.width * p.E / 12, pow(p.width, 3) * p.thickness * p.E / 12,
+                         p.width * p.thickness * p.E, this->_stencils.size() - connectionData.size());
 }
 
 template <bool fullHess>
@@ -224,7 +230,8 @@ void RodCollection<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X
     auto &e = this->_stencils[k++];
     LocalFrame f1 = this->getFrame(X, e.idx(0), e.idx(1), e.idx(3));
     LocalFrame f2 = this->getFrame(X, e.idx(1), e.idx(2), e.idx(4));
-    auto grad = e.gradient(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), std::get<2>(data), this->_mass / 2);
+    auto grad =
+        e.gradient(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), std::get<2>(data), this->_mass / 2);
 
     for(int j = 0; j < 3; ++j)
       Y.segment<3>(3 * e.idx(j)) += grad.template segment<3>(3 * j);
@@ -251,10 +258,10 @@ RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd>
   using namespace Eigen;
 
   std::vector<Triplet<double>> triplets(77 * this->_stencils.size());
-  int k = 0;
+  int n = 0;
   for(auto &data: rodData)
   {
-    for(int i = k; i < k + std::get<3>(data); ++i)
+    for(int i = n; i < n + std::get<3>(data); ++i)
     {
       auto &e = this->_stencils[i];
       LocalFrame f1 = this->getFrame(X, e.idx(0), e.idx(1), e.idx(3));
@@ -267,7 +274,8 @@ RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd>
           if(e.idx(j) <= e.idx(k))
             for(int l = 0; l < 3; ++l)
               for(int m = 0; m < 3; ++m)
-                triplets[77 * i + id++] = Triplet<double>(3 * e.idx(j) + l, 3 * e.idx(k) + m, hess(3 * j + l, 3 * k + m));
+                triplets[77 * i + id++] =
+                    Triplet<double>(3 * e.idx(j) + l, 3 * e.idx(k) + m, hess(3 * j + l, 3 * k + m));
 
       for(int j = 0; j < 2; ++j)
         for(int k = 0; k < 3; ++k)
@@ -285,14 +293,15 @@ RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd>
           if(e.idx(3 + j) <= e.idx(3 + k))
             triplets[77 * i + id++] = Triplet<double>(e.idx(3 + j), e.idx(3 + k), hess(9 + j, 9 + k));
     }
-    k += std::get<3>(data);
+    n += std::get<3>(data);
   }
   for(auto &data: connectionData)
   {
-    auto &e = this->_stencils[k++];
+    auto &e = this->_stencils[n];
     LocalFrame f1 = this->getFrame(X, e.idx(0), e.idx(1), e.idx(3));
     LocalFrame f2 = this->getFrame(X, e.idx(1), e.idx(2), e.idx(4));
-    auto hess = e.hessian(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), std::get<2>(data),  this->_mass / 2);
+    auto hess =
+        e.hessian(X, f1, f2, Vector2d(std::get<0>(data), std::get<1>(data)), std::get<2>(data), this->_mass / 2);
 
     int id = 0;
     for(int j = 0; j < 3; ++j)
@@ -300,23 +309,24 @@ RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd>
         if(e.idx(j) <= e.idx(k))
           for(int l = 0; l < 3; ++l)
             for(int m = 0; m < 3; ++m)
-              triplets[77 * k + id++] = Triplet<double>(3 * e.idx(j) + l, 3 * e.idx(k) + m, hess(3 * j + l, 3 * k + m));
+              triplets[77 * n + id++] = Triplet<double>(3 * e.idx(j) + l, 3 * e.idx(k) + m, hess(3 * j + l, 3 * k + m));
 
     for(int j = 0; j < 2; ++j)
       for(int k = 0; k < 3; ++k)
       {
         if(3 * e.idx(k) < e.idx(3 + j))
           for(int l = 0; l < 3; ++l)
-            triplets[77 * k + id++] = Triplet<double>(3 * e.idx(k) + l, e.idx(3 + j), hess(3 * k + l, 9 + j));
+            triplets[77 * n + id++] = Triplet<double>(3 * e.idx(k) + l, e.idx(3 + j), hess(3 * k + l, 9 + j));
         else
           for(int l = 0; l < 3; ++l)
-            triplets[77 * k + id++] = Triplet<double>(e.idx(3 + j), 3 * e.idx(k) + l, hess(9 + j, 3 * k + l));
+            triplets[77 * n + id++] = Triplet<double>(e.idx(3 + j), 3 * e.idx(k) + l, hess(9 + j, 3 * k + l));
       }
 
     for(int j = 0; j < 2; ++j)
       for(int k = 0; k < 2; ++k)
         if(e.idx(3 + j) <= e.idx(3 + k))
-          triplets[77 * k + id++] = Triplet<double>(e.idx(3 + j), e.idx(3 + k), hess(9 + j, 9 + k));
+          triplets[77 * n + id++] = Triplet<double>(e.idx(3 + j), e.idx(3 + k), hess(9 + j, 9 + k));
+    n += 1;
   }
   return triplets;
 }
