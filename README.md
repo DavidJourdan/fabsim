@@ -26,7 +26,7 @@ add_subdirectory("path/to/fabsim")
 // ...
 target_link_libraries(YOUR_TARGET fabsim)
 ```
-to your ```CMakeLists.txt```
+to your ```CMakeLists.txt```, just make sure you have [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page#Download) installed somewhere.
 
 To get started, you can try the [example project](https://github.com/DavidJourdan/fabsim-example-project)
 

@@ -149,7 +149,6 @@ Mat<double, 9, 9> StVKElement<id>::hessian(const Eigen::Ref<const Eigen::VectorX
   Matrix3d P;
   P << V.row(idx(0)), V.row(idx(1)), V.row(idx(2));
   Matrix<double, 3, 2> F = P.transpose() * _R;
-  Matrix2d E = 0.5 * (F.transpose() * F - Matrix2d::Identity());
 
   Matrix3d A = _C(0, 0) * F.col(0) * F.col(0).transpose() + S(0) * Matrix3d::Identity() +
                _C(2, 2) * F.col(1) * F.col(1).transpose();

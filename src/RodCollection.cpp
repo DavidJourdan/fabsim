@@ -163,8 +163,6 @@ double RodCollection<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X
 {
   using namespace Eigen;
 
-  // static_cast<const ElasticRod<fullHess>*>(this)->energy(X);
-
   double result = 0;
   int k = 0;
   for(auto &data: rodData)
