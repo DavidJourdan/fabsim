@@ -1,34 +1,25 @@
 // IncompressibleNeoHookeanElement.h
 //
-// Authors: Etienne Vouga and David Jourdan (david.jourdan@inria.fr)
-// Created: 01/13/20
-// Code adapted with permission from Etienne Vouga's implementation of the Discrete shell energy
-// For original implementation see https://github.com/evouga/libshell
+// Author: David Jourdan (david.jourdan@inria.fr)
+// Created: 30/10/21
 
 #pragma once
 
 #include "ElementBase.h"
-#include "util/first_fundamental_form.h"
-#include "util/geometry.h"
-#include "util/principal_directions_and_eigenvalues.h"
+#include "fsim/util/geometry.h"
 #include "util/typedefs.h"
+#include <cmath>
 
 namespace fsim
 {
 
-/**
- * Stencil for the incompressible neo-hookean energy
- * @tparam mat  enum representing which material model to use when computing the energy and its derivatives
- * @tparam id  unique identifier meant to disambiguate between different TriangleElement instances so
- * that they don't have the same Lamé parameters and thicknesses (which are stored as static variables)
- */
 template <int id = 0>
 class IncompressibleNeoHookeanElement : public ElementBase<3>
 {
 public:
   /**
-   * Constructor for the TriangleElement class
-   * @param V  n by 3 list of vertex positions (each row is a vertex)
+   * Constructor for the IncompressibleNeoHookeanElement class
+   * @param V  n by 2 list of vertex positions (each row is a vertex)
    * @param face  list of 3 indices, one per vertex of the triangle
    */
   IncompressibleNeoHookeanElement(const Eigen::Ref<const Mat3<double>> V,
@@ -54,60 +45,46 @@ public:
   LocalMatrix hessian(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   /**
-   * Computes the Green strain tensor E = \frac 1 2 (\bar a^{-1} a - I)  where a is the first fundamental form
+   * Computes the Cauchy-Green deformation tensor C = F^T F where F is the deformation gradient
    * @param V  n by 3 list of vertex positions (each row is a vertex)
-   * @return Green strain
+   * @return Cauchy-Green deformation tensor
    */
-  Eigen::Matrix2d strain(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Matrix<double, 3, 2> deformationGradient(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   /**
    * Computes the Second Piola-Kirchhoff stress tensor S = \frac{\partial f}{\partial E} where E is the Green strain
+   * Uses Voigt's notation to express it as a vector
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return second Piola-Kirchhoff stress
    */
-  Eigen::Matrix2d stress(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Matrix2d stress(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
-  /**
-   * Computes the principal strain directions and their corresponding eigenvalues
-   * @param V  n by 3 list of vertex positions (each row is a vertex)
-   * @param max_dir  maximum strain direction
-   * @param min_dir  minimum strain direction
-   * @param eigs  eigenvalues (in ascending order)
-   */
-  void principalStrains(const Eigen::Ref<const Mat3<double>> V,
-                        Eigen::Vector3d &max_dir,
-                        Eigen::Vector3d &min_dir,
-                        Eigen::Vector2d &eigs) const;
+  Eigen::Matrix2d stress(const Eigen::Matrix2d &Cinv) const;
+  Eigen::Matrix3d elasticityTensor(const Eigen::Matrix2d &Cinv) const;
 
-  /**
-   * Computes the principal stress directions and their corresponding eigenvalues
-   * @param V  n by 3 list of vertex positions (each row is a vertex)
-   * @param max_dir  maximum stress direction
-   * @param min_dir  minimum stress direction
-   * @param eigs  eigenvalues (in ascending order)
-   */
-  void principalStresses(const Eigen::Ref<const Mat3<double>> V,
-                         Eigen::Vector3d &max_dir,
-                         Eigen::Vector3d &min_dir,
-                         Eigen::Vector2d &eigs) const;
+  static void setParameters(double young_modulus, double poisson_ratio);
 
-  static double nu;   // Poisson's ratio
-  static double mass; // mass per unit volume
-  static double E;    // Young's modulus
   double coeff;
-  Eigen::Matrix2d abar_inv;
+  Eigen::Matrix<double, 2, 2> _R;
+  static double mass;
+  static double mu;
+  static double k;
 };
 
-// the ids are there to disambiguate between TriangleElements pertaining to different Membrane instances
-// so that they don't have the same static fields
 template <int id>
-double IncompressibleNeoHookeanElement<id>::nu = 0;
+double IncompressibleNeoHookeanElement<id>::mu = 0;
+
+template <int id>
+double IncompressibleNeoHookeanElement<id>::k = 1e4;
 
 template <int id>
 double IncompressibleNeoHookeanElement<id>::mass = 0;
 
 template <int id>
-double IncompressibleNeoHookeanElement<id>::E = 0;
+void IncompressibleNeoHookeanElement<id>::setParameters(double E, double nu)
+{
+  mu = 0.5 * E / (1 + nu);
+}
 
 template <int id>
 IncompressibleNeoHookeanElement<id>::IncompressibleNeoHookeanElement(const Eigen::Ref<const Mat3<double>> V,
@@ -117,142 +94,152 @@ IncompressibleNeoHookeanElement<id>::IncompressibleNeoHookeanElement(const Eigen
   using namespace Eigen;
 
   idx = E;
-  Matrix2d abar = first_fundamental_form(V, idx);
-  abar_inv = abar.inverse();
-  coeff = thickness / 2 * sqrt(abar.determinant());
+
+  Vector3d e1 = V.row(E(0)) - V.row(E(2));
+  Vector3d e2 = V.row(E(1)) - V.row(E(2));
+
+  _R.col(0) << e1.squaredNorm(), 0;
+  _R.col(1) << e2.dot(e1), e2.cross(e1).norm();
+  _R /= e1.norm();
+  _R = _R.inverse();
+
+  coeff = thickness / 2 * e1.cross(e2).norm();
+}
+
+template <int id>
+Eigen::Matrix<double, 3, 2>
+IncompressibleNeoHookeanElement<id>::deformationGradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+{
+  using namespace Eigen;
+
+  Matrix<double, 3, 2> Ds;
+  Ds.col(0) = X.segment<3>(3 * idx(0)) - X.segment<3>(3 * idx(2));
+  Ds.col(1) = X.segment<3>(3 * idx(1)) - X.segment<3>(3 * idx(2));
+  Matrix<double, 3, 2> F = Ds * _R;
+
+  return F;
+}
+
+template <int id>
+Eigen::Matrix2d IncompressibleNeoHookeanElement<id>::stress(const Eigen::Ref<const Eigen::VectorXd> X) const
+{
+  using namespace Eigen;
+
+  Matrix<double, 3, 2> F = deformationGradient(X);
+  Matrix2d C = F.transpose() * F;
+  Matrix2d Cinv = C.inverse();
+  double J = sqrt(C.determinant());
+
+  return mu * ((Matrix2d::Identity() - 0.5 * C.trace() * Cinv) / J + k * J * (J - 1) * Cinv);
+}
+
+template <int id>
+Eigen::Matrix2d IncompressibleNeoHookeanElement<id>::stress(const Eigen::Matrix2d &Cinv) const
+{
+  using namespace Eigen;
+
+  double detC = 1 / Cinv.determinant();
+  double J = sqrt(detC);
+  double trC = Cinv.trace() * detC;
+
+  return mu * ((Matrix2d::Identity() - 0.5 * trC * Cinv) / J + k * J * (J - 1) * Cinv);
+}
+
+/**
+ * All the formula for the elasticity tensors in this library (among other things) are taken from
+ * "Nonlinear continuum mechanics for finite element analysis" by J. Bonet and R. D. Wood
+ * However, the formulas for the case of _nearly_ incompressible neohookean materials the equations should be modified
+ * in eq. 5.53a, III should be replaced by \mathcal{I}, and eq. 5.53b shoud read:
+ * \mathcal{C}_p = k J(2 J - 1) C^{-1} \bigotimes C^{-1} - 2 p J \mathcal{I}
+ */
+template <int id>
+Eigen::Matrix3d IncompressibleNeoHookeanElement<id>::elasticityTensor(const Eigen::Matrix2d &Cinv) const
+{
+  using namespace Eigen;
+
+  double detC = 1 / Cinv.determinant();
+  double J = sqrt(detC);
+  double trC = Cinv.trace() * detC;
+
+  Matrix3d _C;
+  _C << Cinv(0, 0) * Cinv(0, 0), Cinv(0, 1) * Cinv(0, 1), Cinv(0, 0) * Cinv(0, 1), 
+        Cinv(1, 0) * Cinv(1, 0), Cinv(1, 1) * Cinv(1, 1), Cinv(0, 1) * Cinv(1, 1), 
+        Cinv(0, 1) * Cinv(0, 0), Cinv(0, 1) * Cinv(1, 1), (Cinv(0, 0) * Cinv(1, 1) + Cinv(0, 1) * Cinv(0, 1)) / 2;
+  _C *= mu / J * trC - 2 * mu * k * J * (J - 1);
+
+  Vector3d CinvVec(Cinv(0, 0), Cinv(1, 1), Cinv(0, 1));
+  _C += (mu / J * trC / 2 + mu * k * J * (2 * J - 1)) * outer_prod(CinvVec, CinvVec);
+  _C += -2 * mu / J * sym(outer_prod(Vector3d(1, 1, 0), CinvVec));
+
+  return _C;
 }
 
 template <int id>
 double IncompressibleNeoHookeanElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
-  double res = 9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
 
-  Matrix2d a = first_fundamental_form(V, idx);
-  double J = sqrt((a * abar_inv).determinant());
-  return coeff * E / (4 * (1 + nu)) * ((abar_inv * a).trace() / J - 2 + 1e4 * pow(J - 1, 2)) +
-         9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
+  Matrix<double, 3, 2> F = deformationGradient(X);
+  Matrix2d C = F.transpose() * F;
+  double J = sqrt(C.determinant());
+
+  return coeff * (mu / 2 * (C.trace() / J - 2 + k * pow(J - 1, 2)) +
+                  9.8 * mass * (X(3 * idx(0) + 2) + X(3 * idx(1) + 2) + X(3 * idx(2) + 2)) / 3);
 }
 
 template <int id>
-typename IncompressibleNeoHookeanElement<id>::LocalVector
-IncompressibleNeoHookeanElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
-{
-  using namespace Eigen;
-  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
-
-  Matrix<double, 4, 9> aderiv;
-  Matrix2d a = first_fundamental_form(V, idx, &aderiv);
-  double J = sqrt((a * abar_inv).determinant());
-  double trC = (abar_inv * a).trace() / J;
-
-  Matrix2d temp = abar_inv / J + (1e4 * J * (J - 1) - trC / 2) * a.inverse();
-  temp *= coeff * E / (4 * (1 + nu));
-
-  Vec<double, 9> res = aderiv.transpose() * Map<Vector4d>(temp.data());
-  res(2) += 9.8 * coeff / 3 * mass;
-  res(5) += 9.8 * coeff / 3 * mass;
-  res(8) += 9.8 * coeff / 3 * mass;
-
-  return res;
-}
-
-template <int id>
-typename IncompressibleNeoHookeanElement<id>::LocalMatrix
-IncompressibleNeoHookeanElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
-{
-  using namespace Eigen;
-  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
-
-  Matrix<double, 4, 9> aderiv;
-  Matrix<double, 36, 9> ahess;
-  Matrix2d a = first_fundamental_form(V, idx, &aderiv, &ahess);
-
-  double J = sqrt((a * abar_inv).determinant());
-  double trC = (a * abar_inv).trace() / J;
-  double k = 1e4;
-
-  Matrix2d a_inv = a.inverse();
-  double a_det = a.determinant();
-
-  Matrix<double, 9, 9> hess = (3 * trC / 4 + k * J / 2) * aderiv.transpose() * Map<Vector4d>(a_inv.data()) *
-                              Map<RowVector4d>(a_inv.data()) * aderiv;
-
-  Matrix<double, 4, 9> a_deriv_adj;
-  a_deriv_adj << aderiv.row(3), -aderiv.row(1), -aderiv.row(2), aderiv.row(0);
-
-  hess += (k * J * (J - 1) - trC / 2) / a_det * aderiv.transpose() * a_deriv_adj;
-
-  for(int j = 0; j < 4; ++j)
-  {
-    hess += (abar_inv(j) / J + (k * J * (J - 1) - trC / 2) * a_inv(j)) * ahess.block<9, 9>(9 * j, 0);
-  }
-
-  Vector4d flat_abarinv = Map<Vector4d>(const_cast<double *>(abar_inv.data()));
-  hess += -1 / (2 * J) * (aderiv.transpose() * Map<Vector4d>(a_inv.data())) * (flat_abarinv.transpose() * aderiv);
-  hess += -1 / (2 * J) * (aderiv.transpose() * flat_abarinv) * (Map<RowVector4d>(a_inv.data()) * aderiv);
-
-  hess *= 0.5 * coeff * E / (2 * (1 + nu));
-  return hess;
-}
-
-template <int id>
-Eigen::Matrix2d IncompressibleNeoHookeanElement<id>::strain(const Eigen::Ref<const Mat3<double>> V) const
-{
-  Eigen::Matrix2d a = first_fundamental_form(V, idx);
-  return 0.5 * (abar_inv * a - Eigen::Matrix2d::Identity());
-}
-
-template <int id>
-Eigen::Matrix2d IncompressibleNeoHookeanElement<id>::stress(const Eigen::Ref<const Mat3<double>> V) const
+Vec<double, 9> IncompressibleNeoHookeanElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
-  Matrix2d a = first_fundamental_form(V, idx);
+  Matrix<double, 3, 2> F = deformationGradient(X);
+  Matrix2d Cinv = (F.transpose() * F).inverse();
+  Matrix2d S = stress(Cinv);
 
-  double J = sqrt((a * abar_inv).determinant());
-  double trC = (abar_inv * a).trace() / J;
-  return coeff * E / (2 * (1 + nu)) *
-         (Matrix2d::Identity() / J + (1e4 * J * (J - 1) - trC / 2) * (abar_inv * a).inverse());
+  Matrix<double, 3, 2> H = coeff * F * (S * _R.transpose());
+
+  Vec<double, 9> grad;
+  grad.segment<3>(0) = H.col(0);
+  grad.segment<3>(3) = H.col(1);
+  grad.segment<3>(6) = -H.col(0) - H.col(1);
+
+  grad(2) += 9.8 * coeff / 3 * mass;
+  grad(5) += 9.8 * coeff / 3 * mass;
+  grad(8) += 9.8 * coeff / 3 * mass;
+
+  return grad;
 }
 
 template <int id>
-void IncompressibleNeoHookeanElement<id>::principalStrains(const Eigen::Ref<const Mat3<double>> V,
-                                                           Eigen::Vector3d &max_dir,
-                                                           Eigen::Vector3d &min_dir,
-                                                           Eigen::Vector2d &eigs) const
-{
-  using namespace Eigen;
-  Matrix2d abar = abar_inv.inverse();
-
-  // triangle frame, edge-aligned
-  Eigen::Matrix<double, 3, 2> X;
-  X.col(0) = V.row(idx(1)) - V.row(idx(0));
-  X.col(1) = V.row(idx(2)) - V.row(idx(0));
-
-  return principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * strain(V), abar), V,
-                                              max_dir, min_dir, eigs);
-}
-
-template <int id>
-void IncompressibleNeoHookeanElement<id>::principalStresses(const Eigen::Ref<const Mat3<double>> V,
-                                                            Eigen::Vector3d &max_dir,
-                                                            Eigen::Vector3d &min_dir,
-                                                            Eigen::Vector2d &eigs) const
+Mat<double, 9, 9> IncompressibleNeoHookeanElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
-  Matrix2d abar = abar_inv.inverse();
-  Matrix2d a = first_fundamental_form(V, idx);
+  Matrix<double, 3, 2> F = deformationGradient(X);
 
-  // triangle frame, edge-aligned
-  Eigen::Matrix<double, 3, 2> X;
-  X.col(0) = V.row(idx(1)) - V.row(idx(0));
-  X.col(1) = V.row(idx(2)) - V.row(idx(0));
+  Matrix2d Cinv = (F.transpose() * F).inverse();
+  Matrix2d S = stress(Cinv);
+  Matrix3d _C = elasticityTensor(Cinv);
 
-  return principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), V, max_dir,
-                                              min_dir, eigs);
+  Matrix3d A = _C(0, 0) * F.col(0) * F.col(0).transpose() + S(0, 0) * Matrix3d::Identity() +
+               _C(2, 2) * F.col(1) * F.col(1).transpose() + 2 * _C(0, 2) * sym(F.col(0) * F.col(1).transpose());
+  Matrix3d B = _C(1, 1) * F.col(1) * F.col(1).transpose() + S(1, 1) * Matrix3d::Identity() +
+               _C(2, 2) * F.col(0) * F.col(0).transpose() + 2 * _C(1, 2) * sym(F.col(0) * F.col(1).transpose());
+  Matrix3d C = _C(0, 1) * F.col(0) * F.col(1).transpose() + S(0, 1) * Matrix3d::Identity() +
+               _C(2, 2) * F.col(1) * F.col(0).transpose() + _C(0, 2) * F.col(0) * F.col(0).transpose() +
+               _C(1, 2) * F.col(1) * F.col(1).transpose();
+
+  Matrix<double, 9, 9> hess;
+
+  for(int i = 0; i < 2; ++i)
+    for(int j = i; j < 2; ++j)
+      hess.block<3, 3>(3 * i, 3 * j) =
+          _R(i, 0) * _R(j, 0) * A + _R(i, 1) * _R(j, 1) * B + _R(i, 0) * _R(j, 1) * C + _R(i, 1) * _R(j, 0) * C.transpose();
+
+  hess.block<3, 3>(3, 0) = hess.block<3, 3>(0, 3).transpose();
+  hess.block<6, 3>(0, 6) = -hess.block<6, 3>(0, 0) - hess.block<6, 3>(0, 3);
+  hess.block<3, 6>(6, 0) = hess.block<6, 3>(0, 6).transpose();
+  hess.block<3, 3>(6, 6) = -hess.block<3, 3>(0, 6) - hess.block<3, 3>(3, 6);
+  return coeff * hess;
 }
-
 } // namespace fsim

@@ -20,7 +20,7 @@ public:
    * @param V  n by 2 list of vertex positions (each row is a vertex)
    * @param face  list of 3 indices, one per vertex of the triangle
    */
-  StVKElement(const Eigen::Ref<const Mat2<double>> V, const Eigen::Vector3i &face, double thickness);
+  StVKElement(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector3i &face, double thickness);
 
   /**
    * @param X  a flat vector stacking all degrees of freedom
@@ -46,7 +46,7 @@ public:
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return Green strain
    */
-  Eigen::Vector3d strain(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Matrix2d strain(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   /**
    * Computes the Second Piola-Kirchhoff stress tensor S = \frac{\partial f}{\partial E} where E is the Green strain
@@ -54,116 +54,136 @@ public:
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return second Piola-Kirchhoff stress
    */
-  Eigen::Vector3d stress(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Matrix2d stress(const Eigen::Ref<const Eigen::VectorXd> X) const;
+
+  static void setParameters(double young_modulus, double poisson_ratio);
 
   double coeff;
-  Eigen::Matrix<double, 3, 2> _R;
-  static Eigen::Matrix3d _C;
+  Eigen::Matrix<double, 2, 2> _R;
   static double mass;
+  static double lambda;
+  static double mu;
 };
 
 // https://stackoverflow.com/questions/3229883/static-member-initialization-in-a-class-template
 template <int id>
-Eigen::Matrix3d StVKElement<id>::_C = Eigen::Matrix3d::Zero();
+double StVKElement<id>::lambda = 0;
+
+template <int id>
+double StVKElement<id>::mu = 0;
 
 template <int id>
 double StVKElement<id>::mass = 0;
 
 template <int id>
-StVKElement<id>::StVKElement(const Eigen::Ref<const Mat2<double>> V,
-                                                   const Eigen::Vector3i &E,
-                                                   double thickness)
+void StVKElement<id>::setParameters(double E, double nu)
+{
+  lambda = E * nu / pow(1 - nu, 2);
+  mu = 0.5 * E / (1 + nu);
+}
+
+template <int id>
+StVKElement<id>::StVKElement(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector3i &E, double thickness)
 {
   using namespace Eigen;
 
   idx = E;
 
-  _R << V(E(1), 1) - V(E(2), 1), V(E(1), 0) - V(E(2), 0), 
-        V(E(2), 1) - V(E(0), 1), V(E(2), 0) - V(E(0), 0),
-        V(E(0), 1) - V(E(1), 1), V(E(0), 0) - V(E(1), 0);
+  Vector3d e1 = V.row(E(0)) - V.row(E(2));
+  Vector3d e2 = V.row(E(1)) - V.row(E(2));
 
-  double d = Vector3d(V(E(0), 0), V(E(1), 0), V(E(2), 0)).dot(_R.col(0));
+  _R.col(0) << e1.squaredNorm(), 0;
+  _R.col(1) << e2.dot(e1), e2.cross(e1).norm();
+  _R /= e1.norm();
+  _R = _R.inverse();
 
-  _R /= d;
-  coeff = thickness / 2 * std::abs(d);
+  coeff = thickness / 2 * e1.cross(e2).norm();
 }
 
 template <int id>
-Eigen::Vector3d StVKElement<id>::strain(const Eigen::Ref<const Mat3<double>> V) const
+Eigen::Matrix2d StVKElement<id>::strain(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Matrix3d P = (Matrix3d(3, 3) << V.row(idx(0)), V.row(idx(1)), V.row(idx(2))).finished();
-  Matrix<double, 3, 2> F = P.transpose() * _R;
 
-  Vector3d res;
-  res(0) = 0.5 * (F.col(0).dot(F.col(0)) - 1);
-  res(1) = 0.5 * (F.col(1).dot(F.col(1)) - 1);
-  res(2) = F.col(1).dot(F.col(0));
+  Matrix<double, 3, 2> Ds;
+  Ds.col(0) = X.segment<3>(3 * idx(0)) - X.segment<3>(3 * idx(2));
+  Ds.col(1) = X.segment<3>(3 * idx(1)) - X.segment<3>(3 * idx(2));
+  Matrix<double, 3, 2> F = Ds * _R;
 
-  return res;
+  return 0.5 * (F.transpose() * F - Matrix2d::Identity());
 }
 
 template <int id>
-Eigen::Vector3d StVKElement<id>::stress(const Eigen::Ref<const Mat3<double>> V) const
+Eigen::Matrix2d StVKElement<id>::stress(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Vector3d E = strain(V);
-  return _C * E;
+  Matrix2d E = strain(X);
+  return 2 * mu * E + lambda * E.trace() * Matrix2d::Identity();
 }
 
 template <int id>
 double StVKElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
-
-  Vector3d E = strain(V);
-
-  return coeff * (0.5 * E.dot(_C * E) + 9.8 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2)) / 3);
+  Matrix2d E = strain(X);
+  return coeff * (mu * (E * E).trace() + lambda / 2 * pow(E.trace(), 2) +
+                  9.8 * mass * (X(3 * idx(0) + 2) + X(3 * idx(1) + 2) + X(3 * idx(2) + 2)) / 3);
 }
 
 template <int id>
 Vec<double, 9> StVKElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+  Matrix2d S = stress(X);
 
-  Vector3d S = stress(V);
-  Matrix2d SMat = (Matrix2d(2, 2) << S(0), S(2), S(2), S(1)).finished();
+  Matrix<double, 3, 2> Ds;
+  Ds.col(0) = X.segment<3>(3 * idx(0)) - X.segment<3>(3 * idx(2));
+  Ds.col(1) = X.segment<3>(3 * idx(1)) - X.segment<3>(3 * idx(2));
+  Matrix<double, 3, 2> F = Ds * _R;
 
-  Matrix3d P = (Matrix3d(3, 3) << V.row(idx(0)), V.row(idx(1)), V.row(idx(2))).finished();
-  Matrix<double, 3, 2> F = P.transpose() * _R;
+  Matrix<double, 3, 2> H = coeff * F * (S * _R.transpose());
 
-  Matrix3d grad = coeff * F * (SMat * _R.transpose());
-  grad.row(2) += Vector3d::Constant(9.8 * coeff / 3 * mass);
-  return Map<Vec<double, 9>>(grad.data(), 9);
+  Vec<double, 9> grad;
+  grad.segment<3>(0) = H.col(0);
+  grad.segment<3>(3) = H.col(1);
+  grad.segment<3>(6) = -H.col(0) - H.col(1);
+
+  grad(2) += 9.8 * coeff / 3 * mass;
+  grad(5) += 9.8 * coeff / 3 * mass;
+  grad(8) += 9.8 * coeff / 3 * mass;
+
+  return grad;
 }
 
 template <int id>
 Mat<double, 9, 9> StVKElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
-  Vector3d S = stress(V);
-  Matrix3d P;
-  P << V.row(idx(0)), V.row(idx(1)), V.row(idx(2));
-  Matrix<double, 3, 2> F = P.transpose() * _R;
+  Matrix2d S = stress(X);
+  Matrix<double, 3, 2> Ds;
+  Ds.col(0) = X.segment<3>(3 * idx(0)) - X.segment<3>(3 * idx(2));
+  Ds.col(1) = X.segment<3>(3 * idx(1)) - X.segment<3>(3 * idx(2));
+  Matrix<double, 3, 2> F = Ds * _R;
 
-  Matrix3d A = _C(0, 0) * F.col(0) * F.col(0).transpose() + S(0) * Matrix3d::Identity() +
-               _C(2, 2) * F.col(1) * F.col(1).transpose();
-  Matrix3d B = _C(1, 1) * F.col(1) * F.col(1).transpose() + S(1) * Matrix3d::Identity() +
-               _C(2, 2) * F.col(0) * F.col(0).transpose();
-  Matrix3d C = _C(0, 1) * F.col(0) * F.col(1).transpose() + S(2) * Matrix3d::Identity() +
-               _C(2, 2) * F.col(1) * F.col(0).transpose();
+  Matrix3d A = (lambda + 2 * mu) * F.col(0) * F.col(0).transpose() + S(0, 0) * Matrix3d::Identity() +
+               mu * F.col(1) * F.col(1).transpose();
+  Matrix3d B = (lambda + 2 * mu) * F.col(1) * F.col(1).transpose() + S(1, 1) * Matrix3d::Identity() +
+               mu * F.col(0) * F.col(0).transpose();
+  Matrix3d C = lambda * F.col(0) * F.col(1).transpose() + S(0, 1) * Matrix3d::Identity() +
+               mu * F.col(1) * F.col(0).transpose();
 
   Matrix<double, 9, 9> hess;
 
-  for(int i = 0; i < 3; ++i)
-    for(int j = i; j < 3; ++j)
+  for(int i = 0; i < 2; ++i)
+    for(int j = i; j < 2; ++j)
       hess.block<3, 3>(3 * i, 3 * j) =
           _R(i, 0) * _R(j, 0) * A + _R(i, 1) * _R(j, 1) * B + _R(i, 0) * _R(j, 1) * C + _R(i, 1) * _R(j, 0) * C.transpose();
 
-  return coeff * hess.selfadjointView<Upper>();
+  hess.block<3, 3>(3, 0) = hess.block<3, 3>(0, 3).transpose();
+  hess.block<6, 3>(0, 6) = -hess.block<6, 3>(0, 0) - hess.block<6, 3>(0, 3);
+  hess.block<3, 6>(6, 0) = hess.block<6, 3>(0, 6).transpose();
+  hess.block<3, 3>(6, 6) = -hess.block<3, 3>(0, 6) - hess.block<3, 3>(3, 6);
+  return coeff * hess;
 }
 } // namespace fsim

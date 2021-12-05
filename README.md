@@ -29,7 +29,3 @@ target_link_libraries(YOUR_TARGET fabsim)
 to your ```CMakeLists.txt```, just make sure you have [Eigen](http://eigen.tuxfamily.org/index.php?title=Main_Page#Download) installed somewhere.
 
 To get started, you can try the [example project](https://github.com/DavidJourdan/fabsim-example-project)
-
-## Acknowledgements
-
-The code for the neo-hookean membrane energy comes from Etienne Vouga's [libshell](https://github.com/evouga/libshell) library

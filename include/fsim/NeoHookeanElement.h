@@ -1,34 +1,25 @@
 // NeoHookeanElement.h
 //
-// Authors: Etienne Vouga and David Jourdan (david.jourdan@inria.fr)
-// Created: 01/13/20
-// Code adapted with permission from Etienne Vouga's implementation of the Discrete shell energy
-// For original implementation see https://github.com/evouga/libshell
+// Author: David Jourdan (david.jourdan@inria.fr)
+// Created: 30/10/21
 
 #pragma once
 
 #include "ElementBase.h"
-#include "util/first_fundamental_form.h"
-#include "util/geometry.h"
-#include "util/principal_directions_and_eigenvalues.h"
+#include "fsim/util/geometry.h"
 #include "util/typedefs.h"
+#include <cmath>
 
 namespace fsim
 {
 
-/**
- * Stencil for the neo-hookean energy
- * @tparam mat  enum representing which material model to use when computing the energy and its derivatives
- * @tparam id  unique identifier meant to disambiguate between different TriangleElement instances so
- * that they don't have the same Lamé parameters and thicknesses (which are stored as static variables)
- */
 template <int id = 0>
 class NeoHookeanElement : public ElementBase<3>
 {
 public:
   /**
-   * Constructor for the TriangleElement class
-   * @param V  n by 3 list of vertex positions (each row is a vertex)
+   * Constructor for the NeoHookeanElement class
+   * @param V  n by 2 list of vertex positions (each row is a vertex)
    * @param face  list of 3 indices, one per vertex of the triangle
    */
   NeoHookeanElement(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector3i &face, double thickness);
@@ -52,60 +43,48 @@ public:
   LocalMatrix hessian(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   /**
-   * Computes the Green strain tensor E = \frac 1 2 (\bar a^{-1} a - I)  where a is the first fundamental form
+   * Computes the Cauchy-Green deformation tensor C = F^T F where F is the deformation gradient
    * @param V  n by 3 list of vertex positions (each row is a vertex)
-   * @return Green strain
+   * @return Cauchy-Green deformation tensor
    */
-  Eigen::Matrix2d strain(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Matrix<double, 3, 2> deformationGradient(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   /**
    * Computes the Second Piola-Kirchhoff stress tensor S = \frac{\partial f}{\partial E} where E is the Green strain
+   * Uses Voigt's notation to express it as a vector
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @return second Piola-Kirchhoff stress
    */
-  Eigen::Matrix2d stress(const Eigen::Ref<const Mat3<double>> V) const;
+  Eigen::Matrix2d stress(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
-  /**
-   * Computes the principal strain directions and their corresponding eigenvalues
-   * @param V  n by 3 list of vertex positions (each row is a vertex)
-   * @param max_dir  maximum strain direction
-   * @param min_dir  minimum strain direction
-   * @param eigs  eigenvalues (in ascending order)
-   */
-  void principalStrains(const Eigen::Ref<const Mat3<double>> V,
-                        Eigen::Vector3d &max_dir,
-                        Eigen::Vector3d &min_dir,
-                        Eigen::Vector2d &eigs) const;
+  Eigen::Matrix2d stress(const Eigen::Matrix2d &Cinv) const;
+  Eigen::Matrix3d elasticityTensor(const Eigen::Matrix2d &Cinv) const;
 
-  /**
-   * Computes the principal stress directions and their corresponding eigenvalues
-   * @param V  n by 3 list of vertex positions (each row is a vertex)
-   * @param max_dir  maximum stress direction
-   * @param min_dir  minimum stress direction
-   * @param eigs  eigenvalues (in ascending order)
-   */
-  void principalStresses(const Eigen::Ref<const Mat3<double>> V,
-                         Eigen::Vector3d &max_dir,
-                         Eigen::Vector3d &min_dir,
-                         Eigen::Vector2d &eigs) const;
+  static void setParameters(double young_modulus, double poisson_ratio);
 
-  static double nu;   // Poisson's ratio
-  static double mass; // mass per unit volume
-  static double E;    // Young's modulus
   double coeff;
-  Eigen::Matrix2d abar_inv;
+  Eigen::Matrix<double, 2, 2> _R;
+  static double mass;
+  static double lambda;
+  static double mu;
 };
 
-// the ids are there to disambiguate between TriangleElements pertaining to different Membrane instances
-// so that they don't have the same static fields
+// https://stackoverflow.com/questions/3229883/static-member-initialization-in-a-class-template
 template <int id>
-double NeoHookeanElement<id>::nu = 0;
+double NeoHookeanElement<id>::lambda = 0;
+
+template <int id>
+double NeoHookeanElement<id>::mu = 0;
 
 template <int id>
 double NeoHookeanElement<id>::mass = 0;
 
 template <int id>
-double NeoHookeanElement<id>::E = 0;
+void NeoHookeanElement<id>::setParameters(double E, double nu)
+{
+  lambda = E * nu / pow(1 - nu, 2);
+  mu = 0.5 * E / (1 + nu);
+}
 
 template <int id>
 NeoHookeanElement<id>::NeoHookeanElement(const Eigen::Ref<const Mat3<double>> V,
@@ -115,130 +94,135 @@ NeoHookeanElement<id>::NeoHookeanElement(const Eigen::Ref<const Mat3<double>> V,
   using namespace Eigen;
 
   idx = E;
-  Matrix2d abar = first_fundamental_form(V, idx);
-  abar_inv = abar.inverse();
-  coeff = thickness / 2 * sqrt(abar.determinant());
+
+  Vector3d e1 = V.row(E(0)) - V.row(E(2));
+  Vector3d e2 = V.row(E(1)) - V.row(E(2));
+
+  _R.col(0) << e1.squaredNorm(), 0;
+  _R.col(1) << e2.dot(e1), e2.cross(e1).norm();
+  _R /= e1.norm();
+  _R = _R.inverse();
+
+  coeff = thickness / 2 * e1.cross(e2).norm();
+}
+
+template <int id>
+Eigen::Matrix<double, 3, 2> NeoHookeanElement<id>::deformationGradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+{
+  using namespace Eigen;
+
+  Matrix<double, 3, 2> Ds;
+  Ds.col(0) = X.segment<3>(3 * idx(0)) - X.segment<3>(3 * idx(2));
+  Ds.col(1) = X.segment<3>(3 * idx(1)) - X.segment<3>(3 * idx(2));
+  Matrix<double, 3, 2> F = Ds * _R;
+
+  return F;
+}
+
+template <int id>
+Eigen::Matrix2d NeoHookeanElement<id>::stress(const Eigen::Ref<const Eigen::VectorXd> X) const
+{
+  using namespace Eigen;
+
+  Matrix<double, 3, 2> F = deformationGradient(X);
+  Matrix2d C = F.transpose() * F;
+  double lnJ = log(C.determinant()) / 2;
+
+  return mu * Matrix2d::Identity() + (lambda * lnJ - mu) * C.inverse();
+}
+
+template <int id>
+Eigen::Matrix2d NeoHookeanElement<id>::stress(const Eigen::Matrix2d &Cinv) const
+{
+  using namespace Eigen;
+
+  double lnJ = -log(Cinv.determinant()) / 2;
+  return mu * Matrix2d::Identity() + (lambda * lnJ - mu) * Cinv;
+}
+
+template <int id>
+Eigen::Matrix3d NeoHookeanElement<id>::elasticityTensor(const Eigen::Matrix2d &Cinv) const
+{
+  using namespace Eigen;
+
+  double lnJ = -log(Cinv.determinant()) / 2;
+
+  Matrix3d _C;
+  _C << Cinv(0, 0) * Cinv(0, 0), Cinv(0, 1) * Cinv(0, 1), Cinv(0, 0) * Cinv(0, 1), 
+        Cinv(1, 0) * Cinv(1, 0), Cinv(1, 1) * Cinv(1, 1), Cinv(0, 1) * Cinv(1, 1), 
+        Cinv(0, 1) * Cinv(0, 0), Cinv(0, 1) * Cinv(1, 1), (Cinv(0, 0) * Cinv(1, 1) + Cinv(0, 1) * Cinv(0, 1)) / 2;
+  _C *= 2 * (mu - lambda * lnJ);
+  _C += lambda * Vector3d(Cinv(0, 0), Cinv(1, 1), Cinv(0, 1)) * RowVector3d(Cinv(0, 0), Cinv(1, 1), Cinv(0, 1));
+
+  return _C;
 }
 
 template <int id>
 double NeoHookeanElement<id>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
-  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
-  Matrix2d a = first_fundamental_form(V, idx);
-  // = \ln J with J^2 = \det C (C = abar_inv * a is the right Cauchy-Green deformation tensor)
-  double lnJ = log((a * abar_inv).determinant()) / 2;
-  return coeff * E / (2 * (1 + nu)) * (nu / (1 - nu) * pow(lnJ, 2) + (abar_inv * a).trace() / 2 - 1 - lnJ) +
-         9.8 * coeff / 3 * mass * (V(idx(0), 2) + V(idx(1), 2) + V(idx(2), 2));
+  Matrix<double, 3, 2> F = deformationGradient(X);
+  Matrix2d C = F.transpose() * F;
+  double lnJ = log(C.determinant()) / 2;
+
+  return coeff * (mu / 2 * (C.trace() - 2 - 2 * lnJ) + lambda / 2 * pow(lnJ, 2) +
+                  9.8 * mass * (X(3 * idx(0) + 2) + X(3 * idx(1) + 2) + X(3 * idx(2) + 2)) / 3);
 }
 
 template <int id>
-typename NeoHookeanElement<id>::LocalVector
-NeoHookeanElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
-{
-  using namespace Eigen;
-  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
-
-  Matrix<double, 4, 9> aderiv;
-  Matrix2d a = first_fundamental_form(V, idx, &aderiv);
-  double lnJ = log((a * abar_inv).determinant()) / 2;
-
-  Matrix2d temp = abar_inv + (2 * nu / (1 - nu) * lnJ - 1) * a.inverse();
-  temp *= coeff * E / (4 * (1 + nu));
-
-  Vec<double, 9> res = aderiv.transpose() * Map<Vector4d>(temp.data());
-
-  res(2) += 9.8 * coeff / 3 * mass;
-  res(5) += 9.8 * coeff / 3 * mass;
-  res(8) += 9.8 * coeff / 3 * mass;
-
-  return res;
-}
-
-template <int id>
-typename NeoHookeanElement<id>::LocalMatrix
-NeoHookeanElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
-{
-  using namespace Eigen;
-  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
-
-  Matrix<double, 4, 9> aderiv;
-  Matrix<double, 36, 9> ahess;
-  Matrix2d a = first_fundamental_form(V, idx, &aderiv, &ahess);
-
-  Matrix2d a_inv = a.inverse();
-  double k = -1 + nu / (1 - nu) * log((a * abar_inv).determinant());
-
-  Matrix<double, 9, 1> ainvda = aderiv.transpose() * Map<Vector4d>(a_inv.data());
-  Matrix<double, 9, 9> hess = (nu / (1 - nu) - k) * ainvda * ainvda.transpose();
-
-  Matrix<double, 4, 9> a_deriv_adj;
-  a_deriv_adj << aderiv.row(3), -aderiv.row(1), -aderiv.row(2), aderiv.row(0);
-
-  hess += k * a_inv.determinant() * a_deriv_adj.transpose() * aderiv;
-
-  for(int j = 0; j < 4; ++j)
-    hess += (a_inv(j) * k + abar_inv(j) * 1) * ahess.block<9, 9>(9 * j, 0);
-
-  hess *= coeff * E / (4 * (1 + nu));
-  return hess;
-}
-
-template <int id>
-Eigen::Matrix2d NeoHookeanElement<id>::strain(const Eigen::Ref<const Mat3<double>> V) const
-{
-  Eigen::Matrix2d a = first_fundamental_form(V, idx);
-  return 0.5 * (abar_inv * a - Eigen::Matrix2d::Identity());
-}
-
-template <int id>
-Eigen::Matrix2d NeoHookeanElement<id>::stress(const Eigen::Ref<const Mat3<double>> V) const
+Vec<double, 9> NeoHookeanElement<id>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
-  Matrix2d a = first_fundamental_form(V, idx);
+  Matrix<double, 3, 2> F = deformationGradient(X);
+  Matrix2d Cinv = (F.transpose() * F).inverse();
+  Matrix2d S = stress(Cinv);
 
-  double lnJ = log((a * abar_inv).determinant()) / 2;
-  return coeff * E / (2 * (1 + nu)) * (Matrix2d::Identity() + (abar_inv * a).inverse() * (2 * nu / (1 - nu) * lnJ - 1));
+  Matrix<double, 3, 2> H = coeff * F * (S * _R.transpose());
+
+  Vec<double, 9> grad;
+  grad.segment<3>(0) = H.col(0);
+  grad.segment<3>(3) = H.col(1);
+  grad.segment<3>(6) = -H.col(0) - H.col(1);
+
+  grad(2) += 9.8 * coeff / 3 * mass;
+  grad(5) += 9.8 * coeff / 3 * mass;
+  grad(8) += 9.8 * coeff / 3 * mass;
+
+  return grad;
 }
 
 template <int id>
-void NeoHookeanElement<id>::principalStrains(const Eigen::Ref<const Mat3<double>> V,
-                                             Eigen::Vector3d &max_dir,
-                                             Eigen::Vector3d &min_dir,
-                                             Eigen::Vector2d &eigs) const
-{
-  using namespace Eigen;
-  Matrix2d abar = abar_inv.inverse();
-
-  // triangle frame, edge-aligned
-  Matrix<double, 3, 2> X;
-  X.col(0) = V.row(idx(1)) - V.row(idx(0));
-  X.col(1) = V.row(idx(2)) - V.row(idx(0));
-
-  principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(abar * strain(V), abar), X, max_dir,
-                                       min_dir, eigs);
-}
-
-template <int id>
-void NeoHookeanElement<id>::principalStresses(const Eigen::Ref<const Mat3<double>> V,
-                                              Eigen::Vector3d &max_dir,
-                                              Eigen::Vector3d &min_dir,
-                                              Eigen::Vector2d &eigs) const
+Mat<double, 9, 9> NeoHookeanElement<id>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
-  Matrix2d abar = abar_inv.inverse();
-  Matrix2d a = first_fundamental_form(V, idx);
+  Matrix<double, 3, 2> F = deformationGradient(X);
 
-  // triangle frame, edge-aligned
-  Matrix<double, 3, 2> X;
-  X.col(0) = V.row(idx(1)) - V.row(idx(0));
-  X.col(1) = V.row(idx(2)) - V.row(idx(0));
+  Matrix2d Cinv = (F.transpose() * F).inverse();
+  Matrix2d S = stress(Cinv);
+  Matrix3d _C = elasticityTensor(Cinv);
 
-  principal_directions_and_eigenvalues(GeneralizedSelfAdjointEigenSolver<Matrix2d>(a * stress(V), a), X, max_dir,
-                                       min_dir, eigs);
+  Matrix3d A = _C(0, 0) * F.col(0) * F.col(0).transpose() + S(0, 0) * Matrix3d::Identity() +
+               _C(2, 2) * F.col(1) * F.col(1).transpose() + 2 * _C(0, 2) * sym(F.col(0) * F.col(1).transpose());
+  Matrix3d B = _C(1, 1) * F.col(1) * F.col(1).transpose() + S(1, 1) * Matrix3d::Identity() +
+               _C(2, 2) * F.col(0) * F.col(0).transpose() + 2 * _C(1, 2) * sym(F.col(0) * F.col(1).transpose());
+  Matrix3d C = _C(0, 1) * F.col(0) * F.col(1).transpose() + S(0, 1) * Matrix3d::Identity() +
+               _C(2, 2) * F.col(1) * F.col(0).transpose() + _C(0, 2) * F.col(0) * F.col(0).transpose() +
+               _C(1, 2) * F.col(1) * F.col(1).transpose();
+
+  Matrix<double, 9, 9> hess;
+
+  for(int i = 0; i < 2; ++i)
+    for(int j = i; j < 2; ++j)
+      hess.block<3, 3>(3 * i, 3 * j) =
+          _R(i, 0) * _R(j, 0) * A + _R(i, 1) * _R(j, 1) * B + _R(i, 0) * _R(j, 1) * C + _R(i, 1) * _R(j, 0) * C.transpose();
+
+  hess.block<3, 3>(3, 0) = hess.block<3, 3>(0, 3).transpose();
+  hess.block<6, 3>(0, 6) = -hess.block<6, 3>(0, 0) - hess.block<6, 3>(0, 3);
+  hess.block<3, 6>(6, 0) = hess.block<6, 3>(0, 6).transpose();
+  hess.block<3, 3>(6, 6) = -hess.block<3, 3>(0, 6) - hess.block<3, 3>(3, 6);
+  return coeff * hess;
 }
-
 } // namespace fsim

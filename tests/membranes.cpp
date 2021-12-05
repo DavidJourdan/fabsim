@@ -12,38 +12,47 @@
 
 using namespace fsim;
 
-TEMPLATE_TEST_CASE("TriangleElement", "", NeoHookeanElement<>, IncompressibleNeoHookeanElement<>)
+TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, IncompressibleNeoHookeanElement<>)
 {
   using namespace Eigen;
 
   Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
-  double thickness = GENERATE(take(5, random(0., 1.)));
-  double young_modulus = GENERATE(take(5, random(0., 1.)));
-  double poisson_ratio = GENERATE(take(5, random(0., 0.5)));
-  TestType::nu = poisson_ratio;
-  TestType::E = young_modulus;
+  Vector3d params = GENERATE(take(5, vector_random(3, 0., 0.5)));
+  TestType::setParameters(params(0), params(1));
   TestType::mass = 0;
-  TestType e(V, Vector3i(0, 1, 2), thickness);
+  TestType e(V, Vector3i(0, 1, 2), params(2));
 
   SECTION("Translate invariance") { translate_invariance(e); }
   SECTION("Rotation invariance") { rotational_invariance(e); }
+
+  SECTION("Energy")
+  {
+    VectorXd var = VectorXd::Zero(9);
+    var.segment<3>(0) = V.row(0);
+    var.segment<3>(3) = V.row(1);
+    var.segment<3>(6) = V.row(2);
+
+    REQUIRE(e.energy(var) == Approx(0.).margin(1e-10));
+  }
 }
 
-TEST_CASE("StVKElement")
+TEST_CASE("OrthotropicStVKElement")
 {
   using namespace Eigen;
 
-  double poisson_ratio = GENERATE(take(5, random(0., 0.5)));
-  double thickness = GENERATE(take(5, random(0., 1.)));
   Mat2<double> V = GENERATE(take(5, matrix_random(3, 2)));
+  VectorXd params = GENERATE(take(5, vector_random(4, 0., 0.5)));
 
-  double E1 = GENERATE(take(5, random(0., 1.)));
-  double E2 = GENERATE(take(5, random(0., 1.)));
-  StVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
-                       poisson_ratio * sqrt(E1 * E2), E2, 0,
-                       0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
-  StVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
-  StVKElement e(V, Vector3i(0, 1, 2), thickness);
+  double E1 = params(0);
+  double E2 = params(1);
+  double thickness = params(2);
+  double poisson_ratio = params(3);
+
+  OrthotropicStVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
+                                  poisson_ratio * sqrt(E1 * E2), E2, 0,
+                                  0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
+  OrthotropicStVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
+  OrthotropicStVKElement e(V, Vector3i(0, 1, 2), thickness);
 
   SECTION("Energy")
   {
@@ -56,9 +65,9 @@ TEST_CASE("StVKElement")
   }
   SECTION("Strain/stress")
   {
-    Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
+    VectorXd var = GENERATE(take(5, vector_random(9)));
 
-    REQUIRE_THAT(e.stress(V), ApproxEquals(StVKElement<>::_C * e.strain(V)));
+    REQUIRE_THAT(e.stress(var), ApproxEquals(OrthotropicStVKElement<>::_C * e.strain(var)));
   }
 }
 
@@ -66,7 +75,7 @@ TEST_CASE("StVKMembrane class")
 {
   using namespace Eigen;
 
-  Mat2<double> V = GENERATE(take(5, matrix_random(3, 2)));
+  Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
   StVKMembrane<0> instance0(V, F, 0.1, 10, 0.3);
@@ -236,22 +245,19 @@ TEST_CASE("Small strain equivalence")
   using namespace Eigen;
 
   Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
-  V.col(2).setZero();
 
-  double young_modulus = GENERATE(take(5, random(1e10, 1e11)));
-  double poisson_ratio = GENERATE(take(5, random(0., 0.5)));
+  double E = GENERATE(take(5, random(1e10, 1e11)));
+  double nu = GENERATE(take(5, random(0., 0.5)));
   double thickness = GENERATE(take(5, random(0., 1.)));
 
-  StVKElement<> e1(V.leftCols(2), Vector3i(0, 1, 2), thickness);
+  StVKElement<> e1(V, Vector3i(0, 1, 2), thickness);
   NeoHookeanElement<> e2(V, Vector3i(0, 1, 2), thickness);
 
-  StVKElement<>::_C << young_modulus, poisson_ratio * young_modulus, 0,
-                       poisson_ratio * young_modulus, young_modulus, 0,
-                       0, 0, 0.5 * young_modulus * (1 - poisson_ratio);
-  StVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
-  NeoHookeanElement<>::nu = poisson_ratio;
-  NeoHookeanElement<>::E = young_modulus;
-
+  StVKElement<>::lambda = E * nu / pow(1 - nu, 2);
+  StVKElement<>::mu = E / (1 + nu) / 2;
+  NeoHookeanElement<>::lambda = E * nu / pow(1 - nu, 2);
+  NeoHookeanElement<>::mu = E / (1 + nu) / 2;
+  
   VectorXd var = 1e-5 * GENERATE(take(5, vector_random(9)));
   var.segment<3>(0) += V.row(0);
   var.segment<3>(3) += V.row(1);

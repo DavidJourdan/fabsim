@@ -21,25 +21,22 @@ using namespace fsim;
 
 // MEMBRANES
 
-TEMPLATE_TEST_CASE("TriangleElement", "", NeoHookeanElement<>, IncompressibleNeoHookeanElement<>)
+TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement<>, NeoHookeanElement<>, IncompressibleNeoHookeanElement<>)
 {
   using namespace Eigen;
 
   Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
-  double thickness = GENERATE(take(2, random(0., 1.)));
-  double young_modulus = GENERATE(take(2, random(0., 1.)));
-  double mass = GENERATE(take(2, random(0., 1.)));
-  double poisson_ratio = GENERATE(take(2, random(0., 0.5)));
-  TestType::nu = poisson_ratio;
-  TestType::E = young_modulus;
-  TestType::mass = mass;
-  TestType e(V, Vector3i(0, 1, 2), thickness);
+  VectorXd params = GENERATE(take(4, vector_random(4, 0., 1.)));
+
+  TestType::setParameters(params(0), params(1));
+  TestType::mass = params(2);
+  TestType e(V, Vector3i(0, 1, 2), params(3));
 
   SECTION("Gradient") { test_gradient(e, 1e-5); }
   SECTION("Hessian") { test_hessian(e, 1e-5); }
 }
 
-TEST_CASE("StVKElement", "[StVK]")
+TEST_CASE("OrthotropicStVKElement", "[StVK]")
 {
   using namespace Eigen;
 
@@ -49,11 +46,11 @@ TEST_CASE("StVKElement", "[StVK]")
 
   double E1 = GENERATE(take(2, random(0., 1.)));
   double E2 = GENERATE(take(2, random(0., 1.)));
-  StVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
+  OrthotropicStVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
                                   poisson_ratio * sqrt(E1 * E2), E2, 0,
                                   0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
-  StVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
-  StVKElement e(V, Vector3i(0, 1, 2), thickness);
+  OrthotropicStVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
+  OrthotropicStVKElement e(V, Vector3i(0, 1, 2), thickness);
 
   SECTION("Gradient") { test_gradient(e); }
   SECTION("Hessian") { test_hessian(e); }
@@ -148,7 +145,7 @@ TEST_CASE("RodStencil")
     INFO("Numerical hessian\n" << hessian_numerical);
     INFO("Computed hessian\n" << hessian_computed);
     INFO("Difference\n" << diff);
-    REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-5));
+    REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-4));
   }
 }
 
@@ -165,7 +162,7 @@ TEST_CASE("ElasticRod")
 
   SECTION("Gradient") 
   {
-    test_gradient(rod, 1e-5, 
+    test_gradient(rod, 5e-4, 
     [](auto &X) { return true; },
     [&](const Eigen::VectorXd &X) { 
       rod.updateProperties(X);
@@ -261,7 +258,7 @@ TEST_CASE("RodCollection")
     INFO("Numerical hessian\n" << hessian_numerical);
     INFO("Computed hessian\n" << hessian_computed);
     INFO("Difference\n" << diff);
-    REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-5));
+    REQUIRE(diff.norm() / hessian_numerical.norm() == Approx(0.0).margin(1e-4));
   }
 }
 

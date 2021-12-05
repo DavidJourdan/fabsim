@@ -36,14 +36,14 @@ public:
    * @param thickness  membrane's thickness
    * @param mass  membrane's mass (defaults to 0 to disable gravity)
    */
-  StVKMembrane(const Eigen::Ref<const Mat2<double>> V,
+  StVKMembrane(const Eigen::Ref<const Mat3<double>> V,
                const Eigen::Ref<const Mat3<int>> F,
                double thickness,
                double young_modulus,
                double poisson_ratio,
                double mass = 0);
 
-  StVKMembrane(const Eigen::Ref<const Mat2<double>> V,
+  StVKMembrane(const Eigen::Ref<const Mat3<double>> V,
                const Eigen::Ref<const Mat3<int>> F,
                const std::vector<double> &thicknesses,
                double young_modulus,
@@ -77,7 +77,7 @@ private:
 };
 
 template <int id>
-StVKMembrane<id>::StVKMembrane(const Eigen::Ref<const Mat2<double>> V,
+StVKMembrane<id>::StVKMembrane(const Eigen::Ref<const Mat3<double>> V,
                                const Eigen::Ref<const Mat3<int>> F,
                                double thickness,
                                double young_modulus,
@@ -89,27 +89,20 @@ StVKMembrane<id>::StVKMembrane(const Eigen::Ref<const Mat2<double>> V,
 }
 
 template <int id>
-StVKMembrane<id>::StVKMembrane(const Eigen::Ref<const Mat2<double>> V,
+StVKMembrane<id>::StVKMembrane(const Eigen::Ref<const Mat3<double>> V,
                                const Eigen::Ref<const Mat3<int>> F,
                                const std::vector<double> &thicknesses,
                                double young_modulus,
                                double poisson_ratio,
-                               double mass) : _E(young_modulus), _nu(poisson_ratio)
+                               double mass)
+    : _E(young_modulus), _nu(poisson_ratio)
 {
   using namespace Eigen;
 
   nV = V.rows();
 
-  if(StVKElement<id>::_C.norm() != 0 && StVKElement<id>::_C(0, 0) != _E / (1 - std::pow(_nu, 2)) ||
-     StVKElement<id>::mass != 0 && StVKElement<id>::mass != mass)    
-    std::cerr << "Warning: overwriting elasticity tensor. Please declare your different instances as "
-                 "StVKMembrane<0>, StVKMembrane<1>, etc.\n";
-
-  StVKElement<id>::_C << 
-    _E, _nu * _E, 0, 
-    _nu * _E, _E, 0, 
-    0, 0, 0.5 * _E * (1 - _nu);
-  StVKElement<id>::_C /= (1 - std::pow(_nu, 2));
+  StVKElement<id>::lambda = _E * _nu / (1 - std::pow(_nu, 2));
+  StVKElement<id>::mu = 0.5 * _E / (1 + _nu);
 
   StVKElement<id>::mass = mass;
   int nF = F.rows();
@@ -122,20 +115,16 @@ template <int id>
 void StVKMembrane<id>::setPoissonRatio(double poisson_ratio)
 {
   _nu = poisson_ratio;
-  StVKElement<id>::_C << 
-    _E, _nu * _E, 0, 
-    _nu * _E, _E, 0, 
-    0, 0, 0.5 * _E * (1 - _nu);
+  StVKElement<id>::lambda = _E * _nu / (1 - std::pow(_nu, 2));
+  StVKElement<id>::mu = 0.5 * _E / (1 + _nu);
 }
 
 template <int id>
 void StVKMembrane<id>::setYoungModulus(double young_modulus)
 {
   _E = young_modulus;
-  StVKElement<id>::_C << 
-    _E, _nu * _E, 0, 
-    _nu * _E, _E, 0, 
-    0, 0, 0.5 * _E * (1 - _nu);
+  StVKElement<id>::lambda = _E * _nu / (1 - std::pow(_nu, 2));
+  StVKElement<id>::mu = 0.5 * _E / (1 + _nu);
 }
 
 template <int id>

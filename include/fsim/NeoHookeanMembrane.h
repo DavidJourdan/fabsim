@@ -17,7 +17,11 @@ namespace fsim
 
 /**
  * template class for isotropic membrane models (e.g. StVK, neohookean...)
- * @tparam NeoHookeanElement  triangle stencil class
+ * @tparam id  used to disambiguate between different instances so that they don't have the same Lamé coefficients  and
+ * thicknesses (which are stored as static variables in the NeoHookeanElement class)
+ * If you only want to declare one Membrane instance (or if you're using several with the same Lamé coefficents), you
+ * can safely leave the angle brackets empty (e.g. NeoHookeanMembrane<>). However if you declared several instances with
+ * different Lamé coefficents, please declare them as e.g. NeoHookeanMembrane<0>, NeoHookeanMembrane<1>, etc.
  */
 template <int id = 0>
 class NeoHookeanMembrane : public ModelBase<NeoHookeanElement<id>>
@@ -25,7 +29,7 @@ class NeoHookeanMembrane : public ModelBase<NeoHookeanElement<id>>
 public:
   /**
    * constructor for NeoHookeanMembrane
-   * @param V  nV by 3 list of vertex positions
+   * @param V  nV by 2 list of vertex positions (initial position in the 2D plane)
    * @param F  nF by 3 list of face indices
    * @param young_modulus  membrane's Young's modulus, controls the resistance to bending
    * @param poisson_ratio  membrane's Poisson's ratio
@@ -51,11 +55,11 @@ public:
 
   // set Poisson ratio (between 0 and 0.5)
   void setPoissonRatio(double poisson_ratio);
-  double getPoissonRatio() const { return NeoHookeanElement<id>::nu; }
+  double getPoissonRatio() const { return _nu; }
 
   // set Young's modulus (positive coefficient)
   void setYoungModulus(double E);
-  double getYoungModulus() const { return NeoHookeanElement<id>::E; }
+  double getYoungModulus() const { return _E; }
 
   // set thickness of the membrane (controls the amount of stretching and the total weight)
   // negative values are not allowed
@@ -67,14 +71,10 @@ public:
 
 private:
   int nV, nF;
+  double _E;
+  double _nu;
   double _thickness = -1;
 };
-
-// the ids are there to disambiguate between different instances so that they don't have the same Lamé coefficients
-// and thicknesses (which are stored as static variables in each TriangleElement)
-// If you only want to declare one Membrane instance (or if you're using several with the same Lamé coefficents),
-// you can safely leave the angle brackets empty (e.g. StVKMembrane<>). However if you declared several instances with
-// different Lamé coefficents, please declare them as e.g. StVKMembrane<0>, StVKMembrane<1>, etc.
 
 template <int id>
 NeoHookeanMembrane<id>::NeoHookeanMembrane(const Eigen::Ref<const Mat3<double>> V,
@@ -95,19 +95,17 @@ NeoHookeanMembrane<id>::NeoHookeanMembrane(const Eigen::Ref<const Mat3<double>> 
                                            double young_modulus,
                                            double poisson_ratio,
                                            double mass)
+    : _E(young_modulus), _nu(poisson_ratio)
 {
+  using namespace Eigen;
+
   nV = V.rows();
-  nF = F.rows();
 
-  if(NeoHookeanElement<id>::E != 0 && NeoHookeanElement<id>::E != young_modulus ||
-     NeoHookeanElement<id>::nu != 0 && NeoHookeanElement<id>::nu != poisson_ratio ||
-     NeoHookeanElement<id>::mass != 0 && NeoHookeanElement<id>::mass != mass)
-    std::cerr << "Warning: overwriting properties. Please declare your different instances as "
-                 "NeoHookeanMembrane<0>, NeoHookeanMembrane<1>, etc.\n";
-  NeoHookeanElement<id>::E = young_modulus;
-  NeoHookeanElement<id>::nu = poisson_ratio;
+  NeoHookeanElement<id>::lambda = _E * _nu / (1 - std::pow(_nu, 2));
+  NeoHookeanElement<id>::mu = 0.5 * _E / (1 + _nu);
+
   NeoHookeanElement<id>::mass = mass;
-
+  int nF = F.rows();
   this->_elements.reserve(nF);
   for(int i = 0; i < nF; ++i)
     this->_elements.emplace_back(V, F.row(i), thicknesses[i]);
@@ -116,13 +114,17 @@ NeoHookeanMembrane<id>::NeoHookeanMembrane(const Eigen::Ref<const Mat3<double>> 
 template <int id>
 void NeoHookeanMembrane<id>::setPoissonRatio(double poisson_ratio)
 {
-  NeoHookeanElement<id>::nu = poisson_ratio;
+  _nu = poisson_ratio;
+  NeoHookeanElement<id>::lambda = _E * _nu / (1 - std::pow(_nu, 2));
+  NeoHookeanElement<id>::mu = 0.5 * _E / (1 + _nu);
 }
 
 template <int id>
 void NeoHookeanMembrane<id>::setYoungModulus(double young_modulus)
 {
-  NeoHookeanElement<id>::E = young_modulus;
+  _E = young_modulus;
+  NeoHookeanElement<id>::lambda = _E * _nu / (1 - std::pow(_nu, 2));
+  NeoHookeanElement<id>::mu = 0.5 * _E / (1 + _nu);
 }
 
 template <int id>

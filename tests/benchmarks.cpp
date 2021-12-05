@@ -16,7 +16,8 @@
 
 using namespace fsim;
 
-TEMPLATE_TEST_CASE("ElasticMembrane", "", NeoHookeanMembrane<>, IncompressibleNeoHookeanMembrane<>)
+
+TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane<>, NeoHookeanMembrane<>, IncompressibleNeoHookeanMembrane<>)
 {
   using namespace Eigen;
 
@@ -25,24 +26,6 @@ TEMPLATE_TEST_CASE("ElasticMembrane", "", NeoHookeanMembrane<>, IncompressibleNe
   readOFF("../tests/mesh.off", V, F);
 
   TestType membrane(V, F, 10, 0.3, 0.1);
-
-  static int nX = 3 * V.rows();
-  BENCHMARK_ADVANCED("hessian")(Catch::Benchmark::Chronometer meter)
-  {
-    VectorXd X = GENERATE(take(1, vector_random(nX)));
-    meter.measure([&membrane, &X] { return membrane.hessian(X); });
-  };
-}
-
-TEST_CASE("StVKMembrane")
-{
-  using namespace Eigen;
-
-  Mat3<double> V;
-  Mat3<int> F;
-  readOFF("../tests/mesh.off", V, F);
-
-  StVKMembrane membrane(V.leftCols(2), F, 10, 0.3, 0.1);
 
   static int nX = 3 * V.rows();
   BENCHMARK_ADVANCED("hessian")(Catch::Benchmark::Chronometer meter)
