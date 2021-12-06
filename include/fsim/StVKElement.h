@@ -95,7 +95,7 @@ StVKElement<id>::StVKElement(const Eigen::Ref<const Mat3<double>> V, const Eigen
   _R.col(0) << e1.squaredNorm(), 0;
   _R.col(1) << e2.dot(e1), e2.cross(e1).norm();
   _R /= e1.norm();
-  _R = _R.inverse();
+  _R = _R.inverse().eval();
 
   coeff = thickness / 2 * e1.cross(e2).norm();
 }
