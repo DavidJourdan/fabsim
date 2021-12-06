@@ -156,12 +156,13 @@ inline EigenApproxMatcher ApproxEquals(const Eigen::MatrixXd &M)
   return EigenApproxMatcher(M);
 }
 template <class EnergyFunc, class GradientFunc>
-void test_gradient(const EnergyFunc &energy,
-                   const GradientFunc &gradient,
-                   int nbDOFs,
-                   double eps = 1e-6,
-                   const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
-                   const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
+void test_gradient(
+    const EnergyFunc &energy,
+    const GradientFunc &gradient,
+    int nbDOFs,
+    double eps = 1e-6,
+    const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
+    const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
 {
   using namespace Eigen;
 
@@ -198,29 +199,24 @@ void test_gradient(const EnergyFunc &energy,
 }
 
 template <class Element>
-void test_gradient(const Element &e,
-                   double eps = 1e-6,
-                   const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
-                   const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
+void test_gradient(
+    const Element &e,
+    double eps = 1e-6,
+    const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
+    const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
 {
-    test_gradient(
-      [&e](const auto &X) { return e.energy(X); },
-      [&e](const auto &X) { return e.gradient(X); },
-      e.nbDOFs(),
-      eps,
-      filter,
-      prepare_data
-    );
+  test_gradient([&e](const auto &X) { return e.energy(X); }, [&e](const auto &X) { return e.gradient(X); }, e.nbDOFs(),
+                eps, filter, prepare_data);
 }
 
-
 template <class HessianFunc, class GradientFunc>
-void test_hessian(const GradientFunc &gradient,
-                  const HessianFunc &hessian,
-                  int nbDOFs,
-                  double eps = 1e-6,
-                  const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
-                  const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
+void test_hessian(
+    const GradientFunc &gradient,
+    const HessianFunc &hessian,
+    int nbDOFs,
+    double eps = 1e-6,
+    const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
+    const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
 {
   using namespace Eigen;
   VectorXd var(nbDOFs);
@@ -254,23 +250,18 @@ void test_hessian(const GradientFunc &gradient,
 }
 
 template <class Element>
-void test_hessian(const Element &e,
-                  double eps = 1e-5,
-                  const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
-                  const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
+void test_hessian(
+    const Element &e,
+    double eps = 1e-5,
+    const std::function<bool(const Eigen::VectorXd &)> &filter = [](auto &X) { return true; },
+    const std::function<void(const Eigen::VectorXd &)> &prepare_data = [](auto &X) {})
 {
-    test_hessian(
-      [&e](const auto &X) { return e.gradient(X); },
-      [&e](const auto &X) { return e.hessian(X); },
-      e.nbDOFs(),
-      eps,
-      filter,
-      prepare_data
-    );
+  test_hessian([&e](const auto &X) { return e.gradient(X); }, [&e](const auto &X) { return e.hessian(X); }, e.nbDOFs(),
+               eps, filter, prepare_data);
 }
 
-template <class Element>
-void rotational_invariance(const Element &e, double eps = 1e-10)
+template <class Element, class... Types>
+void rotational_invariance(const Element &e, double eps = 1e-10, Types... args)
 {
   using namespace Eigen;
 
@@ -284,11 +275,11 @@ void rotational_invariance(const Element &e, double eps = 1e-10)
   for(int i = 0; i < Element::NB_VERTICES; ++i)
     var2.segment<3>(3 * i) = rotation * var.segment<3>(3 * i);
 
-  REQUIRE(e.energy(var) == Approx(e.energy(var2)).epsilon(eps));
+  REQUIRE(e.energy(var, args...) == Approx(e.energy(var2, args...)).epsilon(eps));
 }
 
-template <class Element>
-void translate_invariance(const Element &e, double eps = 1e-10)
+template <class Element, class... Types>
+void translate_invariance(const Element &e, double eps = 1e-10, Types... args)
 {
   using namespace Eigen;
 
@@ -299,5 +290,5 @@ void translate_invariance(const Element &e, double eps = 1e-10)
   for(int i = 0; i < Element::NB_VERTICES; ++i)
     var2.segment<3>(3 * i) = var.segment<3>(3 * i) + randomDir;
 
-  REQUIRE(e.energy(var) == Approx(e.energy(var2)).epsilon(eps));
+  REQUIRE(e.energy(var, args...) == Approx(e.energy(var2, args...)).epsilon(eps));
 }

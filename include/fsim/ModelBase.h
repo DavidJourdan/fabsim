@@ -28,7 +28,8 @@ public:
    * @param X  a flat vector stacking all degrees of freedom
    * @return  the energy of this model evaluated at X
    */
-  double energy(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  template <class... Types>
+  double energy(const Eigen::Ref<const Eigen::VectorXd> X, Types... args) const;
 
   /**
    * gradient of the energy  \nabla f : \R^n -> \R^n
@@ -36,22 +37,27 @@ public:
    * @param Y  gradient (or sum of gradients) vector in which we will add the gradient of energy evaluated at X
    * @return Y
    */
-  void gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const;
-  Eigen::VectorXd gradient(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  template <class... Types>
+  void gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y, Types... args) const;
+
+  template <class... Types>
+  Eigen::VectorXd gradient(const Eigen::Ref<const Eigen::VectorXd> X, Types... args) const;
 
   /**
    * hessian of the energy  \nabla^2 f : \R^n -> \R^{n \times n}
    * @param X  a flat vector stacking all degrees of freedom
    * @return  hessian of the energy stored in a sparse matrix representation
    */
-  Eigen::SparseMatrix<double> hessian(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  template <class... Types>
+  Eigen::SparseMatrix<double> hessian(const Eigen::Ref<const Eigen::VectorXd> X, Types... args) const;
 
   /**
    * (row, column, value) triplets used to build the sparse hessian matrix
    * @param X  a flat vector stacking all degrees of freedom
    * @return  all the triplets needed to build the hessian
    */
-  std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  template <class... Types>
+  std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X, Types... args) const;
 
   std::vector<Element> getElements() { return _elements; };
 
@@ -60,27 +66,26 @@ protected:
 };
 
 template <class Element>
-double ModelBase<Element>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <class... Types>
+double ModelBase<Element>::energy(const Eigen::Ref<const Eigen::VectorXd> X, Types... args) const
 {
-  using namespace Eigen;
-
   double result = 0;
   for(auto &element: _elements)
   {
-    result += element.energy(X);
+    result += element.energy(X, args...);
   }
-
   return result;
 }
 
 template <class Element>
-void ModelBase<Element>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const
+template <class... Types>
+void ModelBase<Element>::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
+                                  Eigen::Ref<Eigen::VectorXd> Y,
+                                  Types... args) const
 {
-  using namespace Eigen;
-
   for(auto &element: _elements)
   {
-    auto grad = element.gradient(X);
+    auto grad = element.gradient(X, args...);
 
     int nV = element.nbVertices();
     for(int j = 0; j < nV; ++j)
@@ -92,21 +97,23 @@ void ModelBase<Element>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eig
 }
 
 template <class Element>
-Eigen::VectorXd ModelBase<Element>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <class... Types>
+Eigen::VectorXd ModelBase<Element>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Types... args) const
 {
   using namespace Eigen;
 
   VectorXd Y = VectorXd::Zero(X.size());
-  gradient(X, Y);
+  gradient(X, Y, args...);
   return Y;
 }
 
 template <class Element>
-Eigen::SparseMatrix<double> ModelBase<Element>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <class... Types>
+Eigen::SparseMatrix<double> ModelBase<Element>::hessian(const Eigen::Ref<const Eigen::VectorXd> X, Types... args) const
 {
   using namespace Eigen;
 
-  std::vector<Triplet<double>> triplets = hessianTriplets(X);
+  std::vector<Triplet<double>> triplets = hessianTriplets(X, args...);
 
   SparseMatrix<double> hess(X.size(), X.size());
   hess.setFromTriplets(triplets.begin(), triplets.end());
@@ -114,7 +121,9 @@ Eigen::SparseMatrix<double> ModelBase<Element>::hessian(const Eigen::Ref<const E
 }
 
 template <class Element>
-std::vector<Eigen::Triplet<double>> ModelBase<Element>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <class... Types>
+std::vector<Eigen::Triplet<double>> ModelBase<Element>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X,
+                                                                        Types... args) const
 {
   using namespace Eigen;
 
@@ -125,7 +134,7 @@ std::vector<Eigen::Triplet<double>> ModelBase<Element>::hessianTriplets(const Ei
   for(int i = 0; i < _elements.size(); ++i)
   {
     auto &e = _elements[i];
-    auto hess = e.hessian(X);
+    auto hess = e.hessian(X, args...);
 
     int id = 0;
     constexpr int nV = Element::NB_VERTICES;

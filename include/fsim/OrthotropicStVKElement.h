@@ -1,7 +1,7 @@
 // OrthotropicStVKElement.h
 //
 // Author: David Jourdan (david.jourdan@inria.fr)
-// Created: 30/10/21
+// Created: 10/30/21
 
 #pragma once
 

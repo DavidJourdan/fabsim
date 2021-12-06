@@ -5,19 +5,16 @@
 #include "catch.hpp"
 #include "helpers.h"
 
-#include <fsim/ElasticShell.h>
+#include <fsim/ElasticMembrane.h>
 #include <fsim/ElasticRod.h>
-#include <fsim/IncompressibleNeoHookeanMembrane.h>
+#include <fsim/ElasticShell.h>
 #include <fsim/MassSpring.h>
-#include <fsim/NeoHookeanMembrane.h>
 #include <fsim/OrthotropicStVKMembrane.h>
-#include <fsim/StVKMembrane.h>
 #include <fsim/util/io.h>
 
 using namespace fsim;
 
-
-TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane<>, NeoHookeanMembrane<>, IncompressibleNeoHookeanMembrane<>)
+TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane, NeoHookeanMembrane, IncompressibleNeoHookeanMembrane)
 {
   using namespace Eigen;
 
