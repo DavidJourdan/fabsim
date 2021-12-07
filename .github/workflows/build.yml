@@ -29,7 +29,7 @@ jobs:
         run: sudo apt install ${{ matrix.compiler.package }} libeigen3-dev coreutils
 
       - name: Configure
-        run:  cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/${{ matrix.compiler.c }} -DCMAKE_CXX_COMPILER=/usr/bin/${{ matrix.compiler.cpp }}
+        run:  cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/bin/${{ matrix.compiler.c }} -DCMAKE_CXX_COMPILER=/usr/bin/${{ matrix.compiler.cpp }} -DFABSIM_BUILD_TESTS=OFF
 
       - name: Build
         run: cmake --build build --config Release -j $(nproc)
