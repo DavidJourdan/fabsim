@@ -58,7 +58,7 @@ public:
    * @return Y
    */
   void gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const;
-  // Eigen::VectorXd gradient(const Eigen::Ref<const Eigen::VectorXd> X) const;
+  Eigen::VectorXd gradient(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   /**
    * hessian of the energy  \nabla^2 f : \R^n -> \R^{n \times n}

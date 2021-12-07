@@ -3,6 +3,7 @@
 #include "fsim/util/first_fundamental_form.h"
 #include "helpers.h"
 
+#include <fsim/ElasticMembrane.h>
 #include <fsim/ElasticRod.h>
 #include <fsim/ElasticShell.h>
 #include <fsim/IncompressibleNeoHookeanElement.h>
@@ -60,7 +61,7 @@ TEST_CASE("IncompressibleNeoHookeanElement")
   }
 }
 
-TEST_CASE("OrthotropicStVKElement", "[StVK]")
+TEST_CASE("OrthotropicStVKElement")
 {
   using namespace Eigen;
 
@@ -70,13 +71,58 @@ TEST_CASE("OrthotropicStVKElement", "[StVK]")
 
   double E1 = GENERATE(take(2, random(0., 1.)));
   double E2 = GENERATE(take(2, random(0., 1.)));
-  OrthotropicStVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0, poisson_ratio * sqrt(E1 * E2), E2, 0, 0, 0,
-      0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
-  OrthotropicStVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
-  OrthotropicStVKElement<> e(V, Vector3i(0, 1, 2), thickness);
+  double mass = GENERATE(take(2, random(0., 1.)));
+  Matrix3d C;
+  C << E1, poisson_ratio * sqrt(E1 * E2), 0, 
+       poisson_ratio * sqrt(E1 * E2), E2, 0, 0, 
+       0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
+  C /= (1 - std::pow(poisson_ratio, 2));
+  OrthotropicStVKElement e(V, Vector3i(0, 1, 2), thickness);
 
-  SECTION("Gradient") { test_gradient(e); }
-  SECTION("Hessian") { test_hessian(e); }
+  SECTION("Gradient")
+  {
+    test_gradient([&](auto &X) { return e.energy(X, C, mass); },
+                  [&](auto &X) { return e.gradient(X, C, mass); }, 9, 1e-5);
+  }
+  SECTION("Hessian")
+  {
+    test_hessian([&](auto &X) { return e.gradient(X, C, mass); },
+                 [&](auto &X) { return e.hessian(X, C, mass); }, 9, 1e-5);
+  }
+}
+
+TEST_CASE("OrthotropicStVKMembrane")
+{
+  using namespace Eigen;
+
+  Mat2<double> V = GENERATE(take(5, matrix_random(3, 2)));
+  Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
+  VectorXd params = GENERATE(take(5, vector_random(5, 0., 0.5)));
+  OrthotropicStVKMembrane membrane(V, F, params(0), params(1), params(2), params(3), params(4));
+
+  SECTION("Gradient") { test_gradient(membrane); }
+  SECTION("Hessian") 
+  {
+    test_hessian([&](auto &X) { return membrane.gradient(X); },
+                 [&](auto &X) { return MatrixXd(MatrixXd(membrane.hessian(X)).selfadjointView<Upper>()); }, 9, 1e-5);
+  }
+}
+
+TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane, NeoHookeanMembrane, IncompressibleNeoHookeanMembrane)
+{
+  using namespace Eigen;
+
+  Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
+  Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
+  VectorXd params = GENERATE(take(4, vector_random(5, 0., 0.5)));
+  TestType membrane(V, F, params(0), params(1), params(2), params(3));
+
+  SECTION("Gradient") { test_gradient(membrane); }
+  SECTION("Hessian") 
+  {
+    test_hessian([&](auto &X) { return membrane.gradient(X); },
+                 [&](auto &X) { return MatrixXd(MatrixXd(membrane.hessian(X)).selfadjointView<Upper>()); }, 9, 1e-5);
+  }
 }
 
 // RODS

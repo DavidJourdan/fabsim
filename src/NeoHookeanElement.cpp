@@ -1,9 +1,7 @@
-// NeoHookeanElement.h
+// NeoHookeanElement.cpp
 //
 // Author: David Jourdan (david.jourdan@inria.fr)
 // Created: 10/30/21
-
-#pragma once
 
 #include "fsim/NeoHookeanElement.h"
 #include "fsim/util/geometry.h"

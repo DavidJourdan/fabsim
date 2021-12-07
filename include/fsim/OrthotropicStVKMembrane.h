@@ -10,13 +10,11 @@
 #include "OrthotropicStVKElement.h"
 
 #include <array>
-#include <iostream>
 
 namespace fsim
 {
 
-template <int id = 0>
-class OrthotropicStVKMembrane : public ModelBase<OrthotropicStVKElement<id>>
+class OrthotropicStVKMembrane : public ModelBase<OrthotropicStVKElement>
 {
 public:
   /**
@@ -45,6 +43,36 @@ public:
                           double poisson_ratio,
                           double mass = 0);
 
+  /**
+   * energy function of this material model   f : \R^n -> \R
+   * @param X  a flat vector stacking all degrees of freedom
+   * @return  the energy of this model evaluated at X
+   */
+  double energy(const Eigen::Ref<const Eigen::VectorXd> X) const;
+
+  /**
+   * gradient of the energy  \nabla f : \R^n -> \R^n
+   * @param X  a flat vector stacking all degrees of freedom
+   * @param Y  gradient (or sum of gradients) vector in which we will add the gradient of energy evaluated at X
+   * @return Y
+   */
+  void gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const;
+  Eigen::VectorXd gradient(const Eigen::Ref<const Eigen::VectorXd> X) const;
+
+  /**
+   * hessian of the energy  \nabla^2 f : \R^n -> \R^{n \times n}
+   * @param X  a flat vector stacking all degrees of freedom
+   * @return  hessian of the energy stored in a sparse matrix representation
+   */
+  Eigen::SparseMatrix<double> hessian(const Eigen::Ref<const Eigen::VectorXd> X) const;
+
+  /**
+   * (row, column, value) triplets used to build the sparse hessian matrix
+   * @param X  a flat vector stacking all degrees of freedom
+   * @return  all the triplets needed to build the hessian
+   */
+  std::vector<Eigen::Triplet<double>> hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const;
+
   // number of degrees of freedom
   int nbDOFs() const { return 3 * nV; }
 
@@ -62,7 +90,7 @@ public:
   double getThickness() const { return _thickness; }
 
   void setMass(double mass);
-  double getMass() const { return OrthotropicStVKElement<id>::mass; }
+  double getMass() const { return _mass; }
 
 private:
   int nV;
@@ -70,97 +98,7 @@ private:
   double _poisson_ratio;
   double _E1;
   double _E2;
+  double _mass;
 };
-
-template <int id>
-OrthotropicStVKMembrane<id>::OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
-                                                     const Eigen::Ref<const Mat3<int>> F,
-                                                     double thickness,
-                                                     double E1,
-                                                     double E2,
-                                                     double poisson_ratio,
-                                                     double mass)
-    : OrthotropicStVKMembrane(V, F, std::vector<double>(F.rows(), thickness), E1, E2, poisson_ratio, mass)
-{
-  _thickness = thickness;
-}
-
-template <int id>
-OrthotropicStVKMembrane<id>::OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
-                                                     const Eigen::Ref<const Mat3<int>> F,
-                                                     const std::vector<double> &thicknesses,
-                                                     double E1,
-                                                     double E2,
-                                                     double poisson_ratio,
-                                                     double mass)
-    : _poisson_ratio{poisson_ratio}, _E1{E1}, _E2{E2}
-{
-  using namespace Eigen;
-
-  nV = V.rows();
-
-  if(OrthotropicStVKElement<id>::_C.norm() != 0 && OrthotropicStVKElement<id>::_C(0, 0) != E1 / (1 - std::pow(poisson_ratio, 2)) ||
-     OrthotropicStVKElement<id>::_C.norm() != 0 && OrthotropicStVKElement<id>::_C(1, 1) != E2 / (1 - std::pow(poisson_ratio, 2)))
-    std::cerr << "Warning: overwriting elasticity tensor. Please declare your different instances as "
-                 "OrthotropicStVKMembrane<0>, OrthotropicStVKMembrane<1>, etc.\n";
-
-  OrthotropicStVKElement<id>::_C << 
-    E1, poisson_ratio * sqrt(E1 * E2), 0, 
-    poisson_ratio * sqrt(E1 * E2), E2, 0, 
-    0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
-  OrthotropicStVKElement<id>::_C /= (1 - std::pow(poisson_ratio, 2));
-
-  OrthotropicStVKElement<id>::mass = mass;
-  int nF = F.rows();
-  this->_elements.reserve(nF);
-  for(int i = 0; i < nF; ++i)
-    this->_elements.emplace_back(V, F.row(i), thicknesses[i]);
-}
-
-template <int id>
-void OrthotropicStVKMembrane<id>::setPoissonRatio(double poisson_ratio)
-{
-  _poisson_ratio = poisson_ratio;
-
-  OrthotropicStVKElement<id>::_C << 
-    _E1, _poisson_ratio * sqrt(_E1 * _E2), 0, 
-    _poisson_ratio * sqrt(_E1 * _E2), _E2, 0, 0, 
-    0, 0.5 * sqrt(_E1 * _E2) * (1 - _poisson_ratio);
-
-  OrthotropicStVKElement<id>::_C /= (1 - std::pow(_poisson_ratio, 2));
-}
-
-template <int id>
-void OrthotropicStVKMembrane<id>::setYoungModuli(double E1, double E2)
-{
-  _E1 = E1;
-  _E2 = E2;
-
-  OrthotropicStVKElement<id>::_C << 
-    _E1, _poisson_ratio * sqrt(_E1 * _E2), 0, 
-    _poisson_ratio * sqrt(_E1 * _E2), _E2, 0, 0, 
-    0, 0.5 * sqrt(_E1 * _E2) * (1 - _poisson_ratio);
-
-  OrthotropicStVKElement<id>::_C /= (1 - std::pow(_poisson_ratio, 2));
-}
-
-template <int id>
-void OrthotropicStVKMembrane<id>::setThickness(double t)
-{
-  if(_thickness <= 0)
-    throw std::runtime_error(
-        "Warning: membrane may have a locally varying thickness\nCan't set it to a constant value\n");
-  for(auto &elem: this->_elements)
-  {
-    elem.coeff *= t / _thickness;
-  }
-  _thickness = t;
-}
-
-template <int id>
-void OrthotropicStVKMembrane<id>::setMass(double mass)
-{
-  OrthotropicStVKElement<id>::mass = mass;
-}
 
 } // namespace fsim

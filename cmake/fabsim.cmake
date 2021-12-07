@@ -24,6 +24,8 @@ file(GLOB BASE ${FABSIM_SOURCE_DIR}/ElasticMembrane.cpp
                ${FABSIM_SOURCE_DIR}/LocalFrame.cpp
                ${FABSIM_SOURCE_DIR}/MassSpring.cpp
                ${FABSIM_SOURCE_DIR}/NeoHookeanElement.cpp
+               ${FABSIM_SOURCE_DIR}/OrthotropicStVKMembrane.cpp
+               ${FABSIM_SOURCE_DIR}/OrthotropicStVKElement.cpp
                ${FABSIM_SOURCE_DIR}/RodCollection.cpp
                ${FABSIM_SOURCE_DIR}/RodStencil.cpp
                ${FABSIM_SOURCE_DIR}/Spring.cpp
@@ -38,10 +40,9 @@ add_library(fabsim ${BASE} ${UTIL})
 
 # c++ flags
 set_target_properties(fabsim PROPERTIES
-        CXX_STANDARD 14
-        CXX_STANDARD_REQUIRED OFF
-        CXX_EXTENSIONS ON
-        )
+                             CXX_STANDARD 14
+                             CXX_STANDARD_REQUIRED OFF
+                             CXX_EXTENSIONS ON)
 
 # OpenMP
 find_package(OpenMP)

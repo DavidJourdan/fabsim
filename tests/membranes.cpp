@@ -18,8 +18,8 @@ TEMPLATE_TEST_CASE("TriangleElement", "", StVKElement, NeoHookeanElement)
   Vector3d params = GENERATE(take(5, vector_random(3, 0., 1.)));
   TestType e(V, Vector3i(0, 1, 2), params(2));
 
-  SECTION("Translate invariance") { translate_invariance(e, 1e-6, params(0), params(1), 0); }
-  SECTION("Rotation invariance") { rotational_invariance(e, 1e-6, params(0), params(1), 0); }
+  SECTION("Translate invariance") { translate_invariance(e, 1e-6, params(0), params(1), 0.); }
+  SECTION("Rotation invariance") { rotational_invariance(e, 1e-6, params(0), params(1), 0.); }
 
   SECTION("Energy")
   {
@@ -40,8 +40,8 @@ TEST_CASE("IncompressibleNeoHookeanElement")
   Vector2d params = GENERATE(take(5, vector_random(2, 0., 1.)));
   IncompressibleNeoHookeanElement e(V, Vector3i(0, 1, 2), params(1));
 
-  SECTION("Translate invariance") { translate_invariance(e, 1e-6, params(0), 0); }
-  SECTION("Rotation invariance") { rotational_invariance(e, 1e-6, params(0), 0); }
+  SECTION("Translate invariance") { translate_invariance(e, 1e-6, params(0), 0.); }
+  SECTION("Rotation invariance") { rotational_invariance(e, 1e-6, params(0), 0.); }
 
   SECTION("Energy")
   {
@@ -66,10 +66,11 @@ TEST_CASE("OrthotropicStVKElement")
   double thickness = params(2);
   double poisson_ratio = params(3);
 
-  OrthotropicStVKElement<>::_C << E1, poisson_ratio * sqrt(E1 * E2), 0,
-                                  poisson_ratio * sqrt(E1 * E2), E2, 0,
-                                  0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
-  OrthotropicStVKElement<>::_C /= (1 - std::pow(poisson_ratio, 2));
+  Matrix3d C;
+  C << E1, poisson_ratio * sqrt(E1 * E2), 0,
+       poisson_ratio * sqrt(E1 * E2), E2, 0,
+       0, 0, 0.5 * sqrt(E1 * E2) * (1 - poisson_ratio);
+  C /= (1 - std::pow(poisson_ratio, 2));
   OrthotropicStVKElement e(V, Vector3i(0, 1, 2), thickness);
 
   SECTION("Energy")
@@ -79,15 +80,17 @@ TEST_CASE("OrthotropicStVKElement")
     var.segment<2>(3) = V.row(1);
     var.segment<2>(6) = V.row(2);
 
-    REQUIRE(e.energy(var) == Approx(0.).margin(1e-10));
+    REQUIRE(e.energy(var, C, 0) == Approx(0.).margin(1e-10));
   }
   SECTION("Strain/stress")
   {
     VectorXd var = GENERATE(take(5, vector_random(9)));
 
-    REQUIRE_THAT(e.stress(var), ApproxEquals(OrthotropicStVKElement<>::_C * e.strain(var)));
+    REQUIRE_THAT(e.stress(var, C), ApproxEquals(C * e.strain(var)));
   }
 }
+
+
 
 TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane, NeoHookeanMembrane, IncompressibleNeoHookeanMembrane)
 {
@@ -100,13 +103,15 @@ TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane, NeoHookeanMembrane, Inco
 
   SECTION("setThickness")
   {
-    membrane.setThickness(0.3);
-    REQUIRE(membrane.getThickness() == 0.3);
+    double t = GENERATE(take(5, random(0., 1.)));
+    membrane.setThickness(t);
+    REQUIRE(membrane.getThickness() == t);
   }
   SECTION("Poisson's ratio")
   {
-    membrane.setPoissonRatio(0.5);
-    REQUIRE(membrane.getPoissonRatio() == 0.5);
+    double nu = GENERATE(take(5, random(0., 0.5)));
+    membrane.setPoissonRatio(nu);
+    REQUIRE(membrane.getPoissonRatio() == nu);
   }
   SECTION("Young's modulus")
   {
@@ -123,8 +128,9 @@ TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane, NeoHookeanMembrane, Inco
   }
   SECTION("setMass")
   {
-    membrane.setMass(2);
-    REQUIRE(membrane.getMass() == 2);
+    double m = GENERATE(take(5, random(0., 1.)));
+    membrane.setMass(m);
+    REQUIRE(membrane.getMass() == m);
   }
   SECTION("nbDOFS") { REQUIRE(membrane.nbDOFs() == 9); }
 }
@@ -136,34 +142,35 @@ TEST_CASE("OrthotropicStVKMembrane class")
   Mat2<double> V = GENERATE(take(5, matrix_random(3, 2)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
-  OrthotropicStVKMembrane<0> instance0(V, F, 0.1, 10, 5, 0.3);
-  OrthotropicStVKMembrane<1> instance1(V, F, 0.9, 100, 50, 0.4);
+  OrthotropicStVKMembrane membrane(V, F, 0.1, 10, 9, 0.3);
 
-  SECTION("getThickness") { REQUIRE(instance1.getThickness() == 0.9); }
-  SECTION("getPoissonRatio") { REQUIRE(instance0.getPoissonRatio() != instance1.getPoissonRatio()); }
   SECTION("setThickness")
   {
-    instance0.setThickness(0.3);
-    REQUIRE(instance0.getThickness() == 0.3);
+    double t = GENERATE(take(5, random(0., 1.)));
+    membrane.setThickness(t);
+    REQUIRE(membrane.getThickness() == t);
   }
-  SECTION("setPoissonRatio")
+  SECTION("Poisson's ratio")
   {
-    instance0.setPoissonRatio(0.5);
-    REQUIRE(instance0.getPoissonRatio() == 0.5);
+    double nu = GENERATE(take(5, random(0., 0.5)));
+    membrane.setPoissonRatio(nu);
+    REQUIRE(membrane.getPoissonRatio() == nu);
   }
-  SECTION("setYoungModuli")
+  SECTION("Young's moduli")
   {
-    instance0.setYoungModuli(5, 6);
-    std::array<double, 2> youngModuli = instance0.getYoungModuli();
-    REQUIRE(youngModuli[0] == 5);
-    REQUIRE(youngModuli[1] == 6);
+    Vector2d E = GENERATE(take(5, vector_random(2)));
+    membrane.setYoungModuli(E(0), E(1));
+    std::array<double, 2> youngModuli = membrane.getYoungModuli();
+    REQUIRE(youngModuli[0] == E(0));
+    REQUIRE(youngModuli[1] == E(1));
   }
   SECTION("setMass")
   {
-    instance0.setMass(2);
-    REQUIRE(instance0.getMass() == 2);
+    double m = GENERATE(take(5, random(0., 1.)));
+    membrane.setMass(m);
+    REQUIRE(membrane.getMass() == m);
   }
-  SECTION("nbDOFS") { REQUIRE(instance0.nbDOFs() == 9); }
+  SECTION("nbDOFS") { REQUIRE(membrane.nbDOFs() == 9); }
 }
 
 TEST_CASE("Small strain equivalence")

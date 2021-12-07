@@ -70,6 +70,16 @@ void ElasticMembrane<IncompressibleNeoHookeanElement>::gradient(const Eigen::Ref
 }
 
 template <class Element>
+Eigen::VectorXd ElasticMembrane<Element>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+{
+  using namespace Eigen;
+
+  VectorXd Y = VectorXd::Zero(X.size());
+  gradient(X, Y);
+  return Y;
+}
+
+template <class Element>
 Eigen::SparseMatrix<double> ElasticMembrane<Element>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   return ModelBase<Element>::hessian(X, _lambda, _mu, _mass);
