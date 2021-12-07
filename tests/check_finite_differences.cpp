@@ -352,7 +352,7 @@ TEMPLATE_TEST_CASE("HingeElement", "", SquaredAngleFormulation, TanAngleFormulat
   double coeff = GENERATE(take(2, random(0., 1.)));
   VectorXd X = GENERATE(take(2, filter(check_normals, vector_random(12))));
   Map<Mat3<double>> V(X.data(), 4, 3);
-  HingeElement<TestType, true> e1(V, Vector4i(0, 1, 2, 3), coeff);
+  HingeElement<TestType> e1(V, Vector4i(0, 1, 2, 3), coeff);
 
   SECTION("Gradient") { test_gradient(e1, 5e-5, check_normals); }
   SECTION("Hessian") { test_hessian(e1, 5e-5, check_normals); }

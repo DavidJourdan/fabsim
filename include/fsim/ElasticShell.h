@@ -11,6 +11,8 @@
 
 #include "HingeElement.h"
 #include "ModelBase.h"
+#include "fsim/CompositeModel.h"
+#include "fsim/ElasticMembrane.h"
 #include "util/typedefs.h"
 
 #include <Eigen/Core>
@@ -25,23 +27,23 @@ namespace fsim
  * @tparam fullHess  Wether to compute the full matrix of second derivatives or use a quadratic approximation
  * If true, the Newton solver will converge faster when it's close to the solution but the hessian might be non-SPD
  */
-template <class Formulation = TanAngleFormulation, bool fullHess = true>
-class ElasticShell : public ModelBase<HingeElement<Formulation, fullHess>>
+template <class Formulation = TanAngleFormulation>
+class DiscreteShell : public ModelBase<HingeElement<Formulation>>
 {
 public:
   /**
-   * ElasticShell constructor
+   * DiscreteShell constructor
    * @param V  nV by 3 list of vertex positions
    * @param F  nF by 3 list of face indices
    * @param thickness  membrane's thickness
    * @param young_modulus  membrane's Young's modulus, controls the resistance to bending
    * @param poisson_ratio  membrane's Poisson's ratio
    */
-  ElasticShell(const Eigen::Ref<const Mat3<double>> V,
-               const Eigen::Ref<const Mat3<int>> F,
-               double thickness,
-               double young_modulus,
-               double poisson_ratio);
+  DiscreteShell(const Eigen::Ref<const Mat3<double>> V,
+                const Eigen::Ref<const Mat3<int>> F,
+                double thickness,
+                double young_modulus,
+                double poisson_ratio);
 
   // number of vertices
   int nbVertices() const { return nV; }
@@ -76,6 +78,54 @@ private:
   double _young_modulus;
   double _poisson_ratio;
   double _thickness;
+};
+
+template <class MembraneModel = StVKMembrane, class Formulation = TanAngleFormulation>
+class ElasticShell : public CompositeModel<DiscreteShell<Formulation>, MembraneModel>
+{
+public:
+  ElasticShell(const Eigen::Ref<const Mat3<double>> V,
+               const Eigen::Ref<const Mat3<int>> F,
+               double thickness,
+               double young_modulus,
+               double poisson_ratio,
+               double mass = 0)
+      : CompositeModel<DiscreteShell<Formulation>, MembraneModel>(
+            DiscreteShell<Formulation>(V, F, thickness, young_modulus, poisson_ratio),
+            MembraneModel(V, F, thickness, young_modulus, poisson_ratio, mass))
+  {}
+  // number of vertices
+  int nbVertices() const { return this->template getModel<0>().nbVertices(); }
+  // number of edges (excluding edges on the boundary)
+  int nbEdges() const { return this->template getModel<0>().nbEdges(); }
+  // number of faces
+  int nbFaces() const { return this->template getModel<0>().nbFaces(); }
+  // number of degrees of freedom
+  int nbDOFs() const { return this->template getModel<0>().nbDOFs(); }
+
+  // set Young's modulus (positive coefficient)
+  void setYoungModulus(double young_modulus)
+  {
+    this->template getModel<0>().setYoungModulus(young_modulus);
+    this->template getModel<1>().setYoungModulus(young_modulus);
+  }
+  double getYoungModulus() { return this->template getModel<0>().getYoungModulus(); }
+
+  // set Poisson ratio (between 0 and 0.5)
+  void setPoissonRatio(double poisson_ratio)
+  {
+    this->template getModel<0>().setPoissonRatio(poisson_ratio);
+    this->template getModel<1>().setPoissonRatio(poisson_ratio);
+  }
+  double getPoissonRatio() { return this->template getModel<0>().getPoissonRatio(); }
+
+  // set thickness of the membrane (controls the amount of bending) negative values are not allowed
+  void setThickness(double thickness)
+  {
+    this->template getModel<0>().setThickness(thickness);
+    this->template getModel<1>().setThickness(thickness);
+  }
+  double getThickness() { return this->template getModel<0>().getThickness(); }
 };
 
 } // namespace fsim

@@ -50,7 +50,7 @@ TEST_CASE("OrthotropicStVKMembrane")
   };
 }
 
-TEMPLATE_TEST_CASE("ElasticShell", "", SquaredAngleFormulation, TanAngleFormulation)
+TEST_CASE("ElasticShell")
 {
   using namespace Eigen;
 
@@ -58,7 +58,7 @@ TEMPLATE_TEST_CASE("ElasticShell", "", SquaredAngleFormulation, TanAngleFormulat
   Mat3<int> F;
   readOFF("../tests/mesh.off", V, F);
 
-  ElasticShell<TestType> shell(V, F, 10, 0.3, 0.1);
+  ElasticShell<> shell(V, F, 10, 0.3, 0.1);
 
   static int nX = 3 * V.rows();
   BENCHMARK_ADVANCED("shell triplets")(Catch::Benchmark::Chronometer meter)

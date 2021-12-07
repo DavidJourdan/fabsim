@@ -4,22 +4,21 @@
 // Created: 01/13/20
 
 #include "fsim/HingeElement.h"
+
 #include "fsim/util/geometry.h"
 
 namespace fsim
 {
 
-template <class Formulation, bool fullHess>
-HingeElement<Formulation, fullHess>::HingeElement(const Eigen::Ref<const Mat3<double>> V,
-                                                  const Eigen::Vector4i &E,
-                                                  double coeff)
+template <class Formulation>
+HingeElement<Formulation>::HingeElement(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector4i &E, double coeff)
     : _coeff{coeff}, _hinge(V, E)
 {
   idx = E;
 }
 
-template <class Formulation, bool fullHess>
-double HingeElement<Formulation, fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <class Formulation>
+double HingeElement<Formulation>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -31,9 +30,9 @@ double HingeElement<Formulation, fullHess>::energy(const Eigen::Ref<const Eigen:
   return _coeff * _hinge.func(n0, n1, axis);
 }
 
-template <class Formulation, bool fullHess>
-typename HingeElement<Formulation, fullHess>::LocalVector
-HingeElement<Formulation, fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <class Formulation>
+typename HingeElement<Formulation>::LocalVector
+HingeElement<Formulation>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
@@ -41,22 +40,17 @@ HingeElement<Formulation, fullHess>::gradient(const Eigen::Ref<const Eigen::Vect
   Vector3d n0 = (V.row(idx(0)) - V.row(idx(2))).cross(V.row(idx(1)) - V.row(idx(2))).normalized();
   Vector3d n1 = (V.row(idx(1)) - V.row(idx(3))).cross(V.row(idx(0)) - V.row(idx(3))).normalized();
   Vector3d axis = V.row(idx(1)) - V.row(idx(0));
-  return _coeff * _hinge.deriv(n0, n1, axis) * HingeElement<Formulation, fullHess>::bendAngleGradient(V, idx);
+  return _coeff * _hinge.deriv(n0, n1, axis) * HingeElement<Formulation>::bendAngleGradient(V, idx);
 }
 
-template <class Formulation, bool fullHess>
-typename HingeElement<Formulation, fullHess>::LocalMatrix
-HingeElement<Formulation, fullHess>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+template <class Formulation>
+Mat<double, 12, 12> HingeElement<Formulation>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
   Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
 
   LocalMatrix bend_hess;
-  LocalVector bend_grad;
-  if(fullHess)
-    bend_grad = HingeElement<Formulation, fullHess>::bendAngleGradient(V, idx, &bend_hess);
-  else
-    bend_grad = HingeElement<Formulation, fullHess>::bendAngleGradient(V, idx);
+  LocalVector bend_grad = HingeElement<Formulation>::bendAngleGradient(V, idx, &bend_hess);
 
   Vector3d n0 = (V.row(idx(0)) - V.row(idx(2))).cross(V.row(idx(1)) - V.row(idx(2))).normalized();
   Vector3d n1 = (V.row(idx(1)) - V.row(idx(3))).cross(V.row(idx(0)) - V.row(idx(3))).normalized();
@@ -65,19 +59,31 @@ HingeElement<Formulation, fullHess>::hessian(const Eigen::Ref<const Eigen::Vecto
   double dderiv, deriv;
   deriv = _hinge.deriv(n0, n1, axis, &dderiv);
 
-  LocalMatrix hess = dderiv * bend_grad * bend_grad.transpose();
-  if(fullHess)
-  {
-    hess += deriv * bend_hess;
-  }
-  return _coeff * hess;
+  return _coeff * (dderiv * bend_grad * bend_grad.transpose() + deriv * bend_hess);
 }
 
-template <class Formulation, bool fullHess>
-Vec<double, 12>
-HingeElement<Formulation, fullHess>::bendAngleGradient(const Eigen::Ref<const Mat3<double>> V,
-                                                       const Vec<int, 4> &idx,
-                                                       LocalMatrix *hessian)
+template <class Formulation>
+Mat<double, 12, 12> HingeElement<Formulation>::hessianApprox(const Eigen::Ref<const Eigen::VectorXd> X) const
+{
+  using namespace Eigen;
+  Map<Mat3<double>> V(const_cast<double *>(X.data()), X.size() / 3, 3);
+
+  LocalVector bend_grad = HingeElement<Formulation>::bendAngleGradient(V, idx);
+
+  Vector3d n0 = (V.row(idx(0)) - V.row(idx(2))).cross(V.row(idx(1)) - V.row(idx(2))).normalized();
+  Vector3d n1 = (V.row(idx(1)) - V.row(idx(3))).cross(V.row(idx(0)) - V.row(idx(3))).normalized();
+  Vector3d axis = V.row(idx(1)) - V.row(idx(0));
+
+  double dderiv, deriv;
+  deriv = _hinge.deriv(n0, n1, axis, &dderiv);
+
+  return _coeff * dderiv * bend_grad * bend_grad.transpose();
+}
+
+template <class Formulation>
+Vec<double, 12> HingeElement<Formulation>::bendAngleGradient(const Eigen::Ref<const Mat3<double>> V,
+                                                             const Vec<int, 4> &idx,
+                                                             LocalMatrix *hessian)
 {
   using namespace Eigen;
 
@@ -168,8 +174,6 @@ SquaredAngleFormulation::SquaredAngleFormulation(const Eigen::Ref<const Mat3<dou
 double
 SquaredAngleFormulation::func(const Eigen::Vector3d &n0, const Eigen::Vector3d &n1, const Eigen::Vector3d &axis) const
 {
-  using namespace Eigen;
-
   double angle = signed_angle(n0, n1, axis);
 
   return pow(angle - _rest_angle, 2);
@@ -180,15 +184,11 @@ double SquaredAngleFormulation::deriv(const Eigen::Vector3d &n0,
                                       const Eigen::Vector3d &axis,
                                       double *second_deriv) const
 {
-  using namespace Eigen;
-
-  double angle = signed_angle(n0, n1, axis);
-  double res = 2 * (angle - _rest_angle);
-
   if(second_deriv)
     *second_deriv = 2;
 
-  return res;
+  double angle = signed_angle(n0, n1, axis);
+  return 2 * (angle - _rest_angle);
 }
 
 TanAngleFormulation::TanAngleFormulation(const Eigen::Ref<const Mat3<double>> V, const Eigen::Vector4i &E)
@@ -206,8 +206,6 @@ TanAngleFormulation::TanAngleFormulation(const Eigen::Ref<const Mat3<double>> V,
 double
 TanAngleFormulation::func(const Eigen::Vector3d &n0, const Eigen::Vector3d &n1, const Eigen::Vector3d &axis) const
 {
-  using namespace Eigen;
-
   assert(n0.norm() > 1e-10 && "Vertices shouldn't be colinear");
   assert(n1.norm() > 1e-10 && "Vertices shouldn't be colinear");
   double tangent = tan_angle_2(n0, n1, axis);
@@ -220,21 +218,16 @@ double TanAngleFormulation::deriv(const Eigen::Vector3d &n0,
                                   const Eigen::Vector3d &axis,
                                   double *second_deriv) const
 {
-  using namespace Eigen;
-
   double tangent = tan_angle_2(n0, n1, axis);
   double sec2 = 4 / (n0 + n1).squaredNorm(); // 1/cos^2(theta/2)
-  double res = 2 * sec2 * (2 * tangent - 2 * _rest_tangent);
 
   if(second_deriv)
     *second_deriv = 2 * sec2 * (sec2 + 2 * tangent * (tangent - _rest_tangent));
 
-  return res;
+  return 2 * sec2 * (2 * tangent - 2 * _rest_tangent);
 }
 
-template class HingeElement<SquaredAngleFormulation, false>;
-template class HingeElement<SquaredAngleFormulation, true>;
-template class HingeElement<TanAngleFormulation, false>;
-template class HingeElement<TanAngleFormulation, true>;
+template class HingeElement<SquaredAngleFormulation>;
+template class HingeElement<TanAngleFormulation>;
 
 } // namespace fsim

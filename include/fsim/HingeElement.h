@@ -25,7 +25,7 @@ class SquaredAngleFormulation;
  * or (2 \tan\theta/2 - 2 \tan\bar\theta/2)^2
  * @tparam fullHessian  whether or not ot compute the full hessian or a quadratic approximation
  */
-template <class HingeFormulation = TanAngleFormulation, bool fullHessian = true>
+template <class HingeFormulation = TanAngleFormulation>
 class HingeElement : public ElementBase<4>
 {
 public:
@@ -56,14 +56,18 @@ public:
   LocalMatrix hessian(const Eigen::Ref<const Eigen::VectorXd> X) const;
 
   /**
+   * @param X  a flat vector stacking all degrees of freedom
+   * @return  a quadratic approximation of the true hessian, guarantees positive definiteness
+   */
+  LocalMatrix hessianApprox(const Eigen::Ref<const Eigen::VectorXd> X) const;
+
+  /**
    * computes the gradient of the bend angle (complement of the dihedral angle) between 2 neighboring faces
    * @param V  n by 3 list of vertex positions (each row is a vertex)
    * @param hessian  optional return parameter: derivative of the gradient
    */
-  static LocalVector bendAngleGradient(
-    const Eigen::Ref<const Mat3<double>> V, 
-    const Vec<int, 4> &idx,
-    LocalMatrix *hessian = nullptr);
+  static LocalVector
+  bendAngleGradient(const Eigen::Ref<const Mat3<double>> V, const Vec<int, 4> &idx, LocalMatrix *hessian = nullptr);
 
   double _coeff;
   HingeFormulation _hinge;

@@ -1,4 +1,5 @@
 #include "catch.hpp"
+#include "fsim/HingeElement.h"
 #include "helpers.h"
 
 #include <fsim/ElasticShell.h>
@@ -22,18 +23,26 @@ TEMPLATE_TEST_CASE("HingeElement", "[HingeElem]", SquaredAngleFormulation, TanAn
   double coeff = GENERATE(take(5, random(0., 1.)));
   VectorXd X = GENERATE(take(5, filter(check_normals, vector_random(12))));
   Map<Mat3<double>> V(X.data(), 4, 3);
-  HingeElement<TestType, true> e1(V, Vector4i(0, 1, 2, 3), coeff);
+  HingeElement<TestType> e(V, Vector4i(0, 1, 2, 3), coeff);
 
-  SECTION("Translate invariance") { translate_invariance(e1); }
-  SECTION("Rotation invariance") { rotational_invariance(e1); }
+  SECTION("Translate invariance") { translate_invariance(e); }
+  SECTION("Rotation invariance") { rotational_invariance(e); }
+}
 
-  SECTION("Equivalence")
-  {
-    HingeElement<TestType, false> e2(V, Vector4i(0, 1, 2, 3), coeff);
-    VectorXd X = GENERATE(take(5, vector_random(12)));
-    REQUIRE(e1.energy(X) == Approx(e2.energy(X)).epsilon(1e-10));
-    REQUIRE_THAT(e1.gradient(X), ApproxEquals(e2.gradient(X)));
-  }
+TEST_CASE("Approx hessian")
+{
+  using namespace Eigen;
+
+  double coeff = GENERATE(take(5, random(0., 1.)));
+  VectorXd X = GENERATE(take(5, filter(check_normals, vector_random(12))));
+  Map<Mat3<double>> V(X.data(), 4, 3);
+  HingeElement<SquaredAngleFormulation> e(V, Vector4i(0, 1, 2, 3), coeff);
+
+  VectorXd var = GENERATE(take(5, filter(check_normals, vector_random(12))));
+  MatrixXd h = e.hessianApprox(var);
+
+  VectorXd z = GENERATE(take(5, filter(check_normals, vector_random(12))));
+  REQUIRE(z.dot(h * z) >= 0);
 }
 
 TEST_CASE("signed angle")
@@ -50,7 +59,7 @@ TEST_CASE("signed angle")
   REQUIRE(signed_angle(u, v, axis) == Approx(angle).epsilon(1e-10));
 }
 
-TEST_CASE("ElasticShell class")
+TEST_CASE("ElasticShell")
 {
   using namespace Eigen;
 
@@ -69,13 +78,6 @@ TEST_CASE("ElasticShell class")
     double t = GENERATE(take(5, random(0., 1.)));
     shell.setThickness(t);
     REQUIRE(shell.getThickness() == t);
-
-    VectorXd var = GENERATE(take(5, filter(check_normals, vector_random(12))));
-    double prev_energy = shell.energy(var);
-
-    shell.setThickness(2 * t);
-
-    REQUIRE(shell.energy(var) == Approx(8 * prev_energy).margin(1e-10));
   }
   SECTION("Young's Modulus")
   {
@@ -102,5 +104,34 @@ TEST_CASE("ElasticShell class")
     REQUIRE(shell.nbVertices() == 4);
     REQUIRE(shell.nbFaces() == 2);
     REQUIRE(shell.nbEdges() == 1);
+  }
+}
+
+TEST_CASE("DiscreteShell")
+{
+  using namespace Eigen;
+
+  VectorXd X = GENERATE(take(5, filter(check_normals, vector_random(12))));
+  Map<Mat3<double>> V(X.data(), 4, 3);
+  MatrixX3i F(2, 3);
+  F << 0, 1, 2, 0, 2, 3;
+
+  double young_modulus = GENERATE(take(5, random(0., 1.)));
+  double poisson_ratio = GENERATE(take(5, random(0., 0.5)));
+  double thickness = GENERATE(take(5, random(0., 1.)));
+  DiscreteShell<> shell(V, F, young_modulus, poisson_ratio, thickness);
+
+  SECTION("Thickness")
+  {
+    double t = GENERATE(take(5, random(0., 1.)));
+    shell.setThickness(t);
+    REQUIRE(shell.getThickness() == t);
+
+    VectorXd var = GENERATE(take(5, filter(check_normals, vector_random(12))));
+    double prev_energy = shell.energy(var);
+
+    shell.setThickness(2 * t);
+
+    REQUIRE(shell.energy(var) == Approx(8 * prev_energy).margin(1e-10));
   }
 }
