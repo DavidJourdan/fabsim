@@ -1,7 +1,9 @@
 #include "catch.hpp"
 #include "helpers.h"
 
+#include <fsim/MassSpring.h>
 #include <fsim/Spring.h>
+#include <fsim/util/typedefs.h>
 
 using namespace fsim;
 
@@ -37,5 +39,29 @@ TEST_CASE("Spring")
       var2.segment<3>(3 * i) = rotation * var.segment<3>(3 * i);
 
     REQUIRE(s.energy(var) == Approx(s.energy(var2)).epsilon(1e-10));
+  }
+}
+
+TEST_CASE("MassSpring")
+{
+  using namespace Eigen;
+
+  Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
+  Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
+  double E = GENERATE(take(5, random(0., 0.5)));
+  MassSpring membrane(V, F, E);
+
+  SECTION("Young's modulus")
+  {
+    double E = GENERATE(take(5, random(0., 1.)));
+    membrane.setYoungModulus(E);
+    REQUIRE(membrane.getYoungModulus() == E);
+
+    VectorXd var = GENERATE(take(5, vector_random(9)));
+    double prev_energy = membrane.energy(var);
+
+    membrane.setYoungModulus(2 * E);
+
+    REQUIRE(membrane.energy(var) == Approx(2 * prev_energy).epsilon(1e-6));
   }
 }

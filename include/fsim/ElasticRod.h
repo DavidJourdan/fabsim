@@ -102,8 +102,8 @@ public:
   std::vector<RodStencil<fullHess>> const &rodStencils() const { return _stencils; };
   std::vector<RodStencil<fullHess>> &rodStencils() { return _stencils; };
 
-  std::vector<Spring<true>> const &springs() const { return _springs; }
-  std::vector<Spring<true>> &springs() { return _springs; }
+  std::vector<Spring> const &springs() const { return _springs; }
+  std::vector<Spring> &springs() { return _springs; }
 
   double getMass() const { return _mass; };
   void setMass(double mass) { _mass = mass; };
@@ -160,7 +160,7 @@ protected:
   Eigen::Vector2d _stiffness;
   mutable std::vector<RodStencil<fullHess>> _stencils;
   std::vector<LocalFrame> _frames;
-  std::vector<Spring<true>> _springs;
+  std::vector<Spring> _springs;
 };
 
 } // namespace fsim

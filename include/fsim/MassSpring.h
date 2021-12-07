@@ -22,7 +22,6 @@ namespace fsim
  * @tparam MeasureCompression  whether or not to add compressive contributions to the energy. If false,
  * springs whose length is smaller than their rest length will have no contribution to the energy and its derivatives
  */
-template <bool MeasureCompression = true>
 class MassSpring
 {
 public:
@@ -67,12 +66,13 @@ public:
 
   // set Young's modulus (positive coefficient)
   void setYoungModulus(double young_modulus) { _young_modulus = young_modulus; }
+  double getYoungModulus() { return _young_modulus; }
 
   int nbDOFs() const { return 3 * nV; }
 
 private:
   double _young_modulus;
-  std::vector<Spring<MeasureCompression>> _springs;
+  std::vector<Spring> _springs;
   int nV;
 };
 

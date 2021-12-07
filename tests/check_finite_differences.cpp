@@ -7,6 +7,7 @@
 #include <fsim/ElasticRod.h>
 #include <fsim/ElasticShell.h>
 #include <fsim/IncompressibleNeoHookeanElement.h>
+#include <fsim/MassSpring.h>
 #include <fsim/NeoHookeanElement.h>
 #include <fsim/OrthotropicStVKElement.h>
 #include <fsim/OrthotropicStVKMembrane.h>
@@ -116,6 +117,23 @@ TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane, NeoHookeanMembrane, Inco
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
   VectorXd params = GENERATE(take(4, vector_random(5, 0., 0.5)));
   TestType membrane(V, F, params(0), params(1), params(2), params(3));
+
+  SECTION("Gradient") { test_gradient(membrane); }
+  SECTION("Hessian") 
+  {
+    test_hessian([&](auto &X) { return membrane.gradient(X); },
+                 [&](auto &X) { return MatrixXd(MatrixXd(membrane.hessian(X)).selfadjointView<Upper>()); }, 9, 1e-5);
+  }
+}
+
+TEST_CASE("MassSpring")
+{
+  using namespace Eigen;
+
+  Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
+  Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
+  double E = GENERATE(take(5, random(0., 0.5)));
+  MassSpring membrane(V, F, E);
 
   SECTION("Gradient") { test_gradient(membrane); }
   SECTION("Hessian") 

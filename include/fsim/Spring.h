@@ -10,7 +10,6 @@
 namespace fsim
 {
 
-template <bool measureCompression = true>
 struct Spring
 {
   int i, j;

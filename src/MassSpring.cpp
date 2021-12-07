@@ -10,8 +10,7 @@
 namespace fsim
 {
 
-template <bool MeasureCompression>
-MassSpring<MeasureCompression>::MassSpring(const Eigen::Ref<const Mat3<double>> V,
+MassSpring::MassSpring(const Eigen::Ref<const Mat3<double>> V,
                                            const Eigen::Ref<const Mat3<int>> F,
                                            double young_modulus)
     : _young_modulus(young_modulus)
@@ -37,16 +36,15 @@ MassSpring<MeasureCompression>::MassSpring(const Eigen::Ref<const Mat3<double>> 
   std::sort(edges.begin(), edges.end());                 // std::unique only works if entries are sorted beforehand
   auto end_it = std::unique(edges.begin(), edges.end()); // remove duplicate edges
   _springs.reserve(end_it - edges.begin());
-  for(auto it = edges.begin(); it != end_it; ++it)
+  for(auto &pair: edges)
   {
-    int i = (*it).first;
-    int j = (*it).second;
+    int i = pair.first;
+    int j = pair.second;
     _springs.emplace_back(i, j, (V.row(i) - V.row(j)).norm());
   }
 }
 
-template <bool MeasureCompression>
-double MassSpring<MeasureCompression>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
+double MassSpring::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   double w = 0.0;
   // Spring
@@ -56,8 +54,7 @@ double MassSpring<MeasureCompression>::energy(const Eigen::Ref<const Eigen::Vect
   return w;
 }
 
-template <bool MeasureCompression>
-void MassSpring<MeasureCompression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
+void MassSpring::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
                                               Eigen::Ref<Eigen::VectorXd> Y) const
 {
   using namespace Eigen;
@@ -71,8 +68,7 @@ void MassSpring<MeasureCompression>::gradient(const Eigen::Ref<const Eigen::Vect
   }
 }
 
-template <bool MeasureCompression>
-Eigen::VectorXd MassSpring<MeasureCompression>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+Eigen::VectorXd MassSpring::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -81,9 +77,8 @@ Eigen::VectorXd MassSpring<MeasureCompression>::gradient(const Eigen::Ref<const 
   return Y;
 }
 
-template <bool MeasureCompression>
 std::vector<Eigen::Triplet<double>>
-MassSpring<MeasureCompression>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+MassSpring::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -115,8 +110,7 @@ MassSpring<MeasureCompression>::hessianTriplets(const Eigen::Ref<const Eigen::Ve
   return triplets;
 }
 
-template <bool MeasureCompression>
-Eigen::SparseMatrix<double> MassSpring<MeasureCompression>::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+Eigen::SparseMatrix<double> MassSpring::hessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   assert(X.size() == 3 * nV);
   Eigen::SparseMatrix<double> hess(3 * nV, 3 * nV);
@@ -125,9 +119,5 @@ Eigen::SparseMatrix<double> MassSpring<MeasureCompression>::hessian(const Eigen:
   hess.makeCompressed();
   return hess;
 }
-
-// instantiation
-template class MassSpring<true>;
-template class MassSpring<false>;
 
 } // namespace fsim
