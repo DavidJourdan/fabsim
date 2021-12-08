@@ -26,11 +26,10 @@ Eigen::Matrix<double, 2, 3> materialMatrix(const LocalFrame &f, double theta)
 }
 } // namespace
 
-template <bool fullHess>
-RodStencil<fullHess>::RodStencil(const Eigen::Ref<const Mat3<double>> V,
-                                 const LocalFrame &f1,
-                                 const LocalFrame &f2,
-                                 const Eigen::Matrix<int, 5, 1> &dofs)
+RodStencil::RodStencil(const Eigen::Ref<const Mat3<double>> V,
+                       const LocalFrame &f1,
+                       const LocalFrame &f2,
+                       const Eigen::Matrix<int, 5, 1> &dofs)
 {
   using namespace Eigen;
 
@@ -47,13 +46,12 @@ RodStencil<fullHess>::RodStencil(const Eigen::Ref<const Mat3<double>> V,
   _ref_twist = 0;
 }
 
-template <bool fullHess>
-double RodStencil<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X,
-                                    const LocalFrame &f1,
-                                    const LocalFrame &f2,
-                                    const Eigen::Vector2d &stiffnesses,
-                                    double stretchCoeff,
-                                    double mass) const
+double RodStencil::energy(const Eigen::Ref<const Eigen::VectorXd> X,
+                          const LocalFrame &f1,
+                          const LocalFrame &f2,
+                          const Eigen::Vector2d &stiffnesses,
+                          double stretchCoeff,
+                          double mass) const
 {
   using namespace Eigen;
 
@@ -63,27 +61,27 @@ double RodStencil<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X,
   double twistCoeff = stiffnesses.sum() / 2;
 
   // rod energy
-  double res = ((k - _restK).dot(DiagonalMatrix<double, 2>(stiffnesses) * (k - _restK))
-    + stiffnesses.sum() / 2 * pow(twistAngle(X), 2)) / (2 * _lengths.sum());
+  double res = ((k - _restK).dot(DiagonalMatrix<double, 2>(stiffnesses) * (k - _restK)) +
+                stiffnesses.sum() / 2 * pow(twistAngle(X), 2)) /
+               (2 * _lengths.sum());
   // gravity
   res += 9.81 * mass * X(3 * idx(1) + 2) * _lengths.sum() / 2;
   // stretching
   Vector3d e0 = X.segment<3>(3 * idx(1)) - X.segment<3>(3 * idx(0));
   Vector3d e1 = X.segment<3>(3 * idx(2)) - X.segment<3>(3 * idx(1));
-  res += stretchCoeff / 8 * 
-    (_lengths(0) * pow(e0.squaredNorm() / pow(_lengths(0), 2) - 1, 2) 
-   + _lengths(1) * pow(e1.squaredNorm() / pow(_lengths(1), 2) - 1, 2));
+  res += stretchCoeff / 8 *
+         (_lengths(0) * pow(e0.squaredNorm() / pow(_lengths(0), 2) - 1, 2) +
+          _lengths(1) * pow(e1.squaredNorm() / pow(_lengths(1), 2) - 1, 2));
 
   return res;
 }
 
-template <bool fullHess>
-Vec<double, 11> RodStencil<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
-                                               const LocalFrame &f1,
-                                               const LocalFrame &f2,
-                                               const Eigen::Vector2d &stiffnesses,
-                                               double stretchCoeff,
-                                               double mass) const
+Vec<double, 11> RodStencil::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
+                                     const LocalFrame &f1,
+                                     const LocalFrame &f2,
+                                     const Eigen::Vector2d &stiffnesses,
+                                     double stretchCoeff,
+                                     double mass) const
 {
   using namespace Eigen;
 
@@ -103,45 +101,57 @@ Vec<double, 11> RodStencil<fullHess>::gradient(const Eigen::Ref<const Eigen::Vec
   return res;
 }
 
-template <bool fullHess>
-Mat<double, 11, 11> RodStencil<fullHess>::hessian(const Eigen::Ref<const Eigen::VectorXd> X,
-                                                  const LocalFrame &f1,
-                                                  const LocalFrame &f2,
-                                                  const Eigen::Vector2d &stiffnesses,
-                                                  double stretchCoeff,
-                                                  double mass) const
+Mat<double, 11, 11> RodStencil::hessian(const Eigen::Ref<const Eigen::VectorXd> X,
+                                        const LocalFrame &f1,
+                                        const LocalFrame &f2,
+                                        const Eigen::Vector2d &stiffnesses,
+                                        double stretchCoeff,
+                                        double mass) const
 {
   using namespace Eigen;
 
   DiagonalMatrix<double, 2> bendMatrix(stiffnesses);
   double twistCoeff = stiffnesses.sum() / 2;
 
-  if(fullHess)
-  {
-    Matrix<double, 11, 11> ddK, ddT;
-    Matrix<double, 11, 2> dK = materialCurvatureDerivative(X, f1, f2, stiffnesses, &ddK);
-    auto dT = twistAngleDerivative(X, f1, f2, &ddT);
-    // rod hessian
-    Mat<double, 11, 11> res = (dK * bendMatrix * dK.transpose() + ddK 
-      + twistCoeff * (dT * dT.transpose() + twistAngle(X) * ddT)) / _lengths.sum();
-    // stretching
-    res.block<9,9>(0,0) += stretchCoeff * stretchHessian(X);
+  Matrix<double, 11, 11> ddK, ddT;
+  Matrix<double, 11, 2> dK = materialCurvatureDerivative(X, f1, f2, stiffnesses, &ddK);
+  auto dT = twistAngleDerivative(X, f1, f2, &ddT);
+  // rod hessian
+  Mat<double, 11, 11> res =
+      (dK * bendMatrix * dK.transpose() + ddK + twistCoeff * (dT * dT.transpose() + twistAngle(X) * ddT)) /
+      _lengths.sum();
+  // stretching
+  res.block<9, 9>(0, 0) += stretchCoeff * stretchHessian(X);
 
-    return res;
-  }
-  else
-  {
-    Matrix<double, 11, 2> dK = materialCurvatureDerivative(X, f1, f2, stiffnesses);
-    auto dT = twistAngleDerivative(X, f1, f2);
-
-    return (dK * bendMatrix * dK.transpose() + twistCoeff * (dT * dT.transpose())) / _lengths.sum();
-  }
+  return res;
 }
 
-template <bool fullHess>
-Eigen::Vector2d RodStencil<fullHess>::materialCurvature(const Eigen::Ref<const Eigen::VectorXd> X,
-                                                        const LocalFrame &f1,
-                                                        const LocalFrame &f2) const
+Mat<double, 11, 11> RodStencil::hessianApprox(const Eigen::Ref<const Eigen::VectorXd> X,
+                                              const LocalFrame &f1,
+                                              const LocalFrame &f2,
+                                              const Eigen::Vector2d &stiffnesses,
+                                              double stretchCoeff,
+                                              double mass) const
+{
+  using namespace Eigen;
+
+  DiagonalMatrix<double, 2> bendMatrix(stiffnesses);
+  double twistCoeff = stiffnesses.sum() / 2;
+
+  Matrix<double, 11, 2> dK = materialCurvatureDerivative(X, f1, f2, stiffnesses);
+  auto dT = twistAngleDerivative(X, f1, f2);
+
+  // rod hessian (quadratic approximation)
+  Mat<double, 11, 11> res = (dK * bendMatrix * dK.transpose() + twistCoeff * (dT * dT.transpose())) / _lengths.sum();
+  // stretching
+  res.block<9, 9>(0, 0) += stretchCoeff * stretchHessian(X);
+
+  return res;
+}
+
+Eigen::Vector2d RodStencil::materialCurvature(const Eigen::Ref<const Eigen::VectorXd> X,
+                                              const LocalFrame &f1,
+                                              const LocalFrame &f2) const
 {
   using namespace Eigen;
 
@@ -158,13 +168,11 @@ Eigen::Vector2d RodStencil<fullHess>::materialCurvature(const Eigen::Ref<const E
   return (materialMatrix(f1, theta0) + materialMatrix(f2, theta1)) / 2 * kb;
 }
 
-template <bool fullHess>
-Eigen::Matrix<double, 11, 2>
-RodStencil<fullHess>::materialCurvatureDerivative(const Eigen::Ref<const Eigen::VectorXd> X,
-                                                  const LocalFrame &f1,
-                                                  const LocalFrame &f2,
-                                                  const Eigen::Vector2d stiffnesses,
-                                                  Eigen::Matrix<double, 11, 11> *ddK) const
+Eigen::Matrix<double, 11, 2> RodStencil::materialCurvatureDerivative(const Eigen::Ref<const Eigen::VectorXd> X,
+                                                                     const LocalFrame &f1,
+                                                                     const LocalFrame &f2,
+                                                                     const Eigen::Vector2d stiffnesses,
+                                                                     Eigen::Matrix<double, 11, 11> *ddK) const
 {
   using namespace Eigen;
   double theta0, theta1;
@@ -256,7 +264,7 @@ RodStencil<fullHess>::materialCurvatureDerivative(const Eigen::Ref<const Eigen::
       ddK->block<9, 1>(0, 9) *= -1;
     if(idx(1) > idx(2))
       ddK->block<9, 1>(0, 10) *= -1;
-    
+
     ddK->block<1, 9>(9, 0) = ddK->block<9, 1>(0, 9).transpose();
     ddK->block<1, 9>(10, 0) = ddK->block<9, 1>(0, 10).transpose();
 
@@ -265,8 +273,7 @@ RodStencil<fullHess>::materialCurvatureDerivative(const Eigen::Ref<const Eigen::
   return dK;
 }
 
-template <bool fullHess>
-double RodStencil<fullHess>::twistAngle(const Eigen::Ref<const Eigen::VectorXd> X) const
+double RodStencil::twistAngle(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   // to measure angles in a consistent way across shared degrees of freedom, we check for the order of vertex indices
   double theta0, theta1;
@@ -281,11 +288,10 @@ double RodStencil<fullHess>::twistAngle(const Eigen::Ref<const Eigen::VectorXd> 
   return theta1 - theta0 + _ref_twist;
 }
 
-template <bool fullHess>
-Vec<double, 11> RodStencil<fullHess>::twistAngleDerivative(const Eigen::Ref<const Eigen::VectorXd> X,
-                                                            const LocalFrame &f1,
-                                                            const LocalFrame &f2,
-                                                            Eigen::Matrix<double, 11, 11> *dderiv) const
+Vec<double, 11> RodStencil::twistAngleDerivative(const Eigen::Ref<const Eigen::VectorXd> X,
+                                                 const LocalFrame &f1,
+                                                 const LocalFrame &f2,
+                                                 Eigen::Matrix<double, 11, 11> *dderiv) const
 {
   using namespace Eigen;
 
@@ -331,23 +337,21 @@ Vec<double, 11> RodStencil<fullHess>::twistAngleDerivative(const Eigen::Ref<cons
   return V;
 }
 
-template <bool fullHess>
-Vec<double, 9> RodStencil<fullHess>::stretchGradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+Vec<double, 9> RodStencil::stretchGradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
   Vector3d e0 = X.segment<3>(3 * idx(1)) - X.segment<3>(3 * idx(0));
   Vector3d e1 = X.segment<3>(3 * idx(2)) - X.segment<3>(3 * idx(1));
-  
+
   Vec<double, 9> res;
   res.segment<3>(0) = -0.5 * e0 / _lengths(0) * (e0.squaredNorm() / pow(_lengths(0), 2) - 1);
   res.segment<3>(6) = 0.5 * e1 / _lengths(1) * (e1.squaredNorm() / pow(_lengths(1), 2) - 1);
-  res.segment<3>(3) = -res.segment<3>(0) -res.segment<3>(6);
+  res.segment<3>(3) = -res.segment<3>(0) - res.segment<3>(6);
   return res;
 }
 
-template <bool fullHess>
-Mat<double, 9, 9> RodStencil<fullHess>::stretchHessian(const Eigen::Ref<const Eigen::VectorXd> X) const
+Mat<double, 9, 9> RodStencil::stretchHessian(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -355,13 +359,13 @@ Mat<double, 9, 9> RodStencil<fullHess>::stretchHessian(const Eigen::Ref<const Ei
   Vector3d e0 = X.segment<3>(3 * idx(1)) - X.segment<3>(3 * idx(0));
   Vector3d e1 = X.segment<3>(3 * idx(2)) - X.segment<3>(3 * idx(1));
 
-  res.block<3, 3>(0, 0) = outer_prod(e0, e0) / pow(_lengths(0), 3) + 0.5 * Matrix3d::Identity() / _lengths(0)
-    * (e0.squaredNorm() / pow(_lengths(0), 2) - 1);
+  res.block<3, 3>(0, 0) = outer_prod(e0, e0) / pow(_lengths(0), 3) +
+                          0.5 * Matrix3d::Identity() / _lengths(0) * (e0.squaredNorm() / pow(_lengths(0), 2) - 1);
   res.block<3, 3>(0, 3) = -res.block<3, 3>(0, 0);
   res.block<3, 3>(3, 0) = -res.block<3, 3>(0, 0);
 
-  res.block<3, 3>(6, 6) = outer_prod(e1, e1) / pow(_lengths(1), 3) + 0.5 * Matrix3d::Identity() / _lengths(1)
-    * (e1.squaredNorm() / pow(_lengths(1), 2) - 1);
+  res.block<3, 3>(6, 6) = outer_prod(e1, e1) / pow(_lengths(1), 3) +
+                          0.5 * Matrix3d::Identity() / _lengths(1) * (e1.squaredNorm() / pow(_lengths(1), 2) - 1);
   res.block<3, 3>(3, 6) = -res.block<3, 3>(6, 6);
   res.block<3, 3>(6, 3) = -res.block<3, 3>(6, 6);
 
@@ -371,8 +375,7 @@ Mat<double, 9, 9> RodStencil<fullHess>::stretchHessian(const Eigen::Ref<const Ei
   return res;
 }
 
-template <bool fullHess>
-void RodStencil<fullHess>::updateReferenceTwist(const LocalFrame &f1, const LocalFrame &f2)
+void RodStencil::updateReferenceTwist(const LocalFrame &f1, const LocalFrame &f2)
 {
   using namespace Eigen;
 
@@ -383,8 +386,5 @@ void RodStencil<fullHess>::updateReferenceTwist(const LocalFrame &f1, const Loca
   // compute increment to reference twist to align reference frames
   _ref_twist += signed_angle(u, f2.d1, f2.t);
 }
-
-template class RodStencil<true>;
-template class RodStencil<false>;
 
 } // namespace fsim

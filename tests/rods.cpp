@@ -23,9 +23,9 @@ TEST_CASE("ElasticRod")
   {
     Mat3<double> D1, D2, D3, D4;
     // if(closed)
-    //   ElasticRod<>::bishopFrame(V, (VectorXi(4) << 0, 1, 2, 0).finished(), n, D1, D2);
+    //   ElasticRod::bishopFrame(V, (VectorXi(4) << 0, 1, 2, 0).finished(), n, D1, D2);
     // else
-      ElasticRod<>::bishopFrame(V, Vector3i(0, 1, 2), n, D1, D2);
+      ElasticRod::bishopFrame(V, Vector3i(0, 1, 2), n, D1, D2);
 
     rod.getReferenceDirectors(D3, D4);
     REQUIRE_THAT(D1, ApproxEquals(D3));
@@ -109,15 +109,6 @@ TEST_CASE("ElasticRod")
 
     rod.setMass(0);
     REQUIRE(rod.energy(var) == Approx(rod.energy(var2)).epsilon(1e-10));
-  }
-
-  SECTION("Equivalence")
-  {
-    ElasticRod<true> rod1(V, n, {params(0), params(1), params(2)});
-    ElasticRod<false> rod2(V, n, {params(0), params(1), params(2)});
-    VectorXd X = GENERATE(take(5, vector_random(11)));
-    REQUIRE(rod1.energy(X) == Approx(rod2.energy(X)));
-    REQUIRE_THAT(rod1.gradient(X), ApproxEquals(rod2.gradient(X)));
   }
 
   // This test fails systematically, probably due to the incorrect averaging of material directors for the bending part
@@ -232,7 +223,7 @@ TEST_CASE("RodCollection")
 //   MatrixXd n = GENERATE(take(5, vector_random(3))).normalized();
 
 //   Mat3<double> D1, D2;
-//   ElasticRod<>::bishopFrame(V, Vector3i(0, 1, 2), n, D1, D2);
+//   ElasticRod::bishopFrame(V, Vector3i(0, 1, 2), n, D1, D2);
 //   LocalFrame f1{(V.row(1) - V.row(0)).normalized(), D1.row(0), D2.row(0)};
 //   LocalFrame f2{(V.row(2) - V.row(1)).normalized(), D1.row(1), D2.row(1)};
 
@@ -259,6 +250,49 @@ TEST_CASE("RodCollection")
 //     SECTION("Hessian") { REQUIRE_THAT(rodCol.hessian(X), ApproxEquals(stencil.hessian(X, new_f1, new_f2))); }
 //   }
 // }
+
+TEST_CASE("Approx hessian")
+{
+  using namespace Eigen;
+
+  Mat3<double> V = GENERATE(take(2, matrix_random(3, 3)));
+  Vector2d widths = GENERATE(take(2, vector_random(2, 0., 1.)));
+  Vector2d  params = GENERATE(take(2, vector_random(2, 0., 1.)));
+  Vector3d n1 = GENERATE(take(2, vector_random(3))).normalized();
+  Vector3d t1 = (V.row(1) - V.row(0)).normalized();
+  n1 = (n1 - n1.dot(t1) * t1).normalized(); // make sure the frame is orthogonal
+
+  VectorXi dofs(5);
+  dofs << 0, 1, 2, 9, 10;
+
+  Vector2d stiffnesses(pow(widths(0), 3) * widths(1), pow(widths(1), 3) * widths(0));
+  stiffnesses *= params(0) / 12;
+
+  LocalFrame f1(t1, n1, t1.cross(n1));
+  LocalFrame f2(f1);
+  f2.update(V.row(1), V.row(2));
+  RodStencil rod(V, f1, f2, dofs);
+
+  SECTION("Approx hessian")
+  {
+    VectorXd var = GENERATE(take(5, vector_random(11)));
+
+    f1.update(var.segment<3>(3 * 0), var.segment<3>(3 * 1));
+    f2.update(var.segment<3>(3 * 1), var.segment<3>(3 * 2));
+    rod.updateReferenceTwist(f1, f2);
+
+    MatrixXd h = rod.hessianApprox(var, f1, f2, stiffnesses, 0, params(1));
+    VectorXd z = GENERATE(take(5, vector_random(11)));
+
+    REQUIRE(z.dot(h * z) >= 0);
+  }
+  SECTION("Curvatures")
+  {
+    Vector2d curvature = GENERATE(take(2, vector_random(2)));
+    rod.setCurvature(curvature);
+    REQUIRE_THAT(rod.getCurvature(), ApproxEquals(curvature));
+  }
+}
 
 TEST_CASE("Parallel transport")
 {

@@ -15,16 +15,15 @@
 namespace fsim
 {
 
-template <bool fullHess>
-RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
-                                       const std::vector<std::vector<int>> &indices,
-                                       const Eigen::Ref<const Mat2<int>> C,
-                                       const Eigen::Ref<const Mat3<double>> N,
-                                       const std::vector<double> &thicknesses,
-                                       const std::vector<double> &widths,
-                                       double young_modulus,
-                                       double mass,
-                                       CrossSection c)
+RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
+                             const std::vector<std::vector<int>> &indices,
+                             const Eigen::Ref<const Mat2<int>> C,
+                             const Eigen::Ref<const Mat3<double>> N,
+                             const std::vector<double> &thicknesses,
+                             const std::vector<double> &widths,
+                             double young_modulus,
+                             double mass,
+                             CrossSection c)
 {
   using namespace Eigen;
 
@@ -39,7 +38,7 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
   {
     Mat3<double> D1, D2;
     Map<VectorXi> E(const_cast<int *>(indices[i].data()), indices[i].size());
-    ElasticRod<>::bishopFrame(V, E, N.row(i), D1, D2);
+    ElasticRod::bishopFrame(V, E, N.row(i), D1, D2);
     for(int j = 0; j < E.size() - 1; ++j)
     {
       this->_frames.emplace_back((V.row(E(j + 1)) - V.row(E(j))).normalized(), D1.row(j), D2.row(j));
@@ -50,12 +49,12 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
     {
       if(c == CrossSection::Circle)
         rodData.emplace_back(pow(thicknesses[i], 3) * widths[i] * 3.1415 * young_modulus / 64,
-                            pow(widths[i], 3) * thicknesses[i] * 3.1415 * young_modulus / 64,
-                            3.14159 / 4 * young_modulus * thicknesses[i] * widths[i], E.size() - 2);
+                             pow(widths[i], 3) * thicknesses[i] * 3.1415 * young_modulus / 64,
+                             3.14159 / 4 * young_modulus * thicknesses[i] * widths[i], E.size() - 2);
       else if(c == CrossSection::Square)
         rodData.emplace_back(pow(thicknesses[i], 3) * widths[i] * young_modulus / 12,
-                            pow(widths[i], 3) * thicknesses[i] * young_modulus / 12,
-                            young_modulus * thicknesses[0] * widths[0], E.size() - 2);
+                             pow(widths[i], 3) * thicknesses[i] * young_modulus / 12,
+                             young_modulus * thicknesses[0] * widths[0], E.size() - 2);
     }
 
     extremal_edges(i, 0) = this->nE;
@@ -132,21 +131,20 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
   assert(this->_springs.size() == this->_frames.size());
 }
 
-template <bool fullHess>
-RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
-                                       const std::vector<std::vector<int>> &indices,
-                                       const Eigen::Ref<const Mat2<int>> C,
-                                       const Eigen::Ref<const Mat3<double>> N,
-                                       const RodParams &p)
-    : RodCollection<fullHess>(V,
-                              indices,
-                              C,
-                              N,
-                              std::vector<double>(indices.size(), p.thickness),
-                              std::vector<double>(indices.size(), p.width),
-                              p.E,
-                              p.mass,
-                              p.crossSection)
+RodCollection::RodCollection(const Eigen::Ref<const Mat3<double>> V,
+                             const std::vector<std::vector<int>> &indices,
+                             const Eigen::Ref<const Mat2<int>> C,
+                             const Eigen::Ref<const Mat3<double>> N,
+                             const RodParams &p)
+    : RodCollection(V,
+                    indices,
+                    C,
+                    N,
+                    std::vector<double>(indices.size(), p.thickness),
+                    std::vector<double>(indices.size(), p.width),
+                    p.E,
+                    p.mass,
+                    p.crossSection)
 {
   rodData.clear();
   if(p.crossSection == CrossSection::Circle)
@@ -158,8 +156,7 @@ RodCollection<fullHess>::RodCollection(const Eigen::Ref<const Mat3<double>> V,
                          p.width * p.thickness * p.E, this->_stencils.size() - connectionData.size());
 }
 
-template <bool fullHess>
-double RodCollection<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
+double RodCollection::energy(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -200,8 +197,7 @@ double RodCollection<fullHess>::energy(const Eigen::Ref<const Eigen::VectorXd> X
   return result;
 }
 
-template <bool fullHess>
-void RodCollection<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const
+void RodCollection::gradient(const Eigen::Ref<const Eigen::VectorXd> X, Eigen::Ref<Eigen::VectorXd> Y) const
 {
   using namespace Eigen;
 
@@ -239,8 +235,7 @@ void RodCollection<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X
   }
 }
 
-template <bool fullHess>
-Eigen::VectorXd RodCollection<fullHess>::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
+Eigen::VectorXd RodCollection::gradient(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -249,9 +244,7 @@ Eigen::VectorXd RodCollection<fullHess>::gradient(const Eigen::Ref<const Eigen::
   return Y;
 }
 
-template <bool fullHess>
-std::vector<Eigen::Triplet<double>>
-RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
+std::vector<Eigen::Triplet<double>> RodCollection::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd> X) const
 {
   using namespace Eigen;
 
@@ -328,8 +321,5 @@ RodCollection<fullHess>::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd>
   }
   return triplets;
 }
-
-template class RodCollection<true>;
-template class RodCollection<false>;
 
 } // namespace fsim

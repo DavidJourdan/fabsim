@@ -13,7 +13,6 @@
 namespace fsim
 {
 
-template <bool fullHess = true>
 class RodStencil : public ElementBase<3, 2>
 {
 public:
@@ -40,12 +39,19 @@ public:
                       double stretchCoeff,
                       double mass = 0) const;
 
+  LocalMatrix hessianApprox(const Eigen::Ref<const Eigen::VectorXd> X,
+                            const LocalFrame &f1,
+                            const LocalFrame &f2,
+                            const Eigen::Vector2d &stiffnesses,
+                            double stretchCoeff,
+                            double mass = 0) const;
+
   double getReferenceTwist() const { return _ref_twist; }
   void setReferenceTwist(double ref_twist) { _ref_twist = ref_twist; }
   void updateReferenceTwist(const LocalFrame &f1, const LocalFrame &f2);
 
-  void setCurvatures(const Eigen::Vector2d &restK) { _restK = restK; }
-  Eigen::Vector2d getCurvatures() { return _restK; }
+  void setCurvature(const Eigen::Vector2d &restK) { _restK = restK; }
+  Eigen::Vector2d getCurvature() { return _restK; }
 
 protected:
   Eigen::Vector2d
@@ -61,9 +67,10 @@ protected:
                                                     const LocalFrame &f1,
                                                     const LocalFrame &f2,
                                                     Eigen::Matrix<double, 11, 11> *dderiv = nullptr) const;
-  
+
   Vec<double, 9> stretchGradient(const Eigen::Ref<const Eigen::VectorXd> X) const;
   Mat<double, 9, 9> stretchHessian(const Eigen::Ref<const Eigen::VectorXd> X) const;
+
 private:
   Eigen::Vector2d _lengths;
   Eigen::Vector2d _restK; // rest material curvature (product of curvature binormal and mean material director)

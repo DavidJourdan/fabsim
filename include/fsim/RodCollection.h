@@ -26,8 +26,7 @@
 namespace fsim
 {
 
-template <bool fullHess = true>
-class RodCollection : public ElasticRod<fullHess>
+class RodCollection : public ElasticRod
 {
 public:
   RodCollection(const Eigen::Ref<const Mat3<double>> V,

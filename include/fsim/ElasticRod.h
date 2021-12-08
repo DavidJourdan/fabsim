@@ -39,7 +39,6 @@ struct RodParams
  * @tparam fullHess  Wether to compute the full matrix of second derivatives or use a quadratic approximation
  * If true, the Newton solver will converge faster when it's close to the solution but the hessian might be non-SPD
  */
-template <bool fullHess = true>
 class ElasticRod
 {
 public:
@@ -99,8 +98,8 @@ public:
   void getReferenceDirectors(Mat3<double> &D1, Mat3<double> &D2) const;
   void getRotatedDirectors(const Eigen::Ref<const Eigen::VectorXd> theta, Mat3<double> &P1, Mat3<double> &P2) const;
 
-  std::vector<RodStencil<fullHess>> const &rodStencils() const { return _stencils; };
-  std::vector<RodStencil<fullHess>> &rodStencils() { return _stencils; };
+  std::vector<RodStencil> const &rodStencils() const { return _stencils; };
+  std::vector<RodStencil> &rodStencils() { return _stencils; };
 
   std::vector<Spring> const &springs() const { return _springs; }
   std::vector<Spring> &springs() { return _springs; }
@@ -158,7 +157,7 @@ protected:
   double _stretch;
   double _mass;
   Eigen::Vector2d _stiffness;
-  mutable std::vector<RodStencil<fullHess>> _stencils;
+  mutable std::vector<RodStencil> _stencils;
   std::vector<LocalFrame> _frames;
   std::vector<Spring> _springs;
 };

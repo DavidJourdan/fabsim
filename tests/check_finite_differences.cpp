@@ -168,7 +168,7 @@ TEST_CASE("RodStencil")
   LocalFrame f1(t1, n1, t1.cross(n1));
   LocalFrame f2(f1);
   f2.update(V.row(1), V.row(2));
-  RodStencil rod(V, f2, f2, dofs);
+  RodStencil rod(V, f1, f2, dofs);
 
   SECTION("Gradient")
   {
