@@ -32,6 +32,7 @@ struct RodParams
   double E;                                         // Young's modulus
   double mass = 0;                                  // mass per unit length
   CrossSection crossSection = CrossSection::Circle; // shape of the cross-section (can be elliptic or rectangular)
+  bool closed = false;
 };
 
 /**

@@ -31,11 +31,11 @@ TEST_CASE("ElasticRod")
     REQUIRE_THAT(D1, ApproxEquals(D3));
     REQUIRE_THAT(D2, ApproxEquals(D4));
 
-    REQUIRE_THAT(D1.row(1).transpose(), ApproxEquals(
-      parallel_transport(D1.row(0), (V.row(1) - V.row(0)).normalized(), (V.row(2) - V.row(1)).normalized())));
+    REQUIRE_THAT(D1.row(1).transpose(), ApproxEquals(parallel_transport(D1.row(0), (V.row(1) - V.row(0)).normalized(),
+                                                                        (V.row(2) - V.row(1)).normalized())));
 
-    REQUIRE_THAT(D2.row(1).transpose(), ApproxEquals(
-      parallel_transport(D2.row(0), (V.row(1) - V.row(0)).normalized(), (V.row(2) - V.row(1)).normalized())));
+    REQUIRE_THAT(D2.row(1).transpose(), ApproxEquals(parallel_transport(D2.row(0), (V.row(1) - V.row(0)).normalized(),
+                                                                        (V.row(2) - V.row(1)).normalized())));
 
     Vector2d theta = GENERATE(take(5, vector_random(2)));
     rod.getRotatedDirectors(theta, D3, D4);
@@ -45,12 +45,14 @@ TEST_CASE("ElasticRod")
       REQUIRE(D1.row(i).dot(D2.row(i)) == Approx(0).margin(1e-10));
       REQUIRE(D1.row(i).norm() == Approx(1).margin(1e-10));
       REQUIRE(D2.row(i).norm() == Approx(1).margin(1e-10));
-      REQUIRE_THAT(D3.row(i).transpose(), 
-        ApproxEquals(AngleAxis<double>(theta(i), 
-          (V.row(i + 1) - V.row(i)).normalized()) * D1.row(i).transpose()).epsilon(1e-6));
-      REQUIRE_THAT(D4.row(i).transpose(), 
-        ApproxEquals(AngleAxis<double>(theta(i), 
-          (V.row(i + 1) - V.row(i)).normalized()) * D2.row(i).transpose()).epsilon(1e-6));
+      REQUIRE_THAT(
+          D3.row(i).transpose(),
+          ApproxEquals(AngleAxis<double>(theta(i), (V.row(i + 1) - V.row(i)).normalized()) * D1.row(i).transpose())
+              .epsilon(1e-6));
+      REQUIRE_THAT(
+          D4.row(i).transpose(),
+          ApproxEquals(AngleAxis<double>(theta(i), (V.row(i + 1) - V.row(i)).normalized()) * D2.row(i).transpose())
+              .epsilon(1e-6));
     }
   }
 
@@ -239,9 +241,9 @@ TEST_CASE("RodCollection")
 
 //   SECTION("RodStencil ~ RodCollection")
 //   {
-//     RodCollection rodCol(V, {{0, 1}, {1, 2}}, 
-//       (MatrixX2i(2, 2) << 0, 1, 1, 0).finished(), 
-//       (Mat3<double>(2, 3) << n.transpose(), n.transpose()).finished(), 
+//     RodCollection rodCol(V, {{0, 1}, {1, 2}},
+//       (MatrixX2i(2, 2) << 0, 1, 1, 0).finished(),
+//       (Mat3<double>(2, 3) << n.transpose(), n.transpose()).finished(),
 //       {W_n(0), W_n(1)}, {W_b(0), W_b(1)}, young_modulus);
 //     rodCol.updateProperties(X);
 

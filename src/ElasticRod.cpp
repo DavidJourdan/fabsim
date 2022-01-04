@@ -33,7 +33,14 @@ ElasticRod::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
     _stiffness *= p.E / 12;
   }
 
-  Map<VectorXi> E(const_cast<int *>(indices.data()), indices.size());
+  VectorXi E;
+  if(p.closed && indices(indices.size() - 1) != indices(0))
+  {
+    E.resize(indices.size() + 1);
+    E << indices, indices(0);
+  }
+  else
+    E = indices;
 
   nV = V.rows();
   nE = E.size() - 1;
@@ -51,6 +58,13 @@ ElasticRod::ElasticRod(const Eigen::Ref<const Mat3<double>> V,
     Matrix<int, 5, 1> dofs;
     dofs << E(j - 1), E(j), E(j + 1), 3 * nV + j - 1, 3 * nV + j;
     _stencils.emplace_back(V, _frames[j - 1], _frames[j], dofs);
+  }
+
+  if(p.closed)
+  {
+    Matrix<int, 5, 1> dofs;
+    dofs << E(nE - 1), E(0), E(1), 3 * nV + nE - 1, 3 * nV;
+    _stencils.emplace_back(V, _frames[nE - 1], _frames[0], dofs);
   }
 
   assert(_springs.size() == _frames.size());
