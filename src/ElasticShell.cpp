@@ -16,7 +16,16 @@ DiscreteShell<Formulation>::DiscreteShell(const Eigen::Ref<const Mat3<double>> V
                                           double thickness,
                                           double young_modulus,
                                           double poisson_ratio)
-    : _young_modulus(young_modulus), _thickness(thickness), _poisson_ratio(poisson_ratio)
+    : DiscreteShell(V, F, std::vector<double>(V.rows(), thickness), young_modulus, poisson_ratio)
+{}
+
+template <class Formulation>
+DiscreteShell<Formulation>::DiscreteShell(const Eigen::Ref<const Mat3<double>> V,
+                                          const Eigen::Ref<const Mat3<int>> F,
+                                          const std::vector<double> &thicknesses,
+                                          double young_modulus,
+                                          double poisson_ratio)
+    : _young_modulus(young_modulus), _poisson_ratio(poisson_ratio)
 {
   using namespace Eigen;
 
@@ -26,9 +35,26 @@ DiscreteShell<Formulation>::DiscreteShell(const Eigen::Ref<const Mat3<double>> V
   MatrixXi E = hingeIndices(V, F);
   nE = E.rows();
 
-  double flexural_energy = young_modulus * pow(thickness, 3) / 24 / (1 - pow(poisson_ratio, 2));
+  double flexural_energy = young_modulus / 24 / (1 - pow(poisson_ratio, 2));
 
   this->_elements.reserve(nE);
+
+  std::vector<double> vertexThicknesses;
+  if(thicknesses.size() == nF)
+  {
+    // convert face-based thicknesses to vertex-based quantities
+    vertexThicknesses = std::vector<double>(V.rows(), 0);
+    std::vector<int> vertexValences(V.rows(), 0);
+    for(int i = 0; i < F.rows(); ++i)
+      for(int j = 0; j < 3; ++j)
+      {
+        vertexThicknesses[F(i, j)] += thicknesses[i];
+        vertexValences[F(i, j)] += 1;
+      }
+    for(int i = 0; i < V.rows(); ++i)
+      vertexThicknesses[i] = vertexThicknesses[i] / vertexValences[i];
+  }
+
   for(int i = 0; i < nE; ++i)
   {
     int v0 = E(i, 0);
@@ -40,8 +66,18 @@ DiscreteShell<Formulation>::DiscreteShell(const Eigen::Ref<const Mat3<double>> V
     Vector3d n1 = (V.row(v1) - V.row(v3)).cross(V.row(v0) - V.row(v3));
     Vector3d axis = V.row(v1) - V.row(v0);
 
+    double h;
+    if(thicknesses.size() == F.rows())
+      h = (vertexThicknesses[v0] + vertexThicknesses[v1]) / 2.;
+    else if(thicknesses.size() == V.rows())
+      h = (thicknesses[v0] + thicknesses[v1]) / 2.;
+    else if(thicknesses.size() == nE)
+      h = thicknesses[i];
+    else
+      throw std::runtime_error("Invalid size for thicknesses (should match the number of vertices, edges, or faces)\n");
+
     // formula from "Discrete bending forces and their Jacobians" (p.5)
-    double coeff = flexural_energy * 3 * axis.squaredNorm() / (n0.norm() / 2 + n1.norm() / 2);
+    double coeff = flexural_energy * pow(h, 3) * 3 * axis.squaredNorm() / (n0.norm() / 2 + n1.norm() / 2);
 
     this->_elements.emplace_back(V, E.row(i), coeff);
   }
@@ -57,10 +93,7 @@ Mat4<int> DiscreteShell<Formulation>::hingeIndices(const Eigen::Ref<const Mat3<d
   indices.reserve(3 * F.rows());
   for(int i = 0; i < F.rows(); ++i)
   {
-    // clang-format off
-    auto fill = [&](int a, int b, int c)
-    {
-      // clang-format on
+    auto fill = [&](int a, int b, int c) {
       if(a < b)
         indices.emplace_back(a, b, c);
       else
@@ -120,17 +153,6 @@ void DiscreteShell<Formulation>::setPoissonRatio(double poisson_ratio)
     element._coeff *= (1 - pow(_poisson_ratio, 2)) / (1 - pow(poisson_ratio, 2));
   }
   _poisson_ratio = poisson_ratio;
-}
-
-template <class Formulation>
-void DiscreteShell<Formulation>::setThickness(double thickness)
-{
-  assert(thickness > 0);
-  for(auto &element: this->_elements)
-  {
-    element._coeff *= pow(thickness, 3) / pow(_thickness, 3);
-  }
-  _thickness = thickness;
 }
 
 template class DiscreteShell<TanAngleFormulation>;

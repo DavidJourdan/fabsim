@@ -43,21 +43,25 @@ Eigen::Vector3d OrthotropicStVKElement::strain(const Eigen::Ref<const Eigen::Vec
   return res;
 }
 
-Eigen::Vector3d OrthotropicStVKElement::stress(const Eigen::Ref<const Eigen::VectorXd> X, const Eigen::Matrix3d &_C) const
+Eigen::Vector3d OrthotropicStVKElement::stress(const Eigen::Ref<const Eigen::VectorXd> X,
+                                               const Eigen::Matrix3d &_C) const
 {
   using namespace Eigen;
   Vector3d E = strain(X);
   return _C * E;
 }
 
-double OrthotropicStVKElement::energy(const Eigen::Ref<const Eigen::VectorXd> X, const Eigen::Matrix3d &_C, double mass) const
+double
+OrthotropicStVKElement::energy(const Eigen::Ref<const Eigen::VectorXd> X, const Eigen::Matrix3d &_C, double mass) const
 {
   using namespace Eigen;
   Vector3d E = strain(X);
   return coeff * (0.5 * E.dot(_C * E) + 9.8 * mass * (X(3 * idx(0) + 2) + X(3 * idx(1) + 2) + X(3 * idx(2) + 2)) / 3);
 }
 
-Vec<double, 9> OrthotropicStVKElement::gradient(const Eigen::Ref<const Eigen::VectorXd> X, const Eigen::Matrix3d &_C, double mass) const
+Vec<double, 9> OrthotropicStVKElement::gradient(const Eigen::Ref<const Eigen::VectorXd> X,
+                                                const Eigen::Matrix3d &_C,
+                                                double mass) const
 {
   using namespace Eigen;
   Vector3d S = stress(X, _C);
@@ -74,7 +78,8 @@ Vec<double, 9> OrthotropicStVKElement::gradient(const Eigen::Ref<const Eigen::Ve
   return Map<Vec<double, 9>>(grad.data(), 9);
 }
 
-Mat<double, 9, 9> OrthotropicStVKElement::hessian(const Eigen::Ref<const Eigen::VectorXd> X, const Eigen::Matrix3d &_C, double mass) const
+Mat<double, 9, 9>
+OrthotropicStVKElement::hessian(const Eigen::Ref<const Eigen::VectorXd> X, const Eigen::Matrix3d &_C, double mass) const
 {
   using namespace Eigen;
   Vector3d S = stress(X, _C);

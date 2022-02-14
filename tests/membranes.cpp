@@ -90,8 +90,6 @@ TEST_CASE("OrthotropicStVKElement")
   }
 }
 
-
-
 TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane, NeoHookeanMembrane, IncompressibleNeoHookeanMembrane)
 {
   using namespace Eigen;
@@ -99,13 +97,19 @@ TEMPLATE_TEST_CASE("ElasticMembrane", "", StVKMembrane, NeoHookeanMembrane, Inco
   Mat3<double> V = GENERATE(take(5, matrix_random(3, 3)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
-  TestType membrane(V, F, 0.1, 10, 0.3);
+  VectorXd params = GENERATE(take(5, vector_random(4, 0., 0.5)));
+  TestType membrane(V, F, params(0), params(1), params(2), 0);
 
-  SECTION("setThickness")
+  SECTION("Thickness")
   {
-    double t = GENERATE(take(5, random(0., 1.)));
-    membrane.setThickness(t);
-    REQUIRE(membrane.getThickness() == t);
+    double thickness = GENERATE(take(5, random(0., 1.)));
+    VectorXd var = GENERATE(take(5, vector_random(9)));
+    
+    // compare constant thickness constructor vs list of thicknesses constructor
+    TestType membrane1(V, F, thickness, params(1), params(2), params(3));
+    TestType membrane2(V, F, std::vector<double>(1, thickness), params(1), params(2), params(3));
+
+    REQUIRE(membrane1.energy(var) == Approx(membrane2.energy(var)).margin(1e-10));
   }
   SECTION("Poisson's ratio")
   {
@@ -142,13 +146,19 @@ TEST_CASE("OrthotropicStVKMembrane class")
   Mat2<double> V = GENERATE(take(5, matrix_random(3, 2)));
   Mat3<int> F = (Mat3<int>(1, 3) << 0, 1, 2).finished();
 
-  OrthotropicStVKMembrane membrane(V, F, 0.1, 10, 9, 0.3);
+  VectorXd params = GENERATE(take(5, vector_random(4, 0., 0.5)));
+  OrthotropicStVKMembrane membrane(V, F, params(0), params(1), params(2), params(3));
 
-  SECTION("setThickness")
+  SECTION("Thickness")
   {
-    double t = GENERATE(take(5, random(0., 1.)));
-    membrane.setThickness(t);
-    REQUIRE(membrane.getThickness() == t);
+    double thickness = GENERATE(take(5, random(0., 1.)));
+    VectorXd var = GENERATE(take(5, vector_random(9)));
+    
+    // compare constant thickness constructor vs list of thicknesses constructor
+    OrthotropicStVKMembrane membrane1(V, F, thickness, params(1), params(2), params(3));
+    OrthotropicStVKMembrane membrane2(V, F, std::vector<double>(1, thickness), params(1), params(2), params(3));
+
+    REQUIRE(membrane1.energy(var) == Approx(membrane2.energy(var)).margin(1e-10));
   }
   SECTION("Poisson's ratio")
   {

@@ -18,9 +18,7 @@ ElasticMembrane<Element>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V
                                           double poisson_ratio,
                                           double mass)
     : ElasticMembrane(V, F, std::vector<double>(F.rows(), thickness), young_modulus, poisson_ratio, mass)
-{
-  _thickness = thickness;
-}
+{}
 
 template <class Element>
 ElasticMembrane<Element>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V,
@@ -34,11 +32,12 @@ ElasticMembrane<Element>::ElasticMembrane(const Eigen::Ref<const Mat3<double>> V
   using namespace Eigen;
 
   nV = V.rows();
+  int nF = F.rows();
+  assert(thicknesses.size() == nF);
 
   _lambda = _E * _nu / (1 - std::pow(_nu, 2));
   _mu = 0.5 * _E / (1 + _nu);
 
-  int nF = F.rows();
   this->_elements.reserve(nF);
   for(int i = 0; i < nF; ++i)
     this->_elements.emplace_back(V, F.row(i), thicknesses[i]);
@@ -126,18 +125,6 @@ template <class Element>
 void ElasticMembrane<Element>::setMass(double mass)
 {
   _mass = mass;
-}
-
-template <class Element>
-void ElasticMembrane<Element>::setThickness(double t)
-{
-  if(_thickness <= 0)
-    throw std::runtime_error(
-        "Warning: membrane may have a locally varying thickness\nCan't set it to a constant value\n");
-  for(auto &elem: this->_elements)
-    elem.coeff *= t / _thickness;
-
-  _thickness = t;
 }
 
 template class ElasticMembrane<StVKElement>;

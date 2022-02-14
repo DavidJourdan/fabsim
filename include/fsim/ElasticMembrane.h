@@ -25,9 +25,9 @@ public:
    * constructor for ElasticMembrane
    * @param V  nV by 2 list of vertex positions (initial position in the 2D plane)
    * @param F  nF by 3 list of face indices
+   * @param thickness  membrane's thickness
    * @param young_modulus  membrane's Young's modulus, controls the resistance to bending
    * @param poisson_ratio  membrane's Poisson's ratio
-   * @param thickness  membrane's thickness
    * @param mass  membrane's mass (defaults to 0 to disable gravity)
    */
   ElasticMembrane(const Eigen::Ref<const Mat3<double>> V,
@@ -36,7 +36,15 @@ public:
                   double young_modulus,
                   double poisson_ratio,
                   double mass = 0);
-
+  /**
+   * Alternate constructor for varying thickness
+   * @param V  nV by 2 list of vertex positions (initial position in the 2D plane)
+   * @param F  nF by 3 list of face indices
+   * @param thicknesses  size nF list of membrane's thicknesses
+   * @param young_modulus  membrane's Young's modulus, controls the resistance to bending
+   * @param poisson_ratio  membrane's Poisson's ratio
+   * @param mass  membrane's mass (defaults to 0 to disable gravity)
+   */
   ElasticMembrane(const Eigen::Ref<const Mat3<double>> V,
                   const Eigen::Ref<const Mat3<int>> F,
                   const std::vector<double> &thicknesses,
@@ -85,11 +93,6 @@ public:
   void setYoungModulus(double E);
   double getYoungModulus() const { return _E; }
 
-  // set thickness of the membrane (controls the amount of stretching and the total weight)
-  // negative values are not allowed
-  void setThickness(double t);
-  double getThickness() const { return _thickness; }
-
   void setMass(double mass);
   double getMass() const { return _mass; }
 
@@ -100,7 +103,6 @@ private:
   double _lambda;
   double _mu;
   double _mass;
-  double _thickness = -1;
 };
 
 using StVKMembrane = ElasticMembrane<StVKElement>;

@@ -21,7 +21,7 @@ public:
    * constructor for OrthotropicStVKMembrane
    * @param V  nV by 3 list of vertex positions
    * @param F  nF by 3 list of face indices
-   * @param thicknesses  membrane's thickness (per-triangle value)
+   * @param thickness  membrane's thickness (constant)
    * @param E1  0 degree Young's modulus
    * @param E2  90 degrees Young's modulus
    * @param poisson_ratio  membrane's Poisson's ratio
@@ -34,7 +34,16 @@ public:
                           double E2,
                           double poisson_ratio,
                           double mass = 0);
-
+  /**
+   * Alternate constructor for varying thickness
+   * @param V  nV by 3 list of vertex positions
+   * @param F  nF by 3 list of face indices
+   * @param thicknesses  size nF list of membrane's thicknesses
+   * @param E1  0 degree Young's modulus
+   * @param E2  90 degrees Young's modulus
+   * @param poisson_ratio  membrane's Poisson's ratio
+   * @param mass  membrane's mass (defaults to 0 to disable gravity)
+   */
   OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
                           const Eigen::Ref<const Mat3<int>> F,
                           const std::vector<double> &thicknesses,
@@ -84,17 +93,11 @@ public:
   void setYoungModuli(double E1, double E2);
   std::array<double, 2> getYoungModuli() const { return {_E1, _E2}; }
 
-  // set thickness of the membrane (controls the amount of stretching and the total weight)
-  // negative values are not allowed
-  void setThickness(double t);
-  double getThickness() const { return _thickness; }
-
   void setMass(double mass);
   double getMass() const { return _mass; }
 
 private:
   int nV;
-  double _thickness = -1;
   double _poisson_ratio;
   double _E1;
   double _E2;

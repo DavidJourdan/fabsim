@@ -15,30 +15,30 @@ namespace fsim
 {
 
 OrthotropicStVKMembrane::OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
-                                                     const Eigen::Ref<const Mat3<int>> F,
-                                                     double thickness,
-                                                     double E1,
-                                                     double E2,
-                                                     double poisson_ratio,
-                                                     double mass)
+                                                 const Eigen::Ref<const Mat3<int>> F,
+                                                 double thickness,
+                                                 double E1,
+                                                 double E2,
+                                                 double poisson_ratio,
+                                                 double mass)
     : OrthotropicStVKMembrane(V, F, std::vector<double>(F.rows(), thickness), E1, E2, poisson_ratio, mass)
-{
-  _thickness = thickness;
-}
+{}
 
 OrthotropicStVKMembrane::OrthotropicStVKMembrane(const Eigen::Ref<const Mat2<double>> V,
-                                                     const Eigen::Ref<const Mat3<int>> F,
-                                                     const std::vector<double> &thicknesses,
-                                                     double E1,
-                                                     double E2,
-                                                     double poisson_ratio,
-                                                     double mass)
+                                                 const Eigen::Ref<const Mat3<int>> F,
+                                                 const std::vector<double> &thicknesses,
+                                                 double E1,
+                                                 double E2,
+                                                 double poisson_ratio,
+                                                 double mass)
     : _poisson_ratio{poisson_ratio}, _E1{E1}, _E2{E2}, _mass{mass}
 {
   using namespace Eigen;
 
   nV = V.rows();
   int nF = F.rows();
+  assert(thicknesses.size() == nF);
+
   this->_elements.reserve(nF);
   for(int i = 0; i < nF; ++i)
     this->_elements.emplace_back(V, F.row(i), thicknesses[i]);
@@ -94,7 +94,6 @@ OrthotropicStVKMembrane::hessianTriplets(const Eigen::Ref<const Eigen::VectorXd>
   return ModelBase<OrthotropicStVKElement>::hessianTriplets(X, C, _mass);
 }
 
-
 void OrthotropicStVKMembrane::setPoissonRatio(double poisson_ratio)
 {
   _poisson_ratio = poisson_ratio;
@@ -104,18 +103,6 @@ void OrthotropicStVKMembrane::setYoungModuli(double E1, double E2)
 {
   _E1 = E1;
   _E2 = E2;
-}
-
-void OrthotropicStVKMembrane::setThickness(double t)
-{
-  if(_thickness <= 0)
-    throw std::runtime_error(
-        "Warning: membrane may have a locally varying thickness\nCan't set it to a constant value\n");
-  for(auto &elem: this->_elements)
-  {
-    elem.coeff *= t / _thickness;
-  }
-  _thickness = t;
 }
 
 void OrthotropicStVKMembrane::setMass(double mass)
