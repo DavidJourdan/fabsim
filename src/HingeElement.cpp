@@ -219,10 +219,10 @@ double TanAngleFormulation::deriv(const Eigen::Vector3d &n0,
                                   double *second_deriv) const
 {
   double tangent = tan_angle_2(n0, n1, axis);
-  double sec2 = 4 / (n0 + n1).squaredNorm(); // 1/cos^2(theta/2)
+  double sec2 = (4 + 1E-5 * (n0 + n1).norm()) / pow((n0 + n1).norm() + 1E-5, 2); // 1/cos^2(theta/2)
 
   if(second_deriv)
-    *second_deriv = 2 * sec2 * (sec2 + 2 * tangent * (tangent - _rest_tangent));
+    *second_deriv = 2 * sec2 * sec2 + 2 * tangent * (-1E-5 / ((n0 + n1).norm() + 1E-5) + 2 * sec2) * (tangent - _rest_tangent);
 
   return 2 * sec2 * (2 * tangent - 2 * _rest_tangent);
 }

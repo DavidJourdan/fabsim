@@ -32,9 +32,9 @@ double tan_angle_2(const Eigen::Vector3d &u, const Eigen::Vector3d &v, const Eig
 {
   assert((u + v).norm() > 1e-10);
   if(u.cross(v).dot(n) < 0)
-    return -(u - v).norm() / (u + v).norm();
+    return -(u - v).norm() / ((u + v).norm() + 1e-5);
   else
-    return +(u - v).norm() / (u + v).norm();
+    return +(u - v).norm() / ((u + v).norm() + 1e-5);
 }
 
 Eigen::Matrix3d cross_matrix(const Eigen::Vector3d &a)
