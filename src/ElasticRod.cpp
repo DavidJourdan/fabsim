@@ -243,6 +243,28 @@ LocalFrame ElasticRod::getFrame(const Eigen::Ref<const Eigen::VectorXd> X, int x
   return f;
 }
 
+void ElasticRod::setCurvatures(const Mat2<double> &K)
+{
+  using namespace Eigen;
+  assert(_stencils.size() == K.rows());
+  for(int i = 0; i < _stencils.size(); ++i)
+  {
+    _stencils[i].setCurvature(K.row(i));
+  }
+}
+
+Mat2<double> ElasticRod::getCurvatures()
+{
+  using namespace Eigen;
+  Mat2<double> K(_stencils.size(), 2);
+  for(int i = 0; i < _stencils.size(); ++i)
+  {
+    K.row(i) = _stencils[i].getCurvature();
+  }
+  return K;
+}
+
+
 void ElasticRod::bishopFrame(const Eigen::Ref<const Mat3<double>> V,
                              const Eigen::Ref<const Eigen::VectorXi> E,
                              const Eigen::Vector3d &n,

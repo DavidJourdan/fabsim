@@ -114,6 +114,10 @@ public:
 
   void setParams(const RodParams &params);
 
+  // change the rest curvature of each RodStencil
+  void setCurvatures(const Mat2<double> &K);
+  Mat2<double> getCurvatures();
+
   // number of edges
   int nbEdges() const { return _springs.size(); }
   int nbDOFs() const { return 3 * nV + nE; }
